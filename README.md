@@ -1,0 +1,2 @@
+# losp
+Smol interpreted language.
