@@ -2,6 +2,7 @@ package losp
 
 import (
 	"bytes"
+	"fmt"
 )
 
 type token struct {
@@ -21,37 +22,67 @@ func (l *lexer) lex(sourceCode string) {
 		currTok := new(token)
 		currTok.Line = l.currentLine
 		currTok.Type = determineType(currentChar)
+		appendToken := true
 		switch currTok.Type {
 		case "CHAR":
 			currTok.Value = l.peekTypeN("CHAR", sourceCode)
-			l.tokens = append(l.tokens, currTok)
 		case "NUMB":
 			currTok.Value = l.peekTypeN("NUMB", sourceCode)
-			l.tokens = append(l.tokens, currTok)
 		case "LEFT_ARROW":
+			currTok.Value = "<"
+			currTok.Type = "LEFT_ARROW"
+			l.currentCol++
 			l.currentIndex++
 		case "RIGHT_ARROW":
+			currTok.Value = ">"
+			currTok.Type = "RIGHT_ARROW"
+			l.currentCol++
 			l.currentIndex++
 		case "COMMA":
+			currTok.Value = ","
+			currTok.Type = "COMMA"
+			l.currentCol++
 			l.currentIndex++
 		case "LEFT_BRACE":
+			currTok.Value = "["
+			currTok.Type = "LEFT_BRACE"
+			l.currentCol++
 			l.currentIndex++
 		case "RIGHT_BRACE":
+			currTok.Value = "}"
+			currTok.Type = "RIGHT_BRACE"
+			l.currentCol++
+			l.currentIndex++
+		case "DOUBLE_DOT":
+			currTok.Value = ":"
+			currTok.Type = "DOUBLE_DOT"
+			l.currentCol++
 			l.currentIndex++
 		case "SEMI_COLON":
-			l.currentIndex++
-		case "SYMB":
+			currTok.Value = ";"
+			currTok.Type = "SEMICOLON"
+			l.currentCol++
 			l.currentIndex++
 		case "SPACE":
+			l.currentCol++
 			l.currentIndex++
+			appendToken = false
 		case "UDEF":
-			l.currentIndex++
+			fmt.Println(currentChar)
+			panic("undefined char")
 		case "NEWLINE":
+			l.currentCol = 0
+			l.currentLine++
 			l.currentIndex++
+			appendToken = false
 		case "TAB":
+			l.currentCol++
 			l.currentIndex++
-		default:
-			panic(currentChar)
+			appendToken = false
+		}
+
+		if appendToken {
+			l.tokens = append(l.tokens, currTok)
 		}
 	}
 
