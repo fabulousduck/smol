@@ -26,7 +26,8 @@ func (l *lexer) lex(sourceCode string) {
 			currTok.Value = l.peekTypeN("CHAR", sourceCode)
 			l.tokens = append(l.tokens, currTok)
 		case "NUMB":
-			l.currentIndex++
+			currTok.Value = l.peekTypeN("NUMB", sourceCode)
+			l.tokens = append(l.tokens, currTok)
 		case "LEFT_ARROW":
 			l.currentIndex++
 		case "RIGHT_ARROW":
