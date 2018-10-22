@@ -21,13 +21,16 @@ func (l *lexer) lex(sourceCode string) {
 		currentChar := string(sourceCode[l.currentIndex])
 		currTok := new(token)
 		currTok.Line = l.currentLine
+		currTok.Col = l.currentCol
 		currTok.Type = determineType(currentChar)
 		appendToken := true
 		switch currTok.Type {
 		case "CHAR":
 			currTok.Value = l.peekTypeN("CHAR", sourceCode)
+			l.currentCol += len(currTok.Value)
 		case "NUMB":
 			currTok.Value = l.peekTypeN("NUMB", sourceCode)
+			l.currentCol += len(currTok.Value)
 		case "LEFT_ARROW":
 			currTok.Value = "<"
 			currTok.Type = "LEFT_ARROW"
