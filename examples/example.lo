@@ -1,0 +1,13 @@
+DEF EXAMPLE_FUNCTION<A, B>:
+    ANB[B, A]:
+        DSP B;
+        INC B;
+    END
+END
+
+MEM A 20;
+MEM B 0;
+
+
+EXAMPLE_FUNCTION[A,B];
+
