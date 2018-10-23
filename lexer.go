@@ -2,7 +2,7 @@ package losp
 
 import (
 	"bytes"
-	"fmt"
+	"os"
 )
 
 type token struct {
@@ -15,7 +15,7 @@ type lexer struct {
 	currentIndex, currentLine, currentCol int
 }
 
-func (l *lexer) lex(sourceCode string) {
+func (l *lexer) lex(sourceCode string, filename string) {
 
 	for l.currentIndex < len(sourceCode) {
 		currentChar := string(sourceCode[l.currentIndex])
@@ -71,8 +71,8 @@ func (l *lexer) lex(sourceCode string) {
 			l.currentIndex++
 			appendToken = false
 		case "UDEF":
-			fmt.Println(currentChar)
-			panic("undefined char")
+			report(l.currentLine, filename, "undefined symbol used")
+			os.Exit(65)
 		case "NEWLINE":
 			l.currentCol = 0
 			l.currentLine++

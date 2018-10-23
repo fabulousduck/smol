@@ -5,7 +5,7 @@ type typename map[string]string
 func determineType(character string) string {
 	chars := []string{
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-		"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+		"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_",
 	}
 
 	symbols := typename{
@@ -15,6 +15,7 @@ func determineType(character string) string {
 		";": "SEMI_COLON",
 		"[": "LEFT_BRACE",
 		"]": "RIGHT_BRACE",
+		":": "DOUBLE_DOT",
 	}
 
 	escapeChars := typename{

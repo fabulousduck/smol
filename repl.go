@@ -16,7 +16,7 @@ func (losp *Losp) Repl() {
 		if err != nil {
 			panic(err)
 		}
-		losp.run(text)
+		losp.run(text, "repl")
 		losp.HadError = false
 	}
 }

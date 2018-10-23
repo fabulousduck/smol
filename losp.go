@@ -24,14 +24,14 @@ func (losp *Losp) RunFile(filename string) {
 	if err != nil {
 		panic(err)
 	}
-	losp.run(string(file))
+	losp.run(string(file), filename)
 	if losp.HadError {
 		os.Exit(65)
 	}
 }
 
-func (losp *Losp) run(sourceCode string) {
+func (losp *Losp) run(sourceCode string, filename string) {
 	l := new(lexer)
-	l.lex(sourceCode)
+	l.lex(sourceCode, filename)
 	spew.Dump(l.tokens)
 }
