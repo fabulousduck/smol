@@ -58,3 +58,20 @@ func contains(name string, list []string) bool {
 	}
 	return false
 }
+
+func getKeyword(token *token) string {
+	keywords := map[string]string{
+		"DEF": "function_definition",
+		"ANB": "left_not_right",
+		"MEM": "variable_assignment",
+	}
+
+	if val, ok := keywords[token.Value]; ok {
+		return val
+	}
+
+	if len(token.Value) > 1 {
+		return "string"
+	}
+	return token.Type
+}

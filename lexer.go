@@ -88,7 +88,7 @@ func (l *lexer) lex(sourceCode string, filename string) {
 			l.tokens = append(l.tokens, currTok)
 		}
 	}
-
+	l.tagKeywords()
 }
 
 func (l *lexer) peekTypeN(typeName string, program string) string {
@@ -98,4 +98,12 @@ func (l *lexer) peekTypeN(typeName string, program string) string {
 		l.currentIndex++
 	}
 	return currentString.String()
+}
+
+func (l *lexer) tagKeywords() {
+	for i := 0; i < len(l.tokens); i++ {
+		if l.tokens[i].Type == "CHAR" {
+			l.tokens[i].Type = getKeyword(l.tokens[i])
+		}
+	}
 }

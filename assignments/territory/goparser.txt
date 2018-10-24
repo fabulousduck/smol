@@ -1,0 +1,15 @@
+Assignment:
+
+
+Pick an open source implementation of a language you like. Download the source code and poke around in it. Try to find the code that implements the scanner and parser. Are they hand-written, or generated using tools like Lex and Yacc? (.l or .y files usually imply the latter.)
+
+
+Result:
+
+    Golang has an open source compiler that compiles to a lot of different
+    architectures.
+    Its scanner / lexer is thuis also open source.
+    This scanner is written by hand, in Go no less. It does a lot of things
+    because it has to be reliable, but it comes down to the same principles as
+    explained in the book. It reads the source code string character by
+    character and builds them up into words we understand. "Tokens" if you will.
