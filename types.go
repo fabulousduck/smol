@@ -64,8 +64,10 @@ func getKeyword(token *token) string {
 		"DEF": "function_definition",
 		"ANB": "left_not_right",
 		"MEM": "variable_assignment",
-		"DSP": "print_statement",
+		"PRI": "print_integer",
+		"PRA": "print_ascii",
 		"INC": "increment_value",
+		"END": "close_block",
 	}
 
 	if val, ok := keywords[token.Value]; ok {

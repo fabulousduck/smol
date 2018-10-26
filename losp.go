@@ -3,8 +3,6 @@ package losp
 import (
 	"io/ioutil"
 	"os"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 //Losp : Defines the global attributes of the interpreter
@@ -33,5 +31,6 @@ func (losp *Losp) RunFile(filename string) {
 func (losp *Losp) run(sourceCode string, filename string) {
 	l := new(lexer)
 	l.lex(sourceCode, filename)
-	spew.Dump(l.tokens)
+	p := NewParser(filename)
+	p.ast = p.parse(l.tokens)
 }

@@ -11,7 +11,7 @@ type token struct {
 }
 
 type lexer struct {
-	tokens                                []*token
+	tokens                                []token
 	currentIndex, currentLine, currentCol int
 }
 
@@ -85,7 +85,7 @@ func (l *lexer) lex(sourceCode string, filename string) {
 		}
 
 		if appendToken {
-			l.tokens = append(l.tokens, currTok)
+			l.tokens = append(l.tokens, *currTok)
 		}
 	}
 	l.tagKeywords()
@@ -103,7 +103,7 @@ func (l *lexer) peekTypeN(typeName string, program string) string {
 func (l *lexer) tagKeywords() {
 	for i := 0; i < len(l.tokens); i++ {
 		if l.tokens[i].Type == "CHAR" {
-			l.tokens[i].Type = getKeyword(l.tokens[i])
+			l.tokens[i].Type = getKeyword(&l.tokens[i])
 		}
 	}
 }

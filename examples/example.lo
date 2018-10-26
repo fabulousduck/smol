@@ -1,6 +1,7 @@
-DEF EXAMPLE_FUNCTION<A, B>:
+DEF EXAMPLE_FUNCTION<A, B, THE_ENTIRE_CPS_CURSUS_HANDLEIDING>:
     ANB[B, A]:
-        DSP B;
+        PRI B;
+        PRA B;
         INC B;
     END
 END
@@ -11,3 +12,4 @@ MEM B 0;
 
 EXAMPLE_FUNCTION[A,B];
 
+ 

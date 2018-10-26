@@ -24,6 +24,7 @@ func (v variable) getNodeName() string {
 type functionCall struct {
 	name   string
 	params []string
+	body   []node
 }
 
 func (fc functionCall) getNodeName() string {
@@ -35,25 +36,30 @@ type node interface {
 }
 
 type parser struct {
-	ast    []node
-	expect []string
+	ast      []node
+	filename string
 }
 
-func NewParser() *parser {
-	return new(parser)
+func NewParser(filename string) *parser {
+	p := new(parser)
+	p.filename = filename
+	return p
 }
 
-func (p *parser) parse(tokens []token, filename string) {
+func (p *parser) parse(tokens []token) []node {
+	nodes := []node{}
 	for i := 0; i < len(tokens); {
-		var n node
 		//build something like parse body that can be called recursively
 		//and see the entire program as the main body
 		switch tokens[i].Type {
 		case "variable_assignment":
-			nv, tokensConsumed := createVariable(tokens, i)
+			node, tokensConsumed := p.createVariable(tokens, i)
 			i += tokensConsumed
-			n = nv
+			nodes = append(nodes, node)
 		case "function_definition":
+			node, tokensConsumed := p.createFunctionHeader(tokens, i+1)
+			i += tokensConsumed
+			node.body = p.parse(tokens[:i])
 		case "left_not_right":
 		case "print_statement":
 		case "increment_value":
@@ -69,30 +75,57 @@ func (p *parser) parse(tokens []token, filename string) {
 		case "SEMI_COLON":
 		}
 	}
+
+	return nodes
 }
 
-func createVariable(tokens []token, index int) (*variable, int) {
+func (p *parser) createFunctionHeader(tokens []token, index int) (*function, int) {
+	f := new(function)
+	tokensConsumed := 0
+	p.expect([]string{"string", "CHAR"}, tokens[index+1])
+	f.name = tokens[index+tokensConsumed].Value
+	tokensConsumed++
+
+	p.expect([]string{"LEFT_ARROW", "DOUBLE_DOT"}, tokens[index+2])
+	if tokens[index+tokensConsumed].Type == "DOUBLE_DOT" {
+		tokensConsumed++
+		return f, tokensConsumed
+	}
+	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "RIGHT_ARROW"; currentToken = tokens[index+tokensConsumed] {
+		p.expect([]string{"string", "CHAR", "COMMA"}, currentToken)
+		if currentToken.Type == "COMMA" {
+			p.expect([]string{"char", "string"}, tokens[index+tokensConsumed+1])
+			tokensConsumed++
+			continue
+		}
+		f.params = append(f.params, currentToken.Value)
+		tokensConsumed++
+	}
+	return f, tokensConsumed
+}
+
+func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
 	variable := new(variable)
 	tokensConsumed := 0
 	expectedNameTypes := []string{
 		"CHAR",
 		"STRING",
 	}
-	if !contains(tokens[index+1].Type, expectedNameTypes) {
-		throwSemanticError(&tokens[index+1], expectedNameTypes, "")
-		os.Exit(65)
-	}
-
+	p.expect(expectedNameTypes, tokens[index+1])
 	variable.name = tokens[index+1].Value
 	tokensConsumed++
 
 	expectedValueTypes := []string{"NUMB"}
-	if !contains(tokens[index+2].Type, expectedValueTypes) {
-		throwSemanticError(&tokens[index+2], expectedValueTypes, "")
-		os.Exit(65)
-	}
+	p.expect(expectedValueTypes, tokens[index+2])
 	variable.value = tokens[index+2].Value
 	tokensConsumed++
 
 	return variable, tokensConsumed
+}
+
+func (p *parser) expect(expectedValues []string, token token) {
+	if !contains(token.Type, expectedValues) {
+		throwSemanticError(&token, expectedValues, p.filename)
+		os.Exit(65)
+	}
 }
