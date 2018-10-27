@@ -26,3 +26,8 @@ func throwSemanticError(token *token, expected []string, filename string) {
 			concatVariables(expected, ", "),
 			token.Type))
 }
+
+func undefinedVariableError(variableName string) {
+	//TODO: make this somewhat more informative
+	fmt.Printf("Undefined varaible %s\n", variableName)
+}

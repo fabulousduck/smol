@@ -1,7 +1,7 @@
 DEF EXAMPLE_FUNCTION<A, B, THE_ENTIRE_CPS_CURSUS_HANDLEIDING>:
     ANB[B, A]:
         PRI B;
-        PRA B;
+        PRU B;
         INC B;
     END
 END

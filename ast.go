@@ -6,6 +6,22 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
+type numLit struct {
+	value string
+}
+
+func (nm numLit) getNodeName() string {
+	return "numLit"
+}
+
+type statVar struct {
+	value string
+}
+
+func (sv statVar) getNodeName() string {
+	return "statVar"
+}
+
 type function struct {
 	name   string
 	params []string
@@ -22,8 +38,8 @@ type variable struct {
 }
 
 type anb struct {
-	lhs  string
-	rhs  string
+	lhs  node
+	rhs  node
 	body []node
 }
 
@@ -33,7 +49,7 @@ func (anb anb) getNodeName() string {
 
 type statement struct {
 	lhs string
-	rhs string
+	rhs node
 }
 
 func (s statement) getNodeName() string {
@@ -70,8 +86,6 @@ func NewParser(filename string) *parser {
 
 func (p *parser) parse(tokens []token) ([]node, int) {
 	nodes := []node{}
-	// fmt.Printf("FUUUUUUUUU")
-	// spew.Dump(tokens)
 	for i := 0; i < len(tokens); {
 		switch tokens[i].Type {
 		case "variable_assignment":
@@ -97,7 +111,7 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			i += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "print_ascii":
-			node, tokensConsumed := p.createStatement(tokens, i+1, "PRA")
+			node, tokensConsumed := p.createStatement(tokens, i+1, "PRU")
 			i += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "increment_value":
@@ -117,7 +131,7 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			nodes = append(nodes, node)
 			spew.Dump(node)
 		default:
-			spew.Dump("fuck")
+			spew.Dump("what the fuck ?")
 		}
 	}
 
@@ -156,14 +170,25 @@ func (p *parser) createStatement(tokens []token, index int, t string) (*statemen
 
 	s.lhs = t
 
-	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
-	s.rhs = tokens[index+tokensConsumed].Value
+	p.expect([]string{"string", "CHAR", "NUMB"}, tokens[index+tokensConsumed])
+	s.rhs = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return s, tokensConsumed
+}
+
+func createLit(token token) node {
+	if token.Type == "NUMB" {
+		nm := new(numLit)
+		nm.value = token.Value
+		return nm
+	}
+	sv := new(statVar)
+	sv.value = token.Value
+	return sv
 }
 
 func (p *parser) createLNR(tokens []token, index int) (*anb, int) {
@@ -174,14 +199,15 @@ func (p *parser) createLNR(tokens []token, index int) (*anb, int) {
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
-	anb.lhs = tokens[index+tokensConsumed].Value
+
+	anb.lhs = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"COMMA"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
-	anb.rhs = tokens[index+tokensConsumed].Value
+	anb.rhs = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])

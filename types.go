@@ -65,7 +65,7 @@ func getKeyword(token *token) string {
 		"ANB": "left_not_right",
 		"MEM": "variable_assignment",
 		"PRI": "print_integer",
-		"PRA": "print_ascii",
+		"PRU": "print_ascii",
 		"INC": "increment_value",
 		"END": "close_block",
 	}
