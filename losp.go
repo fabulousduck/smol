@@ -32,5 +32,5 @@ func (losp *Losp) run(sourceCode string, filename string) {
 	l := new(lexer)
 	l.lex(sourceCode, filename)
 	p := NewParser(filename)
-	p.ast = p.parse(l.tokens)
+	p.ast, _ = p.parse(l.tokens)
 }

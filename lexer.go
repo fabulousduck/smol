@@ -46,14 +46,14 @@ func (l *lexer) lex(sourceCode string, filename string) {
 			currTok.Type = "COMMA"
 			l.currentCol++
 			l.currentIndex++
-		case "LEFT_BRACE":
+		case "LEFT_BRACKET":
 			currTok.Value = "["
-			currTok.Type = "LEFT_BRACE"
+			currTok.Type = "LEFT_BRACKET"
 			l.currentCol++
 			l.currentIndex++
-		case "RIGHT_BRACE":
-			currTok.Value = "}"
-			currTok.Type = "RIGHT_BRACE"
+		case "RIGHT_BRACKET":
+			currTok.Value = "]"
+			currTok.Type = "RIGHT_BRACKET"
 			l.currentCol++
 			l.currentIndex++
 		case "DOUBLE_DOT":

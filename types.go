@@ -13,8 +13,8 @@ func determineType(character string) string {
 		",": "COMMA",
 		">": "RIGHT_ARROW",
 		";": "SEMI_COLON",
-		"[": "LEFT_BRACE",
-		"]": "RIGHT_BRACE",
+		"[": "LEFT_BRACKET",
+		"]": "RIGHT_BRACKET",
 		":": "DOUBLE_DOT",
 	}
 

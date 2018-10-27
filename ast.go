@@ -22,6 +22,25 @@ type variable struct {
 	value string
 }
 
+type anb struct {
+	lhs  string
+	rhs  string
+	body []node
+}
+
+func (anb anb) getNodeName() string {
+	return "anb"
+}
+
+type statement struct {
+	lhs string
+	rhs string
+}
+
+func (s statement) getNodeName() string {
+	return "statement"
+}
+
 func (v variable) getNodeName() string {
 	return "variable"
 }
@@ -51,11 +70,11 @@ func NewParser(filename string) *parser {
 	return p
 }
 
-func (p *parser) parse(tokens []token) []node {
+func (p *parser) parse(tokens []token) ([]node, int) {
 	nodes := []node{}
+	// fmt.Printf("FUUUUUUUUU")
+	// spew.Dump(tokens)
 	for i := 0; i < len(tokens); {
-		//build something like parse body that can be called recursively
-		//and see the entire program as the main body
 		switch tokens[i].Type {
 		case "variable_assignment":
 			node, tokensConsumed := p.createVariable(tokens, i)
@@ -63,25 +82,94 @@ func (p *parser) parse(tokens []token) []node {
 			nodes = append(nodes, node)
 		case "function_definition":
 			node, tokensConsumed := p.createFunctionHeader(tokens, i+1)
-			i += tokensConsumed
-			node.body = p.parse(tokens[:i])
+			i += tokensConsumed + 1
+			body, consumed := p.parse(tokens[i:])
+			node.body = body
+			i += consumed
+			nodes = append(nodes, node)
 		case "left_not_right":
-		case "print_statement":
+			node, tokensConsumed := p.createLNR(tokens, i+1)
+			i += tokensConsumed + 1
+			body, consumed := p.parse(tokens[i:])
+			node.body = body
+			i += consumed
+			nodes = append(nodes, node)
+		case "print_integer":
+			node, tokensConsumed := p.createStatement(tokens, i+1, "PRI")
+			i += tokensConsumed + 1
+			nodes = append(nodes, node)
+		case "print_ascii":
+			node, tokensConsumed := p.createStatement(tokens, i+1, "PRA")
+			i += tokensConsumed + 1
+			nodes = append(nodes, node)
 		case "increment_value":
+			node, tokensConsumed := p.createStatement(tokens, i+1, "INC")
+			i += tokensConsumed + 1
+			nodes = append(nodes, node)
+		case "close_block":
+			spew.Dump("END BLOCK")
+			return nodes, i
 		case "string":
 		case "CHAR":
 		case "NUMB":
-		case "LEFT_BRACE":
-		case "RIGHT_BRACE":
+		case "LEFT_BRACKET":
+		case "RIGHT_BRACKET":
 		case "LEFT_ARROW":
 		case "RIGHT_ARROW":
 		case "DOUBLE_DOT":
 		case "COMMA":
-		case "SEMI_COLON":
+		case "SEMICOLON":
+		default:
+			spew.Dump("fuck")
 		}
 	}
 
-	return nodes
+	return nodes, len(tokens)
+}
+
+func (p *parser) createStatement(tokens []token, index int, t string) (*statement, int) {
+	fmt.Printf("creating statment of type :")
+	spew.Dump(t)
+	s := new(statement)
+	tokensConsumed := 0
+
+	s.lhs = t
+
+	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
+	s.rhs = tokens[index+tokensConsumed].Value
+	tokensConsumed++
+
+	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	return s, tokensConsumed
+}
+
+func (p *parser) createLNR(tokens []token, index int) (*anb, int) {
+	anb := new(anb)
+	tokensConsumed := 0
+
+	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
+	anb.lhs = tokens[index+tokensConsumed].Value
+	tokensConsumed++
+
+	p.expect([]string{"COMMA"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
+	anb.rhs = tokens[index+tokensConsumed].Value
+	tokensConsumed++
+
+	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	return anb, tokensConsumed
 }
 
 func (p *parser) createFunctionHeader(tokens []token, index int) (*function, int) {
@@ -107,8 +195,9 @@ func (p *parser) createFunctionHeader(tokens []token, index int) (*function, int
 		f.params = append(f.params, currentToken.Value)
 		tokensConsumed++
 	}
-	spew.Dump(f)
-	os.Exit(65)
+	tokensConsumed++
+	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	tokensConsumed++
 	return f, tokensConsumed
 }
 
@@ -133,8 +222,6 @@ func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
 
 func (p *parser) expect(expectedValues []string, token token) {
 	if !contains(token.Type, expectedValues) {
-		fmt.Printf("got %s, expecting one of : ", token.Type)
-		spew.Dump(expectedValues)
 		throwSemanticError(&token, expectedValues, p.filename)
 		os.Exit(65)
 	}
