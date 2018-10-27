@@ -1,7 +1,6 @@
 package losp
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
@@ -48,7 +47,6 @@ func (v variable) getNodeName() string {
 type functionCall struct {
 	name   string
 	params []string
-	body   []node
 }
 
 func (fc functionCall) getNodeName() string {
@@ -77,8 +75,8 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 	for i := 0; i < len(tokens); {
 		switch tokens[i].Type {
 		case "variable_assignment":
-			node, tokensConsumed := p.createVariable(tokens, i)
-			i += tokensConsumed
+			node, tokensConsumed := p.createVariable(tokens, i+1)
+			i += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "function_definition":
 			node, tokensConsumed := p.createFunctionHeader(tokens, i+1)
@@ -107,18 +105,17 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			i += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "close_block":
-			spew.Dump("END BLOCK")
+			i++
 			return nodes, i
 		case "string":
+			node, tokensConsumed := p.createFunctionCall(tokens, i)
+			i += tokensConsumed
+			nodes = append(nodes, node)
 		case "CHAR":
-		case "NUMB":
-		case "LEFT_BRACKET":
-		case "RIGHT_BRACKET":
-		case "LEFT_ARROW":
-		case "RIGHT_ARROW":
-		case "DOUBLE_DOT":
-		case "COMMA":
-		case "SEMICOLON":
+			node, tokensConsumed := p.createFunctionCall(tokens, i)
+			i += tokensConsumed
+			nodes = append(nodes, node)
+			spew.Dump(node)
 		default:
 			spew.Dump("fuck")
 		}
@@ -127,9 +124,33 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 	return nodes, len(tokens)
 }
 
+func (p *parser) createFunctionCall(tokens []token, index int) (*functionCall, int) {
+	fc := new(functionCall)
+	tokensConsumed := 0
+	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
+	fc.name = tokens[index+tokensConsumed].Value
+	tokensConsumed++
+
+	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "RIGHT_BRACKET"; currentToken = tokens[index+tokensConsumed] {
+		if currentToken.Type == "COMMA" {
+			p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed+1])
+			tokensConsumed++
+			continue
+		}
+		fc.params = append(fc.params, currentToken.Value)
+		tokensConsumed++
+	}
+
+	tokensConsumed++
+	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+	return fc, tokensConsumed
+}
+
 func (p *parser) createStatement(tokens []token, index int, t string) (*statement, int) {
-	fmt.Printf("creating statment of type :")
-	spew.Dump(t)
 	s := new(statement)
 	tokensConsumed := 0
 
@@ -208,15 +229,17 @@ func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
 		"CHAR",
 		"STRING",
 	}
-	p.expect(expectedNameTypes, tokens[index+1])
-	variable.name = tokens[index+1].Value
+	p.expect(expectedNameTypes, tokens[index+tokensConsumed])
+	variable.name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
 	expectedValueTypes := []string{"NUMB"}
-	p.expect(expectedValueTypes, tokens[index+2])
-	variable.value = tokens[index+2].Value
+	p.expect(expectedValueTypes, tokens[index+tokensConsumed])
+	variable.value = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
+	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	tokensConsumed++
 	return variable, tokensConsumed
 }
 
