@@ -1,4 +1,10 @@
 MEM A 20;
 
 PRI A;
+BRK;
+
 PRI 50;
+BRK;
+
+PRU 72;
+BRK;

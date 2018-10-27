@@ -68,6 +68,7 @@ func getKeyword(token *token) string {
 		"PRU": "print_ascii",
 		"INC": "increment_value",
 		"END": "close_block",
+		"BRK": "print_break",
 	}
 
 	if val, ok := keywords[token.Value]; ok {

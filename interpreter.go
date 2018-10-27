@@ -3,6 +3,7 @@ package losp
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type stack map[string]string
@@ -44,6 +45,9 @@ func (i *interpreter) stackAlloc(v *variable) {
 
 func (i *interpreter) execStatement(s *statement) {
 	switch s.lhs {
+	case "BRK":
+		fmt.Printf("\n")
+		return
 	case "PRI":
 		if s.rhs.getNodeName() == "statVar" {
 			rhs := s.rhs.(*statVar)
@@ -55,8 +59,18 @@ func (i *interpreter) execStatement(s *statement) {
 		fmt.Printf("%s", s.rhs.(*numLit).value)
 		return
 	case "PRU":
-		// cast, _ := strconv.Atoi(s.rhs)
-		// fmt.Printf("%c", cast)
+		if s.rhs.getNodeName() == "statVar" {
+			rhs := s.rhs.(*statVar)
+			value := i.stack.find(rhs.value)
+			cast, _ := strconv.Atoi(value)
+			fmt.Printf("%c", cast)
+			return
+		}
+
+		cast, _ := strconv.Atoi(s.rhs.(*numLit).value)
+		fmt.Printf("%c", cast)
+		return
+
 	case "INC":
 
 	}

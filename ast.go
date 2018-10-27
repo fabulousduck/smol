@@ -110,6 +110,10 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			node, tokensConsumed := p.createStatement(tokens, i+1, "PRI")
 			i += tokensConsumed + 1
 			nodes = append(nodes, node)
+		case "print_break":
+			node, tokensConsumed := p.createSingleWordStatement(tokens, i+1, "BRK")
+			i += tokensConsumed + 1
+			nodes = append(nodes, node)
 		case "print_ascii":
 			node, tokensConsumed := p.createStatement(tokens, i+1, "PRU")
 			i += tokensConsumed + 1
@@ -136,6 +140,18 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 	}
 
 	return nodes, len(tokens)
+}
+
+func (p *parser) createSingleWordStatement(tokens []token, index int, t string) (*statement, int) {
+	s := new(statement)
+	tokensConsumed := 0
+
+	s.lhs = t
+
+	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	return s, tokensConsumed
 }
 
 func (p *parser) createFunctionCall(tokens []token, index int) (*functionCall, int) {
