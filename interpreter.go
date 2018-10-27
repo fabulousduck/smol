@@ -72,8 +72,22 @@ func (i *interpreter) execStatement(s *statement) {
 		return
 
 	case "INC":
-
+		if s.rhs.getNodeName() != "statVar" {
+			litIncrementError()
+			os.Exit(65)
+		}
+		v := i.stack.find(s.rhs.(*statVar).value)
+		vc, _ := strconv.Atoi(v)
+		vc++
+		if _, ok := i.stack[s.rhs.(*statVar).value]; ok {
+			i.stack[s.rhs.(*statVar).value] = strconv.Itoa(vc)
+		}
+		return
 	}
+}
+
+func (s *stack) set(key string, value string) {
+
 }
 
 func (s stack) find(key string) string {

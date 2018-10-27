@@ -1,4 +1,4 @@
-MEM A 20;
+MEM A 72;
 
 PRI A;
 BRK;
@@ -7,4 +7,8 @@ PRI 50;
 BRK;
 
 PRU 72;
+BRK;
+
+INC A;
+PRU A;
 BRK;
