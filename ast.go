@@ -227,7 +227,7 @@ func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
 	tokensConsumed := 0
 	expectedNameTypes := []string{
 		"CHAR",
-		"STRING",
+		"string",
 	}
 	p.expect(expectedNameTypes, tokens[index+tokensConsumed])
 	variable.name = tokens[index+tokensConsumed].Value
