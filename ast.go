@@ -1,6 +1,11 @@
 package losp
 
-import "os"
+import (
+	"fmt"
+	"os"
+
+	"github.com/davecgh/go-spew/spew"
+)
 
 type function struct {
 	name   string
@@ -82,25 +87,28 @@ func (p *parser) parse(tokens []token) []node {
 func (p *parser) createFunctionHeader(tokens []token, index int) (*function, int) {
 	f := new(function)
 	tokensConsumed := 0
-	p.expect([]string{"string", "CHAR"}, tokens[index+1])
+	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
 	f.name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
-	p.expect([]string{"LEFT_ARROW", "DOUBLE_DOT"}, tokens[index+2])
+	p.expect([]string{"LEFT_ARROW", "DOUBLE_DOT"}, tokens[index+tokensConsumed])
 	if tokens[index+tokensConsumed].Type == "DOUBLE_DOT" {
 		tokensConsumed++
 		return f, tokensConsumed
 	}
+	tokensConsumed++
 	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "RIGHT_ARROW"; currentToken = tokens[index+tokensConsumed] {
 		p.expect([]string{"string", "CHAR", "COMMA"}, currentToken)
 		if currentToken.Type == "COMMA" {
-			p.expect([]string{"char", "string"}, tokens[index+tokensConsumed+1])
+			p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed+1])
 			tokensConsumed++
 			continue
 		}
 		f.params = append(f.params, currentToken.Value)
 		tokensConsumed++
 	}
+	spew.Dump(f)
+	os.Exit(65)
 	return f, tokensConsumed
 }
 
@@ -125,6 +133,8 @@ func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
 
 func (p *parser) expect(expectedValues []string, token token) {
 	if !contains(token.Type, expectedValues) {
+		fmt.Printf("got %s, expecting one of : ", token.Type)
+		spew.Dump(expectedValues)
 		throwSemanticError(&token, expectedValues, p.filename)
 		os.Exit(65)
 	}
