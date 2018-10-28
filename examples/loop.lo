@@ -1,0 +1,10 @@
+MEM A 0;
+MEM B 10;
+
+ANB[A,B]:
+    PRI A;
+    BRK;
+    INC A;
+END
+
+PRU 0;

@@ -135,6 +135,7 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			nodes = append(nodes, node)
 			spew.Dump(node)
 		default:
+			spew.Dump(tokens[i])
 			spew.Dump("what the fuck ?")
 		}
 	}

@@ -1,14 +1,21 @@
-MEM A 72;
+MEM H 72;
+MEM E 69;
+MEM L 76;
+MEM O 79;
 
-PRI A;
-BRK;
+MEM W 87;
+MEM R 82;
+MEM D 68;
 
-PRI 50;
-BRK;
-
-PRU 72;
-BRK;
-
-INC A;
-PRU A;
+PRU H;
+PRU E;
+PRU L;
+PRU L;
+PRU O;
+PRU 32;
+PRU W;
+PRU O;
+PRU R;
+PRU L;
+PRU D;
 BRK;
