@@ -61,8 +61,8 @@ func (v variable) getNodeName() string {
 }
 
 type functionCall struct {
-	name   string
-	params []string
+	name string
+	args []string
 }
 
 func (fc functionCall) getNodeName() string {
@@ -171,7 +171,7 @@ func (p *parser) createFunctionCall(tokens []token, index int) (*functionCall, i
 			tokensConsumed++
 			continue
 		}
-		fc.params = append(fc.params, currentToken.Value)
+		fc.args = append(fc.args, currentToken.Value)
 		tokensConsumed++
 	}
 

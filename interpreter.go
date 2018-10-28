@@ -15,13 +15,17 @@ type stack []*tuple
 
 type stacks []stack
 
+type heap []*function //not really a heap since its not dynamically sized types, but a good excuse to put my function decls into
+
 type interpreter struct {
 	stacks stacks
+	heap   heap
 }
 
 func newInterpreter() *interpreter {
 	i := new(interpreter)
 	i.stacks = stacks{}
+	i.heap = heap{}
 	baseStack := stack{}
 	i.stacks = append(i.stacks, baseStack)
 	return i
@@ -43,10 +47,34 @@ func (i interpreter) interpret(ast []node) {
 			anb := node.(*anb)
 			i.execANB(anb)
 		case "function":
+			function := node.(*function)
+			i.execFunctionDecl(function)
+		case "functionCall":
+			fc := node.(*functionCall)
+			i.execFunctionCall(fc)
 		}
 	}
 
 	// spew.Dump(i.stack)
+}
+
+func (i *interpreter) execFunctionCall(fc *functionCall) {
+	functionDecl := i.heap[i.heap.find(fc.name)]
+	if len(fc.args) != len(functionDecl.params) {
+		incorrectFunctionParamCountError(functionDecl.name, len(fc.args), len(functionDecl.params))
+		os.Exit(65)
+		return
+	}
+	scopedStack := stack{}
+	i.stacks = append(i.stacks, scopedStack)
+	scopeLevel := len(i.stacks)
+	i.interpret(functionDecl.body)
+	i.stacks = i.stacks[scopeLevel:]
+
+}
+
+func (i *interpreter) execFunctionDecl(f *function) {
+	i.heap = append(i.heap, f)
 }
 
 func (i *interpreter) stackAlloc(scopeLevel int, v *variable) {
@@ -80,7 +108,6 @@ func (i *interpreter) execANB(anb *anb) {
 	v, _ := strconv.Atoi(*lhs)
 	n, _ := strconv.Atoi(*rhs)
 	for v < n {
-		// fmt.Printf(" %s < %s ", *lhs, *rhs)
 		i.interpret(anb.body)
 		v, _ = strconv.Atoi(*lhs)
 		n, _ = strconv.Atoi(*rhs)
@@ -120,7 +147,6 @@ func (i *interpreter) execStatement(s *statement) {
 
 	//TODO: fucking hell make this nicer ryan good god - ryan
 	case "INC":
-		fmt.Println("INC")
 		if s.rhs.getNodeName() != "statVar" {
 			litIncrementError()
 			os.Exit(65)
@@ -128,8 +154,7 @@ func (i *interpreter) execStatement(s *statement) {
 		scopeLevel, index := i.stacks.find(s.rhs.(*statVar).value)
 		vc, _ := strconv.Atoi(i.stacks[scopeLevel][index].value)
 		vc++
-		cast := strconv.Itoa(vc)
-		i.stacks.set(scopeLevel, index, cast)
+		i.stacks.set(scopeLevel, index, strconv.Itoa(vc))
 		return
 	}
 }
@@ -160,5 +185,16 @@ func (s stack) stackContains(key string) int {
 			return i
 		}
 	}
+	return -1
+}
+
+func (h heap) find(name string) int {
+	for i := 0; i < len(h); i++ {
+		if h[i].name == name {
+			return i
+		}
+	}
+	undefinedFunctionReferenceError(name)
+	os.Exit(65)
 	return -1
 }

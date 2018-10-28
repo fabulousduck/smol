@@ -35,3 +35,11 @@ func undefinedVariableError(variableName string) {
 func litIncrementError() {
 	fmt.Printf("Cannot increment a num literal\n")
 }
+
+func undefinedFunctionReferenceError(name string) {
+	fmt.Printf("Cannot find function with name: %s\n", name)
+}
+
+func incorrectFunctionParamCountError(name string, given int, expected int) {
+	fmt.Printf("function \"%s\" requires %d arguments. Got %d\n", name, expected, given)
+}
