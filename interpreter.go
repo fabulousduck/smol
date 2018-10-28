@@ -66,6 +66,9 @@ func (i *interpreter) execFunctionCall(fc *functionCall) {
 		return
 	}
 	scopedStack := stack{}
+	for i := 0; i < len(functionDecl.params); i++ {
+		scopedStack = append(scopedStack, &tuple{key: functionDecl.params[i], value: fc.args[i]})
+	}
 	i.stacks = append(i.stacks, scopedStack)
 	scopeLevel := len(i.stacks)
 	i.interpret(functionDecl.body)

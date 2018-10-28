@@ -1,0 +1,8 @@
+DEF THING<C,D>:
+    PRI C;
+    BRK;
+    PRI D;
+    BRK;
+END
+
+THING[20,30];
