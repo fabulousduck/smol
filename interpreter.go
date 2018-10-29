@@ -279,7 +279,7 @@ func (i *interpreter) execANB(anb *anb) {
 	scopeLevel := len(i.stacks)
 	v, _ := strconv.Atoi(*lhs)
 	n, _ := strconv.Atoi(*rhs)
-	for v < n {
+	for v != n {
 
 		i.interpret(anb.body)
 		v, _ = strconv.Atoi(*lhs)
