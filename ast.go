@@ -57,6 +57,16 @@ func (ss setStatement) getNodeName() string {
 	return "setStatement"
 }
 
+type mathStatement struct {
+	lhs string
+	mhs node
+	rhs node
+}
+
+func (ms mathStatement) getNodeName() string {
+	return "mathStatement"
+}
+
 type statement struct {
 	lhs string
 	rhs node
@@ -136,6 +146,16 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			node, tokensConsumed := p.createSetStatement(tokens, i+1, "SET")
 			i += tokensConsumed + 1
 			nodes = append(nodes, node)
+		case "addition":
+			fallthrough
+		case "subtraction":
+			fallthrough
+		case "multiplication":
+			fallthrough
+		case "division":
+			node, tokensConsumed := p.createMathStatement(tokens, i)
+			i += tokensConsumed
+			nodes = append(nodes, node)
 		case "close_block":
 			i++
 			return nodes, i
@@ -155,6 +175,27 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 	}
 
 	return nodes, len(tokens)
+}
+
+func (p *parser) createMathStatement(tokens []token, index int) (node, int) {
+	ms := new(mathStatement)
+	tokensConsumed := 0
+
+	ms.lhs = tokens[index].Value
+	tokensConsumed++
+
+	p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed])
+	ms.mhs = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	ms.rhs = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	return ms, tokensConsumed
 }
 
 func (p *parser) createSingleWordStatement(tokens []token, index int, t string) (*statement, int) {

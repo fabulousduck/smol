@@ -71,6 +71,10 @@ func getKeyword(token *token) string {
 		"END": "close_block",
 		"BRK": "print_break",
 		"SET": "set_variable",
+		"ADD": "addition",
+		"SUB": "subtraction",
+		"MUL": "multiplication",
+		"DIV": "division",
 	}
 
 	if val, ok := keywords[token.Value]; ok {

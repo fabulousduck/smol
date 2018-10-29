@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type tuple struct {
@@ -57,13 +55,52 @@ func (i interpreter) interpret(ast []node) {
 		case "setStatement":
 			ss := node.(*setStatement)
 			i.setVariableValue(ss)
+		case "mathStatement":
+			ms := node.(*mathStatement)
+			i.execMathStatement(ms)
 		}
 	}
 
 }
 
+func (i *interpreter) execMathStatement(ms *mathStatement) {
+	operator := ms.lhs
+	receiverVariableName := ms.mhs.(*statVar).value
+	receiverVariableScopeLevel, receiverVariableIndex := i.stacks.find(receiverVariableName)
+	receiverVariableValue := i.stacks[receiverVariableScopeLevel][receiverVariableIndex].value
+	result := ""
+	if ms.rhs.getNodeName() == "statVar" {
+		scopeLevel, index := i.stacks.find(ms.rhs.(*statVar).value)
+		rhs := i.stacks[scopeLevel][index].value
+		result = evalMathExpression(operator, receiverVariableValue, rhs)
+	} else {
+		rhs := ms.rhs.(*numLit).value
+		result = evalMathExpression(operator, receiverVariableValue, rhs)
+	}
+
+	i.stacks.set(receiverVariableScopeLevel, receiverVariableIndex, result)
+
+}
+
+func evalMathExpression(expressionType string, lhs string, rhs string) string {
+	clhs, _ := strconv.Atoi(lhs)
+	crhs, _ := strconv.Atoi(rhs)
+	switch expressionType {
+	case "ADD":
+		return strconv.Itoa(clhs + crhs)
+	case "SUB":
+		return strconv.Itoa(clhs - crhs)
+	case "MUL":
+		return strconv.Itoa(clhs * crhs)
+	case "DIV":
+		return strconv.Itoa(clhs / crhs)
+	}
+	//not sure what to return here
+	//TODO: figure above out and apply accordingly
+	return rhs
+}
+
 func (i *interpreter) setVariableValue(ss *setStatement) {
-	spew.Dump(ss.mhs.getNodeName())
 	if ss.mhs.getNodeName() != "statVar" {
 		litAssignError()
 		os.Exit(65)

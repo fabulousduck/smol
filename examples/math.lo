@@ -1,0 +1,18 @@
+MEM A 10;
+MEM B 20;
+
+ADD A B;
+PRI A;
+BRK;
+
+SUB A B;
+PRI A;
+BRK;
+
+MUL A B;
+PRI A;
+BRK;
+
+DIV A B;
+PRI A;
+BRK;
