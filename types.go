@@ -1,4 +1,4 @@
-package losp
+package smol
 
 type typename map[string]string
 
@@ -19,6 +19,7 @@ func determineType(character string) string {
 	}
 
 	escapeChars := typename{
+		"\r": "WIN_NEWLINE",
 		"\n": "NEWLINE",
 		"\t": "TAB",
 	}

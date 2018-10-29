@@ -1,4 +1,4 @@
-package losp
+package smol
 
 import (
 	"bufio"

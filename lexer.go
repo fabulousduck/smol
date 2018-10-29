@@ -1,4 +1,4 @@
-package losp
+package smol
 
 import (
 	"bytes"
@@ -73,6 +73,8 @@ func (l *lexer) lex(sourceCode string, filename string) {
 		case "UDEF":
 			report(l.currentLine, filename, "undefined symbol used")
 			os.Exit(65)
+		case "WIN_NEWLINE":
+			fallthrough
 		case "NEWLINE":
 			l.currentCol = 0
 			l.currentLine++

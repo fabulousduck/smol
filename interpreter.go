@@ -1,4 +1,4 @@
-package losp
+package smol
 
 import (
 	"fmt"
@@ -81,7 +81,6 @@ func (i *interpreter) execFunctionDecl(f *function) {
 }
 
 func (i *interpreter) stackAlloc(scopeLevel int, v *variable) {
-	// fmt.Printf("STACK ALLOCATION K : %s, V : %s\n", v.name, v.value)
 	stackTuple := new(tuple)
 	stackTuple.key = v.name
 	stackTuple.value = v.value
@@ -111,6 +110,7 @@ func (i *interpreter) execANB(anb *anb) {
 	v, _ := strconv.Atoi(*lhs)
 	n, _ := strconv.Atoi(*rhs)
 	for v < n {
+
 		i.interpret(anb.body)
 		v, _ = strconv.Atoi(*lhs)
 		n, _ = strconv.Atoi(*rhs)

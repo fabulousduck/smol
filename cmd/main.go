@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 
-	"github.com/fabulousduck/losp"
+	"github.com/fabulousduck/smol"
 )
 
 func main() {
-	l := losp.NewLosp()
+	l := smol.NewLosp()
 
 	if len(os.Args) > 1 {
 		l.RunFile(os.Args[1])
