@@ -1,6 +1,37 @@
 # Smol
 Smol interpreted language.
 
+# Table of contents
+
+* [table of contents](#Table-of-contents)
+* [Installing](#Installing)
+* [Running a file](#Running-a-file)
+* [Documentation](#Documentation)
+    * [General](#General)
+    * [Syntax](#Syntax)
+    * [Keywords](#Keywords)
+        * [MEM](#MEM-K-V)
+        * [PRI](#PRI-V)
+        * [PRU](#PRU-V)
+        * [INC](#INC-V)
+        * [BRK](#BRK)
+    * [Functions](#DEF)
+    * [a not b](#ANB)
+    * [logical operators](#Logical-operators)
+        * [EQ](#EQ[A,B])
+        * [NEQ](#NEQ[A,B])
+        * [GT](#GT[A,B])
+        * [LT](#LT[A,B])
+    * [Math](#Math)
+        * [ADD](#ADD-A-B)
+        * [SUB](#SUB-A-B)
+        * [MUL](#MUL-A-B)
+        * [DIV](#DIV-A-B)
+    * [Comments](#Comments)
+
+
+
+
 # Installing
 
 1. install the golang language. How to do this can be found [here](https://golang.org/doc/install)
@@ -110,7 +141,7 @@ outputs:
 ### `BRK`
 Simply prints a `\n` character to the terminal
 
-## Functions
+## `DEF`
 
 Smol has support for simple functions. The can be defined like so:
 
@@ -157,4 +188,182 @@ outputs
 7
 8
 9
+```
+
+## Logical operators
+
+### `EQ[A,B]`
+
+EQ stands for "equals" and checks if `A == B`.
+
+Example
+
+```asm
+MEM A 10;
+
+EQ[A, 10]:
+    PRI A;
+END
+
+```
+
+outputs:
+
+```
+10
+```
+
+### `NEQ[A,B]`
+
+NEQ stands for "not equals" and checks if `A == B`.
+
+Example
+
+```asm
+MEM A 11;
+
+NEQ[A, 10]:
+    PRI A;
+END
+
+```
+
+outputs:
+
+```
+10
+```
+
+### `GT[A,B]`
+
+GT stands for "greater than" and checks is `A < B`
+
+Example
+
+```asm
+MEM A 10;
+
+GT[A, 9]:
+    PRI A;
+END
+
+```
+
+outputs:
+
+```
+10
+```
+
+### `LT[A,B]`
+
+LT stands for "less than" and checks if `A < B`
+
+Example
+
+```asm
+MEM A 10;
+
+LT[A, 11]:
+    PRI A;
+END
+
+```
+
+outputs:
+
+```
+10
+```
+
+## Math
+
+Smol supports the basic mathematical operators and all work the same way.
+When called, like in assebly, the result of the calculation will be stored in the left hand variable given.
+this means it is not possible for the left hand side to be a number litteral.
+
+### ADD A B
+
+Adds A and B
+
+```asm
+
+MEM A 10;
+MEM B 20;
+
+ADD A B;
+
+```
+
+
+outputs
+```
+30
+```
+
+### SUB A B
+
+Subtracts B from A
+
+```asm
+
+MEM A 20;
+MEM B 10;
+
+SUB A B;
+
+```
+
+
+outputs
+```
+10
+```
+
+### MUL A B
+
+multiplies A and B
+
+```asm
+
+MEM A 10;
+MEM B 20;
+
+MUL A B;
+
+```
+
+outputs
+```
+200
+```
+
+### DIV A B
+
+Devides A by B
+
+```asm
+
+MEM A 20;
+MEM B 10;
+
+DIV A B;
+
+```
+
+outputs
+```
+2
+```
+
+## Comments
+
+Smol has support for code comments using the `#` symbol.
+
+Example
+```asm
+MEM A 10; #side comment 
+
+#top comment
+MEM B 20;
 ```
