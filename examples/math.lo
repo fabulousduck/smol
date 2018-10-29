@@ -1,5 +1,5 @@
-MEM A 10;
-MEM B 20;
+MEM A 5;
+MEM B 2;
 
 ADD A B;
 PRI A;
@@ -14,5 +14,9 @@ PRI A;
 BRK;
 
 DIV A B;
+PRI A;
+BRK;
+
+POW A B;
 PRI A;
 BRK;

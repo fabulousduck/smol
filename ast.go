@@ -161,6 +161,8 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			fallthrough
 		case "subtraction":
 			fallthrough
+		case "power_of":
+			fallthrough
 		case "multiplication":
 			fallthrough
 		case "division":

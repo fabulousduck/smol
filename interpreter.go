@@ -2,6 +2,7 @@ package smol
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 )
@@ -148,6 +149,8 @@ func evalMathExpression(expressionType string, lhs string, rhs string) string {
 		return strconv.Itoa(clhs * crhs)
 	case "DIV":
 		return strconv.Itoa(clhs / crhs)
+	case "POW":
+		return strconv.Itoa(int(math.Pow(float64(clhs), float64(crhs))))
 	}
 	//not sure what to return here
 	//TODO: figure above out and apply accordingly

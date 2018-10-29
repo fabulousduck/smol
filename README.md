@@ -27,6 +27,7 @@ Smol interpreted language.
         * [SUB](#SUB-A-B)
         * [MUL](#MUL-A-B)
         * [DIV](#DIV-A-B)
+        * [POW](#SRQ-A-B)
     * [Comments](#Comments)
 
 

@@ -79,6 +79,7 @@ func getKeyword(token *token) string {
 		"SUB": "subtraction",
 		"MUL": "multiplication",
 		"DIV": "division",
+		"POW": "power_of",
 		"EQ":  "equals",
 		"NEQ": "not_equals",
 		"LT":  "less_than",
