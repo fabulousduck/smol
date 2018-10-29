@@ -1,0 +1,19 @@
+DEF PRINT_TOP_LINE<>:
+    PRU 72;
+    PRU 79;
+    PRU 85;
+    PRU 82;
+
+    PRU 32;    
+    PRU 32;
+    PRU 32;
+    PRU 32;
+
+    PRU 67;
+    PRU 69;
+    PRU 76;
+    BRK;
+END
+
+PRINT_TOP_LINE[];
+
