@@ -47,6 +47,17 @@ func (anb anb) getNodeName() string {
 	return "anb"
 }
 
+type comparison struct {
+	operator string
+	lhs      node
+	rhs      node
+	body     []node
+}
+
+func (c comparison) getNodeName() string {
+	return "comparison"
+}
+
 type setStatement struct {
 	lhs string
 	mhs node
@@ -168,6 +179,20 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			i += tokensConsumed
 			nodes = append(nodes, node)
 			spew.Dump(node)
+		case "equals":
+			fallthrough
+		case "not_equals":
+			fallthrough
+		case "less_than":
+			fallthrough
+		case "greater_than":
+			node, tokensConsumed := p.createComparisonHeader(tokens, i)
+			i += tokensConsumed
+			body, consumed := p.parse(tokens[i:])
+			node.body = body
+			i += consumed
+			nodes = append(nodes, node)
+
 		default:
 			spew.Dump(tokens[i])
 			spew.Dump("what the fuck ?")
@@ -175,6 +200,36 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 	}
 
 	return nodes, len(tokens)
+}
+
+func (p *parser) createComparisonHeader(tokens []token, index int) (*comparison, int) {
+	ch := new(comparison)
+	tokensConsumed := 0
+
+	ch.operator = tokens[index+tokensConsumed].Value
+	tokensConsumed++
+
+	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	ch.lhs = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"COMMA"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	ch.rhs = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	return ch, tokensConsumed
 }
 
 func (p *parser) createMathStatement(tokens []token, index int) (node, int) {
@@ -203,7 +258,6 @@ func (p *parser) createSingleWordStatement(tokens []token, index int, t string) 
 	tokensConsumed := 0
 
 	s.lhs = t
-
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 

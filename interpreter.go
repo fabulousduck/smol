@@ -58,13 +58,67 @@ func (i interpreter) interpret(ast []node) {
 		case "mathStatement":
 			ms := node.(*mathStatement)
 			i.execMathStatement(ms)
+		case "comparison":
+			cm := node.(*comparison)
+			i.execComparison(cm)
 		}
 	}
+}
 
+func (i *interpreter) execComparison(cm *comparison) {
+
+	clhs := 0
+	crhs := 0
+	beforeScopeLevel := len(i.stacks)
+	scopedStack := stack{}
+
+	if cm.lhs.getNodeName() == "statVar" {
+		scopeLevel, index := i.stacks.find(cm.lhs.(*statVar).value)
+		clhs, _ = strconv.Atoi(i.stacks[scopeLevel][index].value)
+	} else {
+		clhs, _ = strconv.Atoi(cm.lhs.(*numLit).value)
+	}
+
+	if cm.rhs.getNodeName() == "statVar" {
+		scopeLevel, index := i.stacks.find(cm.rhs.(*statVar).value)
+		crhs, _ = strconv.Atoi(i.stacks[scopeLevel][index].value)
+	} else {
+		crhs, _ = strconv.Atoi(cm.lhs.(*numLit).value)
+	}
+
+	// do static analysis on same variable comparisons
+	switch cm.operator {
+	case "LT":
+		if clhs < crhs {
+			i.stacks = append(i.stacks, scopedStack)
+			i.interpret(cm.body)
+		}
+	case "GT":
+		if clhs > crhs {
+			i.stacks = append(i.stacks, scopedStack)
+			i.interpret(cm.body)
+		}
+	case "EQ":
+		if clhs == crhs {
+			i.stacks = append(i.stacks, scopedStack)
+			i.interpret(cm.body)
+		}
+	case "NEQ":
+		if clhs != crhs {
+			i.stacks = append(i.stacks, scopedStack)
+			i.interpret(cm.body)
+		}
+	}
+	i.stacks = i.stacks[:beforeScopeLevel]
+	return
 }
 
 func (i *interpreter) execMathStatement(ms *mathStatement) {
 	operator := ms.lhs
+	if ms.mhs.getNodeName() != "statVar" {
+		additionInvalidReceiverError()
+	}
+
 	receiverVariableName := ms.mhs.(*statVar).value
 	receiverVariableScopeLevel, receiverVariableIndex := i.stacks.find(receiverVariableName)
 	receiverVariableValue := i.stacks[receiverVariableScopeLevel][receiverVariableIndex].value

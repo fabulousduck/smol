@@ -47,3 +47,7 @@ func undefinedFunctionReferenceError(name string) {
 func incorrectFunctionParamCountError(name string, given int, expected int) {
 	fmt.Printf("function \"%s\" requires %d arguments. Got %d\n", name, expected, given)
 }
+
+func additionInvalidReceiverError() {
+	fmt.Printf("left hand side of mathematical operation must be variable")
+}
