@@ -81,3 +81,7 @@ func getKeyword(token *token) string {
 	}
 	return token.Type
 }
+
+func determineStringType(str string) string {
+	return determineType(string([]rune(str)[0]))
+}

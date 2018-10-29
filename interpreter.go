@@ -61,19 +61,25 @@ func (i interpreter) interpret(ast []node) {
 func (i *interpreter) execFunctionCall(fc *functionCall) {
 	functionDecl := i.heap[i.heap.find(fc.name)]
 	if len(fc.args) != len(functionDecl.params) {
+
 		incorrectFunctionParamCountError(functionDecl.name, len(fc.args), len(functionDecl.params))
 		os.Exit(65)
 		return
 	}
+	scopeLevel := len(i.stacks)
 	scopedStack := stack{}
-	for i := 0; i < len(functionDecl.params); i++ {
-		scopedStack = append(scopedStack, &tuple{key: functionDecl.params[i], value: fc.args[i]})
+	for j := 0; j < len(functionDecl.params); j++ {
+		if determineStringType(fc.args[j]) == "CHAR" {
+			scopeLevel, index := i.stacks.find(fc.args[j])
+			value := i.stacks[scopeLevel][index].value
+			scopedStack = append(scopedStack, &tuple{key: functionDecl.params[j], value: value})
+			continue
+		}
+		scopedStack = append(scopedStack, &tuple{key: functionDecl.params[j], value: fc.args[j]})
 	}
 	i.stacks = append(i.stacks, scopedStack)
-	scopeLevel := len(i.stacks)
 	i.interpret(functionDecl.body)
-	i.stacks = i.stacks[scopeLevel:]
-
+	i.stacks = i.stacks[:scopeLevel]
 }
 
 func (i *interpreter) execFunctionDecl(f *function) {
@@ -154,6 +160,8 @@ func (i *interpreter) execStatement(s *statement) {
 			litIncrementError()
 			os.Exit(65)
 		}
+		// spew.Dump(i.stacks)
+
 		scopeLevel, index := i.stacks.find(s.rhs.(*statVar).value)
 		vc, _ := strconv.Atoi(i.stacks[scopeLevel][index].value)
 		vc++
