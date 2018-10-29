@@ -16,6 +16,9 @@ Smol interpreted language.
         * [INC](#INC-V)
         * [BRK](#BRK)
     * [Functions](#DEF)
+    * [switch](#SWT)
+        * [CAS](#CAS-A)
+        * [EOS](#EOS)
     * [a not b](#ANB)
     * [logical operators](#Logical-operators)
         * [EQ](#EQ[A,B])
@@ -157,6 +160,109 @@ END
 
 Functions do not support return values yet. 
 
+
+## `SWT`
+
+`SWT` is a the switch equivelant of smol. It supports cases using either number litterals or variables. it also supports default cases. it can be used like so:
+
+Example:
+
+```asm
+MEM A 30;
+MEM B 10;
+
+SWT[B]: #SWiTch
+    CAS 10: #case
+        PRI 700;
+        BRK;
+    END
+    CAS 20:
+        PRI 20;
+        BRK; 
+    END
+    CAS A:
+        PRI A;
+        BRK;
+    END
+    EOS: #End Of Switch
+        PRI 30;
+        BRK;
+    END
+END
+
+```
+
+outputs
+
+```asm
+700
+```
+
+### `CAS A`
+
+`CAS` defines a case within a switch.
+
+Example: 
+
+```asm
+MEM A 30;
+MEM B 10;
+
+SWT[B]:
+    CAS 10: #case
+        PRI 700;
+        BRK;
+    END
+    CAS A:
+        PRI A;
+        BRK;
+    END
+END
+
+```
+
+outputs
+
+```asm
+700
+```
+
+### `EOS`
+
+`EOS` can be used to declare a default case in a `SWT` statement
+
+Example
+
+```asm
+MEM A 100;
+MEM B 44;
+
+SWT[B]: #SWiTch
+    CAS 10: #case
+        PRI 700;
+        BRK;
+    END
+    CAS 20:
+        PRI 20;
+        BRK; 
+    END
+    CAS A:
+        PRI A;
+        BRK;
+    END
+    EOS: #End Of Switch
+        PRI 30;
+        BRK;
+    END
+END
+
+```
+
+outputs
+
+```asm
+30
+```
 
 ## `ANB`
 `ANB` is the while loop of smol. It will run its body untill `A == B`. So it can be seen as a simple `while a < b {}` loop.
