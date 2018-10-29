@@ -265,7 +265,7 @@ outputs
 ```
 
 ## `ANB`
-`ANB` is the while loop of smol. It will run its body untill `A == B`. So it can be seen as a simple `while a < b {}` loop.
+`ANB` is the while loop of smol. It will run its body untill `A == B`. So it can be seen as a simple `while a != b {}` loop.
 
 Example:
 
