@@ -3,6 +3,8 @@ package smol
 import (
 	"bytes"
 	"os"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type token struct {
@@ -71,6 +73,7 @@ func (l *lexer) lex(sourceCode string, filename string) {
 			l.currentIndex++
 			appendToken = false
 		case "UDEF":
+			spew.Dump(currentChar)
 			report(l.currentLine, filename, "undefined symbol used")
 			os.Exit(65)
 		case "WIN_NEWLINE":

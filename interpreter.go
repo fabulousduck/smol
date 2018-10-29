@@ -83,7 +83,7 @@ func (i *interpreter) execComparison(cm *comparison) {
 		scopeLevel, index := i.stacks.find(cm.rhs.(*statVar).value)
 		crhs, _ = strconv.Atoi(i.stacks[scopeLevel][index].value)
 	} else {
-		crhs, _ = strconv.Atoi(cm.lhs.(*numLit).value)
+		crhs, _ = strconv.Atoi(cm.rhs.(*numLit).value)
 	}
 
 	// do static analysis on same variable comparisons

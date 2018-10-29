@@ -1,0 +1,35 @@
+DEF FIB<RANGE>:
+    
+    MEM COUNTER 0;
+    MEM NEXT 0;
+    MEM FIRST 0;
+    MEM SECOND 1;
+    MEM ADD_TMP_VAR 0;
+
+    ANB[COUNTER, RANGE]:
+        LT[COUNTER, 1]:
+            SET NEXT COUNTER;
+        END
+       
+        EQ[COUNTER, 1]:
+             SET NEXT COUNTER;
+        END
+
+        GT[COUNTER, 1]:
+            ADD ADD_TMP_VAR FIRST;
+            ADD ADD_TMP_VAR SECOND;
+            SET NEXT ADD_TMP_VAR;
+            SET ADD_TMP_VAR 0;
+
+            SET FIRST SECOND;
+            SET SECOND NEXT;
+        END
+
+        PRI NEXT;
+        BRK;
+        INC COUNTER;
+    END
+END
+
+MEM RANGE 10;
+FIB[RANGE];
