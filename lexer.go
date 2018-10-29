@@ -35,9 +35,8 @@ func (l *lexer) lex(sourceCode string, filename string) {
 			l.currentCol += len(currTok.Value)
 		case "COMMENT":
 			appendToken = false
-			curr := l.currentIndex
 			l.readComment(sourceCode)
-			l.currentCol = l.currentIndex - curr
+			l.currentCol = 0
 		case "LEFT_ARROW":
 			currTok.Value = "<"
 			currTok.Type = "LEFT_ARROW"
