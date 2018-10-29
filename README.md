@@ -71,7 +71,6 @@ All statements must end with a `;`. Not doing so will result in syntax errors.
 ### `MEM K V`
 In smol `MEM` is used to declare a variable on the stack. Losp only supports whole integers as variable types. This is done on purpose to make the programmer use arithmatic to accomplish tasks like you would in assembly.
 
-`MEM` does not yet support variable resolution, so creating a variable with the second parameter being a reference to a variable does not work. This will throw a syntax error.
 
 Example:
 ```asm

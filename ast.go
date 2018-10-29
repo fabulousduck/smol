@@ -60,7 +60,7 @@ func (f function) getNodeName() string {
 
 type variable struct {
 	name  string
-	value string
+	value node
 }
 
 type anb struct {
@@ -501,9 +501,9 @@ func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
 	variable.name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
-	expectedValueTypes := []string{"NUMB"}
+	expectedValueTypes := []string{"NUMB", "CHAR", "string"}
 	p.expect(expectedValueTypes, tokens[index+tokensConsumed])
-	variable.value = tokens[index+tokensConsumed].Value
+	variable.value = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])

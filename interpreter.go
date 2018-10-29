@@ -253,7 +253,12 @@ func (i *interpreter) execFunctionDecl(f *function) {
 func (i *interpreter) stackAlloc(scopeLevel int, v *variable) {
 	stackTuple := new(tuple)
 	stackTuple.key = v.name
-	stackTuple.value = v.value
+	if v.value.getNodeName() == "statVar" {
+		scopeLevel, index := i.stacks.find(v.value.(*statVar).value)
+		stackTuple.value = i.stacks[scopeLevel][index].value
+	} else {
+		stackTuple.value = v.value.(*numLit).value
+	}
 	i.stacks[scopeLevel] = append(i.stacks[scopeLevel], stackTuple)
 }
 
