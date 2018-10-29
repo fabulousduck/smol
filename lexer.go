@@ -33,6 +33,11 @@ func (l *lexer) lex(sourceCode string, filename string) {
 		case "NUMB":
 			currTok.Value = l.peekTypeN("NUMB", sourceCode)
 			l.currentCol += len(currTok.Value)
+		case "COMMENT":
+			appendToken = false
+			curr := l.currentIndex
+			l.readComment(sourceCode)
+			l.currentCol = l.currentIndex - curr
 		case "LEFT_ARROW":
 			currTok.Value = "<"
 			currTok.Type = "LEFT_ARROW"
@@ -94,6 +99,13 @@ func (l *lexer) lex(sourceCode string, filename string) {
 		}
 	}
 	l.tagKeywords()
+}
+
+func (l *lexer) readComment(program string) {
+	l.currentIndex++
+	for t := determineType(string(program[l.currentIndex])); t != "NEWLINE" && t != "WIN_NEWLINE"; t = determineType(string(program[l.currentIndex])) {
+		l.currentIndex++
+	}
 }
 
 func (l *lexer) peekTypeN(typeName string, program string) string {

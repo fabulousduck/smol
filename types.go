@@ -18,6 +18,10 @@ func determineType(character string) string {
 		":": "DOUBLE_DOT",
 	}
 
+	if character == "#" {
+		return "COMMENT"
+	}
+
 	escapeChars := typename{
 		"\r": "WIN_NEWLINE",
 		"\n": "NEWLINE",
