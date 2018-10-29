@@ -14,6 +14,32 @@ func (nm numLit) getNodeName() string {
 	return "numLit"
 }
 
+type eos struct {
+	body []node
+}
+
+func (eos eos) getNodeName() string {
+	return "end_of_switch"
+}
+
+type switchCase struct {
+	matchValue node
+	body       []node
+}
+
+func (sc switchCase) getNodeName() string {
+	return "switchCase"
+}
+
+type switchStatement struct {
+	matchValue node
+	cases      []node
+}
+
+func (st switchStatement) getNodeName() string {
+	return "switchStatement"
+}
+
 type statVar struct {
 	value string
 }
@@ -180,7 +206,6 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			node, tokensConsumed := p.createFunctionCall(tokens, i)
 			i += tokensConsumed
 			nodes = append(nodes, node)
-			spew.Dump(node)
 		case "equals":
 			fallthrough
 		case "not_equals":
@@ -194,7 +219,18 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			node.body = body
 			i += consumed
 			nodes = append(nodes, node)
-
+		case "switch":
+			node, tokensConsumed := p.createSwitchStatement(tokens, i+1)
+			i += tokensConsumed
+			nodes = append(nodes, node)
+		case "case":
+			node, tokensConsumed := p.createSwitchCase(tokens, i+1)
+			nodes = append(nodes, node)
+			i += tokensConsumed
+		case "end_of_switch":
+			node, tokensConsumed := p.createEOSStatement(tokens, i+1)
+			nodes = append(nodes, node)
+			i += tokensConsumed
 		default:
 			spew.Dump(tokens[i])
 			spew.Dump("what the fuck ?")
@@ -202,6 +238,64 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 	}
 
 	return nodes, len(tokens)
+}
+
+func (p *parser) createEOSStatement(tokens []token, index int) (*eos, int) {
+	eos := new(eos)
+	tokensConsumed := 0
+
+	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	body, consumed := p.parse(tokens[index+tokensConsumed:])
+	eos.body = body
+	tokensConsumed += consumed + 1
+
+	return eos, tokensConsumed
+}
+
+func (p *parser) createSwitchCase(tokens []token, index int) (*switchCase, int) {
+	sc := new(switchCase)
+	tokensConsumed := 0
+
+	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	sc.matchValue = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	// spew.Dump(tokens[index+tokensConsumed:])
+	body, consumed := p.parse(tokens[index+tokensConsumed:])
+	sc.body = body
+	tokensConsumed += consumed + 1
+
+	return sc, tokensConsumed
+}
+
+func (p *parser) createSwitchStatement(tokens []token, index int) (*switchStatement, int) {
+	st := new(switchStatement)
+	tokensConsumed := 0
+
+	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	st.matchValue = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	// spew.Dump(tokens[index+tokensConsumed:])
+	body, consumed := p.parse(tokens[index+tokensConsumed:])
+	st.cases = body
+	tokensConsumed += consumed
+
+	return st, tokensConsumed
 }
 
 func (p *parser) createComparisonHeader(tokens []token, index int) (*comparison, int) {

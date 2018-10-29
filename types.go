@@ -84,6 +84,9 @@ func getKeyword(token *token) string {
 		"NEQ": "not_equals",
 		"LT":  "less_than",
 		"GT":  "greater_than",
+		"SWT": "switch",
+		"CAS": "case",
+		"EOS": "end_of_switch",
 	}
 
 	if val, ok := keywords[token.Value]; ok {

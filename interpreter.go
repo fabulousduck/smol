@@ -62,8 +62,57 @@ func (i interpreter) interpret(ast []node) {
 		case "comparison":
 			cm := node.(*comparison)
 			i.execComparison(cm)
+		case "switchStatement":
+			ss := node.(*switchStatement)
+			i.execSwitchStatement(ss)
 		}
 	}
+}
+
+func (i *interpreter) execSwitchStatement(ss *switchStatement) {
+	matchValue := ""
+	var defaultCase []node
+	matchExecuted := false
+	if ss.matchValue.getNodeName() == "statVar" {
+		scopeLevel, index := i.stacks.find(ss.matchValue.(*statVar).value)
+		matchValue = i.stacks[scopeLevel][index].value
+	} else {
+		matchValue = ss.matchValue.(*numLit).value
+	}
+
+	for j := 0; j < len(ss.cases); j++ {
+		if ss.cases[j].getNodeName() != "switchCase" && ss.cases[j].getNodeName() != "end_of_switch" {
+			unknownSwitchNode()
+			os.Exit(65)
+		}
+		if ss.cases[j].getNodeName() == "end_of_switch" {
+			defaultCase = ss.cases[j].(*eos).body
+			continue
+		}
+
+		caseMatchValue := ""
+		if ss.cases[j].(*switchCase).matchValue.getNodeName() == "statVar" {
+			scopeLevel, index := i.stacks.find(ss.cases[j].(*switchCase).matchValue.(*statVar).value)
+			caseMatchValue = i.stacks[scopeLevel][index].value
+		} else {
+			caseMatchValue = ss.cases[j].(*switchCase).matchValue.(*numLit).value
+		}
+
+		if matchValue == caseMatchValue {
+
+			i.interpret(ss.cases[j].(*switchCase).body)
+			matchExecuted = true
+			return
+		}
+	}
+
+	if !matchExecuted {
+		if defaultCase != nil {
+			i.interpret(defaultCase)
+		}
+	}
+
+	return
 }
 
 func (i *interpreter) execComparison(cm *comparison) {

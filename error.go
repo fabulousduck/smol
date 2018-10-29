@@ -24,7 +24,8 @@ func throwSemanticError(token *token, expected []string, filename string) {
 		filename,
 		fmt.Sprintf("expected one of [%s]. got %s",
 			concatVariables(expected, ", "),
-			token.Type))
+			token.Type),
+	)
 }
 
 func undefinedVariableError(variableName string) {
@@ -50,4 +51,8 @@ func incorrectFunctionParamCountError(name string, given int, expected int) {
 
 func additionInvalidReceiverError() {
 	fmt.Printf("left hand side of mathematical operation must be variable")
+}
+
+func unknownSwitchNode() {
+	fmt.Printf("unknown definition found in switch")
 }
