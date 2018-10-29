@@ -47,6 +47,16 @@ func (anb anb) getNodeName() string {
 	return "anb"
 }
 
+type setStatement struct {
+	lhs string
+	mhs node
+	rhs node
+}
+
+func (ss setStatement) getNodeName() string {
+	return "setStatement"
+}
+
 type statement struct {
 	lhs string
 	rhs node
@@ -122,6 +132,10 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			node, tokensConsumed := p.createStatement(tokens, i+1, "INC")
 			i += tokensConsumed + 1
 			nodes = append(nodes, node)
+		case "set_variable":
+			node, tokensConsumed := p.createSetStatement(tokens, i+1, "SET")
+			i += tokensConsumed + 1
+			nodes = append(nodes, node)
 		case "close_block":
 			i++
 			return nodes, i
@@ -179,6 +193,26 @@ func (p *parser) createFunctionCall(tokens []token, index int) (*functionCall, i
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 	return fc, tokensConsumed
+}
+
+func (p *parser) createSetStatement(tokens []token, index int, t string) (*setStatement, int) {
+	ss := new(setStatement)
+	tokensConsumed := 0
+
+	ss.lhs = t
+
+	p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed])
+	ss.mhs = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"NUMB", "CHAR", "string"}, tokens[index+tokensConsumed])
+	ss.rhs = createLit(tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	tokensConsumed++
+
+	return ss, tokensConsumed
 }
 
 func (p *parser) createStatement(tokens []token, index int, t string) (*statement, int) {

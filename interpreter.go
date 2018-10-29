@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type tuple struct {
@@ -52,10 +54,29 @@ func (i interpreter) interpret(ast []node) {
 		case "functionCall":
 			fc := node.(*functionCall)
 			i.execFunctionCall(fc)
+		case "setStatement":
+			ss := node.(*setStatement)
+			i.setVariableValue(ss)
 		}
 	}
 
-	// spew.Dump(i.stack)
+}
+
+func (i *interpreter) setVariableValue(ss *setStatement) {
+	spew.Dump(ss.mhs.getNodeName())
+	if ss.mhs.getNodeName() != "statVar" {
+		litAssignError()
+		os.Exit(65)
+	}
+
+	scopeLevel, index := i.stacks.find(ss.mhs.(*statVar).value)
+	if ss.rhs.getNodeName() == "statVar" {
+		rhsScopeLevel, rhsIndex := i.stacks.find(ss.rhs.(*statVar).value)
+		i.stacks[scopeLevel][index].value = i.stacks[rhsScopeLevel][rhsIndex].value
+		return
+	}
+	i.stacks[scopeLevel][index].value = ss.rhs.(*numLit).value
+
 }
 
 func (i *interpreter) execFunctionCall(fc *functionCall) {
@@ -66,7 +87,7 @@ func (i *interpreter) execFunctionCall(fc *functionCall) {
 		os.Exit(65)
 		return
 	}
-	scopeLevel := len(i.stacks)
+	beforeScopeLevel := len(i.stacks)
 	scopedStack := stack{}
 	for j := 0; j < len(functionDecl.params); j++ {
 		if determineStringType(fc.args[j]) == "CHAR" {
@@ -79,7 +100,7 @@ func (i *interpreter) execFunctionCall(fc *functionCall) {
 	}
 	i.stacks = append(i.stacks, scopedStack)
 	i.interpret(functionDecl.body)
-	i.stacks = i.stacks[:scopeLevel]
+	i.stacks = i.stacks[:beforeScopeLevel]
 }
 
 func (i *interpreter) execFunctionDecl(f *function) {
@@ -160,7 +181,6 @@ func (i *interpreter) execStatement(s *statement) {
 			litIncrementError()
 			os.Exit(65)
 		}
-		// spew.Dump(i.stacks)
 
 		scopeLevel, index := i.stacks.find(s.rhs.(*statVar).value)
 		vc, _ := strconv.Atoi(i.stacks[scopeLevel][index].value)

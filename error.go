@@ -32,6 +32,10 @@ func undefinedVariableError(variableName string) {
 	fmt.Printf("Undefined varaible %s\n", variableName)
 }
 
+func litAssignError() {
+	fmt.Printf("Cannot assign new value to litteral value")
+}
+
 func litIncrementError() {
 	fmt.Printf("Cannot increment a num literal\n")
 }
