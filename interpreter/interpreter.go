@@ -242,12 +242,15 @@ func (i *Interpreter) execFunctionCall(fc *ast.FunctionCall) {
 	beforeScopeLevel := len(i.Stacks)
 	scopedStack := stack{}
 	for j := 0; j < len(functionDecl.Params); j++ {
+
+		//if the value given is a variable, resolve it
 		if lexer.DetermineStringType(fc.Args[j]) == "CHAR" {
 			scopeLevel, index := i.Stacks.find(fc.Args[j])
 			value := i.Stacks[scopeLevel][index].value
 			scopedStack = append(scopedStack, &tuple{key: functionDecl.Params[j], value: value})
 			continue
 		}
+
 		scopedStack = append(scopedStack, &tuple{key: functionDecl.Params[j], value: fc.Args[j]})
 	}
 	i.Stacks = append(i.Stacks, scopedStack)

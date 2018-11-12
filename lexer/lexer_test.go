@@ -50,3 +50,18 @@ func TestVariable(T *testing.T) {
 		}
 	}
 }
+
+func TestStringTypeDetermination(T *testing.T) {
+	testNumber := "15"
+	testChar := "boop"
+
+	if DetermineStringType(testNumber) != "NUMB" {
+		T.Logf("\nTestStringTypeDetermination | determined that %s is of type %s which is actually NUMB", testNumber, DetermineStringType(testNumber))
+		T.Fail()
+	}
+
+	if DetermineStringType(testChar) != "CHAR" {
+		T.Logf("\nTestStringTypeDetermination | determined that %s is of type %s which is actually CHAR", testNumber, DetermineStringType(testNumber))
+		T.Fail()
+	}
+}

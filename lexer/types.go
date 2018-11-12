@@ -6,6 +6,8 @@ func determineType(character string) string {
 	chars := []string{
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
 		"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_",
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+		"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
 	}
 
 	symbols := typename{
@@ -99,7 +101,7 @@ func getKeyword(token *Token) string {
 	return token.Type
 }
 
-//DetermineType will determine the type of a given string
+//DetermineStringType will determine the type of a given string
 func DetermineStringType(str string) string {
 	return determineType(string([]rune(str)[0]))
 }
