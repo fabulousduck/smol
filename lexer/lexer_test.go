@@ -6,6 +6,8 @@ const (
 	testVariable = "MEM A 10;"
 )
 
-func TestLexer(T *testing.T) {
-	expectedResults := []smol.
+func TestVariable(T *testing.T) {
+	testProgram := "MEM A 10;"
+	expectedResults := []Token{}
+	l := NewLexer(testProgram, "TESTING")
 }

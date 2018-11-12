@@ -34,8 +34,8 @@ func (smol *Smol) RunFile(filename string) {
 
 //Run exectues a given script
 func (smol *Smol) Run(sourceCode string, filename string) {
-	l := new(lexer.Lexer)
-	l.Lex(sourceCode, filename)
+	l := lexer.NewLexer(filename)
+	l.Lex(sourceCode)
 	p := ast.NewParser(filename)
 	p.Ast, _ = p.Parse(l.Tokens)
 	i := interpreter.NewInterpreter()

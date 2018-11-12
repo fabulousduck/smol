@@ -1,9 +1,9 @@
 package ast
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/proto/src/types"
 	"github.com/fabulousduck/smol/lexer"
 )
@@ -257,8 +257,8 @@ func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
 			nodes = append(nodes, node)
 			i += tokensConsumed
 		default:
-			spew.Dump(tokens[i])
-			spew.Dump("Unknown token type found.")
+			//TODO: make an error for this
+			fmt.Println("Unknown token type found.")
 		}
 	}
 
@@ -290,7 +290,6 @@ func (p *Parser) createSwitchCase(tokens []lexer.Token, index int) (*SwitchCase,
 	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	// spew.Dump(tokens[index+tokensConsumed:])
 	body, consumed := p.Parse(tokens[index+tokensConsumed:])
 	sc.Body = body
 	tokensConsumed += consumed + 1
@@ -315,7 +314,6 @@ func (p *Parser) createSwitchStatement(tokens []lexer.Token, index int) (*Switch
 	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	// spew.Dump(tokens[index+tokensConsumed:])
 	body, consumed := p.Parse(tokens[index+tokensConsumed:])
 	st.Cases = body
 	tokensConsumed += consumed

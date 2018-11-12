@@ -5,22 +5,31 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/errors"
 )
 
+//Token contains all info about a specific token from syntax
 type Token struct {
 	Value, Type string
 	Line, Col   int
 }
 
+//Lexer contains all the info needed for the lexer to generate a set of usable tokens
 type Lexer struct {
 	Tokens                                []Token
 	currentIndex, currentLine, currentCol int
+	FileName                              string
+}
+
+//NewLexer creates a new instance of a lexer stuct
+func NewLexer(filename string) *Lexer {
+	l := new(Lexer)
+	l.FileName = filename
+	return l
 }
 
 //Lex takes a sourcecode string and transforms it into usable tokens to build an AST with
-func (l *Lexer) Lex(sourceCode string, filename string) {
+func (l *Lexer) Lex(sourceCode string) {
 
 	for l.currentIndex < len(sourceCode) {
 		currentChar := string(sourceCode[l.currentIndex])
@@ -80,8 +89,7 @@ func (l *Lexer) Lex(sourceCode string, filename string) {
 			l.currentIndex++
 			appendToken = false
 		case "UDEF":
-			spew.Dump(currentChar)
-			errors.Report(l.currentLine, filename, "undefined symbol used")
+			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
 			os.Exit(65)
 		case "WIN_NEWLINE":
 			fallthrough
