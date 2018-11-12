@@ -7,12 +7,13 @@ import (
 )
 
 func main() {
-	l := smol.NewLosp()
+	l := smol.NewSmol()
 
 	if len(os.Args) > 1 {
 		l.RunFile(os.Args[1])
 	} else {
-		l.Repl()
+		//TODO
+		// repl.Repl()
 	}
 
 }

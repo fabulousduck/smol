@@ -1,148 +1,173 @@
-package smol
+package ast
 
 import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/fabulousduck/proto/src/types"
+	"github.com/fabulousduck/smol/lexer"
 )
 
-type numLit struct {
-	value string
+//Node is a wrapper interface that AST nodes can implement
+type Node interface {
+	GetNodeName() string //GetNodeName Gets the identifier of a AST node describing what it is
+
 }
 
-func (nm numLit) getNodeName() string {
+//NumLit represents a numeric litteral.
+type NumLit struct {
+	Value string
+}
+
+func (nm NumLit) GetNodeName() string {
 	return "numLit"
 }
 
-type eos struct {
-	body []node
+//Eos is a special node in a switch statement that is called if defined when no cases match the given value
+type Eos struct {
+	Body []Node
 }
 
-func (eos eos) getNodeName() string {
+func (eos Eos) GetNodeName() string {
 	return "end_of_switch"
 }
 
-type switchCase struct {
-	matchValue node
-	body       []node
+//SwitchCase is a block definiton that is run when the MatchValue is matched
+type SwitchCase struct {
+	MatchValue Node
+	Body       []Node
 }
 
-func (sc switchCase) getNodeName() string {
+func (sc SwitchCase) GetNodeName() string {
 	return "switchCase"
 }
 
-type switchStatement struct {
-	matchValue node
-	cases      []node
+//SwitchStatement matches the Matchcase against all cases defined in Cases of the switchcase
+//if one matches, the body of that case will be executed.
+//if a EOS is defined within the body, the EOS body will be run if no case matches the matchvalue
+type SwitchStatement struct {
+	MatchValue Node
+	Cases      []Node
 }
 
-func (st switchStatement) getNodeName() string {
+func (st SwitchStatement) GetNodeName() string {
 	return "switchStatement"
 }
 
-type statVar struct {
-	value string
+//StatVar contains the value of a static variable.
+//These statVars are used when a variable is being referenced
+//where the Value is the name of the variable referenced
+type StatVar struct {
+	Value string
 }
 
-func (sv statVar) getNodeName() string {
+func (sv StatVar) GetNodeName() string {
 	return "statVar"
 }
 
-type function struct {
-	name   string
-	params []string
-	body   []node
+//Function is a standard function definition containing the name, parameters and body of the function
+type Function struct {
+	Name   string
+	Params []string
+	Body   []Node
 }
 
-func (f function) getNodeName() string {
+func (f Function) GetNodeName() string {
 	return "function"
 }
 
-type variable struct {
-	name  string
-	value node
+//Variable is a construct used to create a new variable.
+//This is the struct that will be pushed to the stack
+type Variable struct {
+	Name  string
+	Value Node
 }
 
-type anb struct {
-	lhs  node
-	rhs  node
-	body []node
+//Anb is the while loop of smol. It will keep executing its body until LHS equals RHS
+type Anb struct {
+	LHS  Node
+	RHS  Node
+	Body []Node
 }
 
-func (anb anb) getNodeName() string {
+func (anb Anb) GetNodeName() string {
 	return "anb"
 }
 
-type comparison struct {
-	operator string
-	lhs      node
-	rhs      node
-	body     []node
+//Comparison is an expression type that is used when an operation like GT, LT, EQ or NEQ is called
+type Comparison struct {
+	Operator string
+	LHS      Node
+	RHS      Node
+	Body     []Node
 }
 
-func (c comparison) getNodeName() string {
+func (c Comparison) GetNodeName() string {
 	return "comparison"
 }
 
-type setStatement struct {
-	lhs string
-	mhs node
-	rhs node
+//SetStatement is used when a value needs to be set to a variable. Instructions that could make use of this are SET
+type SetStatement struct {
+	LHS string
+	MHS Node
+	RHS Node
 }
 
-func (ss setStatement) getNodeName() string {
+func (ss SetStatement) GetNodeName() string {
 	return "setStatement"
 }
 
-type mathStatement struct {
-	lhs string
-	mhs node
-	rhs node
+//MathStatement contains info needed to execute a mathematical statement like ADD, SUB, MUL and DIV
+type MathStatement struct {
+	LHS string
+	MHS Node
+	RHS Node
 }
 
-func (ms mathStatement) getNodeName() string {
+func (ms MathStatement) GetNodeName() string {
 	return "mathStatement"
 }
 
-type statement struct {
-	lhs string
-	rhs node
+//Statement is a general statement container for all other statements that do not fall under math and logic for example MEM
+type Statement struct {
+	LHS string
+	RHS Node
 }
 
-func (s statement) getNodeName() string {
+func (s Statement) GetNodeName() string {
 	return "statement"
 }
 
-func (v variable) getNodeName() string {
+func (v Variable) GetNodeName() string {
 	return "variable"
 }
 
-type functionCall struct {
-	name string
-	args []string
+//FunctionCall specifies a function call and the arguments given
+type FunctionCall struct {
+	Name string
+	Args []string
 }
 
-func (fc functionCall) getNodeName() string {
+func (fc FunctionCall) GetNodeName() string {
 	return "functionCall"
 }
 
-type node interface {
-	getNodeName() string
+//Parser contains the final AST and forms a base for all ast generating functions
+type Parser struct {
+	Ast      []Node
+	Filename string
 }
 
-type parser struct {
-	ast      []node
-	filename string
-}
-
-func NewParser(filename string) *parser {
-	p := new(parser)
-	p.filename = filename
+//NewParser returns a new Parser instance with the given file
+func NewParser(filename string) *Parser {
+	p := new(Parser)
+	p.Filename = filename
 	return p
 }
 
-func (p *parser) parse(tokens []token) ([]node, int) {
-	nodes := []node{}
+//Parse takes a set of tokens and generates an AST from them
+func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
+	nodes := []Node{}
 	for i := 0; i < len(tokens); {
 		switch tokens[i].Type {
 		case "variable_assignment":
@@ -152,15 +177,15 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 		case "function_definition":
 			node, tokensConsumed := p.createFunctionHeader(tokens, i+1)
 			i += tokensConsumed + 1
-			body, consumed := p.parse(tokens[i:])
-			node.body = body
+			body, consumed := p.Parse(tokens[i:])
+			node.Body = body
 			i += consumed
 			nodes = append(nodes, node)
 		case "left_not_right":
 			node, tokensConsumed := p.createLNR(tokens, i+1)
 			i += tokensConsumed + 1
-			body, consumed := p.parse(tokens[i:])
-			node.body = body
+			body, consumed := p.Parse(tokens[i:])
+			node.Body = body
 			i += consumed
 			nodes = append(nodes, node)
 		case "print_integer":
@@ -215,8 +240,8 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 		case "greater_than":
 			node, tokensConsumed := p.createComparisonHeader(tokens, i)
 			i += tokensConsumed
-			body, consumed := p.parse(tokens[i:])
-			node.body = body
+			body, consumed := p.Parse(tokens[i:])
+			node.Body = body
 			i += consumed
 			nodes = append(nodes, node)
 		case "switch":
@@ -233,55 +258,55 @@ func (p *parser) parse(tokens []token) ([]node, int) {
 			i += tokensConsumed
 		default:
 			spew.Dump(tokens[i])
-			spew.Dump("what the fuck ?")
+			spew.Dump("Unknown token type found.")
 		}
 	}
 
 	return nodes, len(tokens)
 }
 
-func (p *parser) createEOSStatement(tokens []token, index int) (*eos, int) {
-	eos := new(eos)
+func (p *Parser) createEOSStatement(tokens []lexer.Token, index int) (*Eos, int) {
+	eos := new(Eos)
 	tokensConsumed := 0
 
 	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	body, consumed := p.parse(tokens[index+tokensConsumed:])
-	eos.body = body
+	body, consumed := p.Parse(tokens[index+tokensConsumed:])
+	eos.Body = body
 	tokensConsumed += consumed + 1
 
 	return eos, tokensConsumed
 }
 
-func (p *parser) createSwitchCase(tokens []token, index int) (*switchCase, int) {
-	sc := new(switchCase)
+func (p *Parser) createSwitchCase(tokens []lexer.Token, index int) (*SwitchCase, int) {
+	sc := new(SwitchCase)
 	tokensConsumed := 0
 
 	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
-	sc.matchValue = createLit(tokens[index+tokensConsumed])
+	sc.MatchValue = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	// spew.Dump(tokens[index+tokensConsumed:])
-	body, consumed := p.parse(tokens[index+tokensConsumed:])
-	sc.body = body
+	body, consumed := p.Parse(tokens[index+tokensConsumed:])
+	sc.Body = body
 	tokensConsumed += consumed + 1
 
 	return sc, tokensConsumed
 }
 
-func (p *parser) createSwitchStatement(tokens []token, index int) (*switchStatement, int) {
-	st := new(switchStatement)
+func (p *Parser) createSwitchStatement(tokens []lexer.Token, index int) (*SwitchStatement, int) {
+	st := new(SwitchStatement)
 	tokensConsumed := 0
 
 	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
-	st.matchValue = createLit(tokens[index+tokensConsumed])
+	st.MatchValue = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
@@ -291,32 +316,32 @@ func (p *parser) createSwitchStatement(tokens []token, index int) (*switchStatem
 	tokensConsumed++
 
 	// spew.Dump(tokens[index+tokensConsumed:])
-	body, consumed := p.parse(tokens[index+tokensConsumed:])
-	st.cases = body
+	body, consumed := p.Parse(tokens[index+tokensConsumed:])
+	st.Cases = body
 	tokensConsumed += consumed
 
 	return st, tokensConsumed
 }
 
-func (p *parser) createComparisonHeader(tokens []token, index int) (*comparison, int) {
-	ch := new(comparison)
+func (p *Parser) createComparisonHeader(tokens []lexer.Token, index int) (*Comparison, int) {
+	ch := new(Comparison)
 	tokensConsumed := 0
 
-	ch.operator = tokens[index+tokensConsumed].Value
+	ch.Operator = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
 	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
-	ch.lhs = createLit(tokens[index+tokensConsumed])
+	ch.LHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"COMMA"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
-	ch.rhs = createLit(tokens[index+tokensConsumed])
+	ch.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
@@ -328,19 +353,19 @@ func (p *parser) createComparisonHeader(tokens []token, index int) (*comparison,
 	return ch, tokensConsumed
 }
 
-func (p *parser) createMathStatement(tokens []token, index int) (node, int) {
-	ms := new(mathStatement)
+func (p *Parser) createMathStatement(tokens []lexer.Token, index int) (Node, int) {
+	ms := new(MathStatement)
 	tokensConsumed := 0
 
-	ms.lhs = tokens[index].Value
+	ms.LHS = tokens[index].Value
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed])
-	ms.mhs = createLit(tokens[index+tokensConsumed])
+	ms.MHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
-	ms.rhs = createLit(tokens[index+tokensConsumed])
+	ms.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
@@ -349,22 +374,22 @@ func (p *parser) createMathStatement(tokens []token, index int) (node, int) {
 	return ms, tokensConsumed
 }
 
-func (p *parser) createSingleWordStatement(tokens []token, index int, t string) (*statement, int) {
-	s := new(statement)
+func (p *Parser) createSingleWordStatement(tokens []lexer.Token, index int, t string) (*Statement, int) {
+	s := new(Statement)
 	tokensConsumed := 0
 
-	s.lhs = t
+	s.LHS = t
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return s, tokensConsumed
 }
 
-func (p *parser) createFunctionCall(tokens []token, index int) (*functionCall, int) {
-	fc := new(functionCall)
+func (p *Parser) createFunctionCall(tokens []lexer.Token, index int) (*FunctionCall, int) {
+	fc := new(FunctionCall)
 	tokensConsumed := 0
 	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
-	fc.name = tokens[index+tokensConsumed].Value
+	fc.Name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
 	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
@@ -376,7 +401,7 @@ func (p *parser) createFunctionCall(tokens []token, index int) (*functionCall, i
 			tokensConsumed++
 			continue
 		}
-		fc.args = append(fc.args, currentToken.Value)
+		fc.Args = append(fc.Args, currentToken.Value)
 		tokensConsumed++
 	}
 
@@ -386,18 +411,18 @@ func (p *parser) createFunctionCall(tokens []token, index int) (*functionCall, i
 	return fc, tokensConsumed
 }
 
-func (p *parser) createSetStatement(tokens []token, index int, t string) (*setStatement, int) {
-	ss := new(setStatement)
+func (p *Parser) createSetStatement(tokens []lexer.Token, index int, t string) (*SetStatement, int) {
+	ss := new(SetStatement)
 	tokensConsumed := 0
 
-	ss.lhs = t
+	ss.LHS = t
 
 	p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed])
-	ss.mhs = createLit(tokens[index+tokensConsumed])
+	ss.MHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"NUMB", "CHAR", "string"}, tokens[index+tokensConsumed])
-	ss.rhs = createLit(tokens[index+tokensConsumed])
+	ss.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
@@ -406,14 +431,14 @@ func (p *parser) createSetStatement(tokens []token, index int, t string) (*setSt
 	return ss, tokensConsumed
 }
 
-func (p *parser) createStatement(tokens []token, index int, t string) (*statement, int) {
-	s := new(statement)
+func (p *Parser) createStatement(tokens []lexer.Token, index int, t string) (*Statement, int) {
+	s := new(Statement)
 	tokensConsumed := 0
 
-	s.lhs = t
+	s.LHS = t
 
 	p.expect([]string{"string", "CHAR", "NUMB"}, tokens[index+tokensConsumed])
-	s.rhs = createLit(tokens[index+tokensConsumed])
+	s.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
@@ -422,19 +447,19 @@ func (p *parser) createStatement(tokens []token, index int, t string) (*statemen
 	return s, tokensConsumed
 }
 
-func createLit(token token) node {
+func createLit(token lexer.Token) Node {
 	if token.Type == "NUMB" {
-		nm := new(numLit)
-		nm.value = token.Value
+		nm := new(NumLit)
+		nm.Value = token.Value
 		return nm
 	}
-	sv := new(statVar)
-	sv.value = token.Value
+	sv := new(StatVar)
+	sv.Value = token.Value
 	return sv
 }
 
-func (p *parser) createLNR(tokens []token, index int) (*anb, int) {
-	anb := new(anb)
+func (p *Parser) createLNR(tokens []lexer.Token, index int) (*Anb, int) {
+	anb := new(Anb)
 	tokensConsumed := 0
 
 	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
@@ -442,14 +467,14 @@ func (p *parser) createLNR(tokens []token, index int) (*anb, int) {
 
 	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
 
-	anb.lhs = createLit(tokens[index+tokensConsumed])
+	anb.LHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"COMMA"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
-	anb.rhs = createLit(tokens[index+tokensConsumed])
+	anb.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
@@ -461,11 +486,11 @@ func (p *parser) createLNR(tokens []token, index int) (*anb, int) {
 	return anb, tokensConsumed
 }
 
-func (p *parser) createFunctionHeader(tokens []token, index int) (*function, int) {
-	f := new(function)
+func (p *Parser) createFunctionHeader(tokens []lexer.Token, index int) (*Function, int) {
+	f := new(Function)
 	tokensConsumed := 0
 	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
-	f.name = tokens[index+tokensConsumed].Value
+	f.Name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
 	p.expect([]string{"LEFT_ARROW", "DOUBLE_DOT"}, tokens[index+tokensConsumed])
@@ -481,7 +506,7 @@ func (p *parser) createFunctionHeader(tokens []token, index int) (*function, int
 			tokensConsumed++
 			continue
 		}
-		f.params = append(f.params, currentToken.Value)
+		f.Params = append(f.Params, currentToken.Value)
 		tokensConsumed++
 	}
 	tokensConsumed++
@@ -490,20 +515,20 @@ func (p *parser) createFunctionHeader(tokens []token, index int) (*function, int
 	return f, tokensConsumed
 }
 
-func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
-	variable := new(variable)
+func (p *Parser) createVariable(tokens []lexer.Token, index int) (*Variable, int) {
+	variable := new(Variable)
 	tokensConsumed := 0
 	expectedNameTypes := []string{
 		"CHAR",
 		"string",
 	}
 	p.expect(expectedNameTypes, tokens[index+tokensConsumed])
-	variable.name = tokens[index+tokensConsumed].Value
+	variable.Name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
 	expectedValueTypes := []string{"NUMB", "CHAR", "string"}
 	p.expect(expectedValueTypes, tokens[index+tokensConsumed])
-	variable.value = createLit(tokens[index+tokensConsumed])
+	variable.Value = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
@@ -511,9 +536,9 @@ func (p *parser) createVariable(tokens []token, index int) (*variable, int) {
 	return variable, tokensConsumed
 }
 
-func (p *parser) expect(expectedValues []string, token token) {
-	if !contains(token.Type, expectedValues) {
-		throwSemanticError(&token, expectedValues, p.filename)
+func (p *Parser) expect(expectedValues []string, token lexer.Token) {
+	if !types.Contains(token.Type, expectedValues) {
+		lexer.ThrowSemanticError(&token, expectedValues, p.Filename)
 		os.Exit(65)
 	}
 }

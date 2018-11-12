@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/fabulousduck/smol"
 )
 
 //Repl : Activates a new interactive REPL reading from STDIN
-func (losp *Losp) Repl() {
+func Repl(s *smol.Smol) {
 	fmt.Printf("Losp repl v0.1\nUse ^C to exit\n\n")
 	for true {
 		reader := bufio.NewReader(os.Stdin)
@@ -16,7 +18,7 @@ func (losp *Losp) Repl() {
 		if err != nil {
 			panic(err)
 		}
-		losp.run(text, "repl")
-		losp.HadError = false
+		s.Run(text, "repl")
+		s.HadError = false
 	}
 }

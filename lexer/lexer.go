@@ -1,27 +1,30 @@
-package smol
+package lexer
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/fabulousduck/smol/errors"
 )
 
-type token struct {
+type Token struct {
 	Value, Type string
 	Line, Col   int
 }
 
-type lexer struct {
-	tokens                                []token
+type Lexer struct {
+	Tokens                                []Token
 	currentIndex, currentLine, currentCol int
 }
 
-func (l *lexer) lex(sourceCode string, filename string) {
+//Lex takes a sourcecode string and transforms it into usable tokens to build an AST with
+func (l *Lexer) Lex(sourceCode string, filename string) {
 
 	for l.currentIndex < len(sourceCode) {
 		currentChar := string(sourceCode[l.currentIndex])
-		currTok := new(token)
+		currTok := new(Token)
 		currTok.Line = l.currentLine
 		currTok.Col = l.currentCol
 		currTok.Type = determineType(currentChar)
@@ -78,7 +81,7 @@ func (l *lexer) lex(sourceCode string, filename string) {
 			appendToken = false
 		case "UDEF":
 			spew.Dump(currentChar)
-			report(l.currentLine, filename, "undefined symbol used")
+			errors.Report(l.currentLine, filename, "undefined symbol used")
 			os.Exit(65)
 		case "WIN_NEWLINE":
 			fallthrough
@@ -94,20 +97,20 @@ func (l *lexer) lex(sourceCode string, filename string) {
 		}
 
 		if appendToken {
-			l.tokens = append(l.tokens, *currTok)
+			l.Tokens = append(l.Tokens, *currTok)
 		}
 	}
 	l.tagKeywords()
 }
 
-func (l *lexer) readComment(program string) {
+func (l *Lexer) readComment(program string) {
 	l.currentIndex++
 	for t := determineType(string(program[l.currentIndex])); t != "NEWLINE" && t != "WIN_NEWLINE"; t = determineType(string(program[l.currentIndex])) {
 		l.currentIndex++
 	}
 }
 
-func (l *lexer) peekTypeN(typeName string, program string) string {
+func (l *Lexer) peekTypeN(typeName string, program string) string {
 	var currentString bytes.Buffer
 	for t := determineType(string(program[l.currentIndex])); t == typeName; t = determineType(string(program[l.currentIndex])) {
 		currentString.WriteString(string(program[l.currentIndex]))
@@ -116,10 +119,21 @@ func (l *lexer) peekTypeN(typeName string, program string) string {
 	return currentString.String()
 }
 
-func (l *lexer) tagKeywords() {
-	for i := 0; i < len(l.tokens); i++ {
-		if l.tokens[i].Type == "CHAR" {
-			l.tokens[i].Type = getKeyword(&l.tokens[i])
+func (l *Lexer) tagKeywords() {
+	for i := 0; i < len(l.Tokens); i++ {
+		if l.Tokens[i].Type == "CHAR" {
+			l.Tokens[i].Type = getKeyword(&l.Tokens[i])
 		}
 	}
+}
+
+//ThrowSemanticError can be used when an error occurs while generating an AST and not at interpret time
+func ThrowSemanticError(token *Token, expected []string, filename string) {
+	errors.Report(
+		token.Line,
+		filename,
+		fmt.Sprintf("expected one of [%s]. got %s",
+			errors.ConcatVariables(expected, ", "),
+			token.Type),
+	)
 }

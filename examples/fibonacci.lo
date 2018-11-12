@@ -1,5 +1,5 @@
 DEF FIB<RANGE>:
-    
+
     MEM COUNTER 0;
     MEM NEXT 0;
     MEM FIRST 0;
@@ -10,7 +10,7 @@ DEF FIB<RANGE>:
         LT[COUNTER, 1]:
             SET NEXT COUNTER;
         END
-       
+
         EQ[COUNTER, 1]:
              SET NEXT COUNTER;
         END
@@ -31,5 +31,5 @@ DEF FIB<RANGE>:
     END
 END
 
-MEM RANGE 10;
+MEM RANGE 1000;
 FIB[RANGE];

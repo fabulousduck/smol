@@ -1,4 +1,4 @@
-package smol
+package lexer
 
 type typename map[string]string
 
@@ -64,7 +64,7 @@ func contains(name string, list []string) bool {
 	return false
 }
 
-func getKeyword(token *token) string {
+func getKeyword(token *Token) string {
 	keywords := map[string]string{
 		"DEF": "function_definition",
 		"ANB": "left_not_right",
@@ -99,6 +99,7 @@ func getKeyword(token *token) string {
 	return token.Type
 }
 
-func determineStringType(str string) string {
+//DetermineType will determine the type of a given string
+func DetermineStringType(str string) string {
 	return determineType(string([]rune(str)[0]))
 }

@@ -3,37 +3,41 @@ package smol
 import (
 	"io/ioutil"
 	"os"
+
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/interpreter"
+	"github.com/fabulousduck/smol/lexer"
 )
 
-//Losp : Defines the global attributes of the interpreter
-type Losp struct {
-	Tokens   []*token
-	HadError bool
+//Smol : Defines the global attributes of the interpreter
+type Smol struct {
+	Tokens   []*lexer.Token
+	HadError bool //TODO: use this
 }
 
-//NewLosp : Creates a new Losp instance
-func NewLosp() *Losp {
-	return new(Losp)
+//NewSmol : Creates a new Smol instance
+func NewSmol() *Smol {
+	return new(Smol)
 }
 
 //RunFile : Interprets a given file
-func (losp *Losp) RunFile(filename string) {
+func (smol *Smol) RunFile(filename string) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	losp.run(string(file), filename)
-	if losp.HadError {
+	smol.Run(string(file), filename)
+	if smol.HadError {
 		os.Exit(65)
 	}
 }
 
-func (losp *Losp) run(sourceCode string, filename string) {
-	l := new(lexer)
-	l.lex(sourceCode, filename)
-	p := NewParser(filename)
-	p.ast, _ = p.parse(l.tokens)
-	i := newInterpreter()
-	i.interpret(p.ast)
-
+//Run exectues a given script
+func (smol *Smol) Run(sourceCode string, filename string) {
+	l := new(lexer.Lexer)
+	l.Lex(sourceCode, filename)
+	p := ast.NewParser(filename)
+	p.Ast, _ = p.Parse(l.Tokens)
+	i := interpreter.NewInterpreter()
+	i.Interpret(p.Ast)
 }

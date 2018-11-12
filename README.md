@@ -1,3 +1,7 @@
+
+<p align="center">
+    <img src="/peepoo.jpg"/>
+</p>
 # Smol
 Smol interpreted language.
 

@@ -1,8 +1,0 @@
-assignment:
-
-Just-in-time compilation tends to be the fastest way to implement a dynamically-typed language, but not all of them use it. What reasons are there to not JIT?
-
-They do less optimalisation as they need to be fast. So in being fast they leave
-a lot of the optimalisation that a normal compiler can do because it does not
-have the time for it as it needs to do everything on the fly not to keep the
-user waiting.
