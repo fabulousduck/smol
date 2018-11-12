@@ -65,3 +65,23 @@ func TestStringTypeDetermination(T *testing.T) {
 		T.Fail()
 	}
 }
+
+func TestDetermineType(T *testing.T) {
+	values := []string{
+		"1", "B", "<", ",", ">", ";", "[", "]", ":",
+		"#", "\r", "\n", "\t", " ", "&",
+	}
+	expectedTypes := []string{
+		"NUMB", "CHAR", "LEFT_ARROW", "COMMA", "RIGHT_ARROW", "SEMI_COLON",
+		"LEFT_BRACKET", "RIGHT_BRACKET", "DOUBLE_DOT", "COMMENT", "WIN_NEWLINE",
+		"NEWLINE", "TAB", "SPACE", "UDEF",
+	}
+
+	for i := 0; i < len(values); i++ {
+		determinedType := determineType(values[i])
+		if determinedType != expectedTypes[i] {
+			T.Logf("\n TestDetermineType | type of %s wat determined to be %s. should be %s", values[i], determinedType, expectedTypes[i])
+			T.Fail()
+		}
+	}
+}
