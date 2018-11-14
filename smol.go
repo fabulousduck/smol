@@ -40,6 +40,19 @@ func (smol *Smol) Run(sourceCode string, filename string) {
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
 	p.Ast, _ = p.Parse(l.Tokens)
+
 	i := interpreter.NewInterpreter()
 	i.Interpret(p.Ast)
+}
+
+//RunRepl is the same as Run except it allows you to pass our own interpreter so we can keep the state
+//of it after the line has been executed
+func (smol *Smol) RunRepl(sourceCode string, filename string, statefullInterpreter *interpreter.Interpreter) {
+	l := lexer.NewLexer(filename)
+	l.Lex(sourceCode)
+	p := ast.NewParser(filename)
+	//We can ignore the second return value here as it is the amount of tokens consumed.
+	//We do not need this here
+	p.Ast, _ = p.Parse(l.Tokens)
+	statefullInterpreter.Interpret(p.Ast)
 }

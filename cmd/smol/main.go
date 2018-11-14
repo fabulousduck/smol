@@ -4,16 +4,17 @@ import (
 	"os"
 
 	"github.com/fabulousduck/smol"
+	"github.com/fabulousduck/smol/repl"
 )
 
 func main() {
-	l := smol.NewSmol()
+	s := smol.NewSmol()
 
 	if len(os.Args) > 1 {
-		l.RunFile(os.Args[1])
+		s.RunFile(os.Args[1])
 	} else {
 		//TODO
-		// repl.Repl()
+		repl.Repl(s)
 	}
 
 }
