@@ -1,10 +1,13 @@
 
-<p align="center">
-    <img src="/peepoo.jpg"/>
-</p>
 # Smol
 Smol interpreted language.
 
+This is a small educational language I made with the primary intent <br>
+to help new students get accustomed to programming without having to know<br>
+intricate programming concepts.
+
+It is not intended to make sense for a seasoned programmer, but for people who<br>
+are not that familiar with programming yet.
 # Table of contents
 
 * [table of contents](#Table-of-contents)
