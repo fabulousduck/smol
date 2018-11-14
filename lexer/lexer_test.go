@@ -74,7 +74,7 @@ func TestDetermineType(T *testing.T) {
 	expectedTypes := []string{
 		"NUMB", "CHAR", "LEFT_ARROW", "COMMA", "RIGHT_ARROW", "SEMI_COLON",
 		"LEFT_BRACKET", "RIGHT_BRACKET", "DOUBLE_DOT", "COMMENT", "WIN_NEWLINE",
-		"NEWLINE", "TAB", "SPACE", "UDEF",
+		"UNIX_NEWLINE", "TAB", "SPACE", "UDEF",
 	}
 
 	for i := 0; i < len(values); i++ {

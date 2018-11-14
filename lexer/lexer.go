@@ -93,7 +93,7 @@ func (l *Lexer) Lex(sourceCode string) {
 			os.Exit(65)
 		case "WIN_NEWLINE":
 			fallthrough
-		case "NEWLINE":
+		case "UNIX_NEWLINE":
 			l.currentCol = 0
 			l.currentLine++
 			l.currentIndex++
@@ -113,7 +113,7 @@ func (l *Lexer) Lex(sourceCode string) {
 
 func (l *Lexer) readComment(program string) {
 	l.currentIndex++
-	for t := determineType(string(program[l.currentIndex])); t != "NEWLINE" && t != "WIN_NEWLINE"; t = determineType(string(program[l.currentIndex])) {
+	for t := determineType(string(program[l.currentIndex])); t != "UNIX_NEWLINE" && t != "WIN_NEWLINE"; t = determineType(string(program[l.currentIndex])) {
 		l.currentIndex++
 	}
 }

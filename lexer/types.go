@@ -26,7 +26,7 @@ func determineType(character string) string {
 
 	escapeChars := typename{
 		"\r": "WIN_NEWLINE",
-		"\n": "NEWLINE",
+		"\n": "UNIX_NEWLINE",
 		"\t": "TAB",
 	}
 

@@ -4,8 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/interpreter"
 	"github.com/fabulousduck/smol/lexer"
@@ -38,7 +36,6 @@ func (smol *Smol) RunFile(filename string) {
 func (smol *Smol) Run(sourceCode string, filename string) {
 	l := lexer.NewLexer(filename)
 	l.Lex(sourceCode)
-	spew.Dump(l)
 	p := ast.NewParser(filename)
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
