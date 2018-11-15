@@ -120,7 +120,13 @@ func (l *Lexer) readComment(program string) {
 
 func (l *Lexer) peekTypeN(typeName string, program string) string {
 	var currentString bytes.Buffer
+
 	for t := determineType(string(program[l.currentIndex])); t == typeName; t = determineType(string(program[l.currentIndex])) {
+		if l.currentIndex+1 >= len(program) {
+			currentString.WriteString(string(program[l.currentIndex]))
+			l.currentIndex++
+			return currentString.String()
+		}
 		currentString.WriteString(string(program[l.currentIndex]))
 		l.currentIndex++
 	}

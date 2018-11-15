@@ -520,6 +520,7 @@ func (p *Parser) createVariable(tokens []lexer.Token, index int) (*Variable, int
 		"CHAR",
 		"string",
 	}
+
 	p.expect(expectedNameTypes, tokens[index+tokensConsumed])
 	variable.Name = tokens[index+tokensConsumed].Value
 	tokensConsumed++

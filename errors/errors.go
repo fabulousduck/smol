@@ -55,3 +55,9 @@ func MathInvalidReceiverError() {
 func UnknownSwitchNode() {
 	fmt.Printf("unknown definition found in switch")
 }
+
+//EOFError allows us to throw an error when either the lexer or the AST generator runs out of tokens / characters to parse
+//while it still expects there to be a token or character.
+func EOFError() {
+	fmt.Printf("EOF found in program execution.")
+}
