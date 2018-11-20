@@ -1,6 +1,5 @@
 DEF FIB<RANGE>:
-
-    MEM COUNTER 0;
+    MEM COUNTER 0; 
     MEM NEXT 0;
     MEM FIRST 0;
     MEM SECOND 1;

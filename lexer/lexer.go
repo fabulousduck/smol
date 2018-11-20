@@ -43,7 +43,6 @@ func (l *Lexer) Lex() {
 
 	for l.currentIndex < len(l.Program) {
 		currTok := newToken(l.currentLine, l.currentCol, l.currentChar())
-		appendToken := true
 		switch currTok.Type {
 		case "character":
 			currTok.Value = l.peekTypeN("character")
@@ -52,8 +51,10 @@ func (l *Lexer) Lex() {
 			currTok.Value = l.peekTypeN("integer")
 			l.currentCol += len(currTok.Value)
 		case "comment":
-			appendToken = false
+			l.readComment()
+			l.advance()
 			l.currentCol = 0
+			continue
 		case "left_arrow":
 			fallthrough
 		case "right_arrow":
@@ -74,15 +75,14 @@ func (l *Lexer) Lex() {
 		case "newline":
 			l.currentCol = 0
 			l.advance()
-			appendToken = false
+			continue
 		case "ignoreable":
 			l.advance()
-			appendToken = false
+			continue
 		}
 
-		if appendToken {
-			l.Tokens = append(l.Tokens, *currTok)
-		}
+		l.Tokens = append(l.Tokens, *currTok)
+
 	}
 	l.tagKeywords()
 }
