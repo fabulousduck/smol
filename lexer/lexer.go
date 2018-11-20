@@ -62,7 +62,7 @@ func (l *Lexer) Lex(sourceCode string) {
 		case "double_dot":
 			fallthrough
 		case "semicolon":
-			l.advance()
+			fallthrough
 		case "space":
 			l.advance()
 			appendToken = false
