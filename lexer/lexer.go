@@ -18,12 +18,13 @@ type Token struct {
 type Lexer struct {
 	Tokens                                []Token
 	currentIndex, currentLine, currentCol int
-	FileName                              string
+	FileName, Program                     string
 }
 
 //NewLexer creates a new instance of a lexer stuct
-func NewLexer(filename string) *Lexer {
+func NewLexer(filename string, program string) *Lexer {
 	l := new(Lexer)
+	l.Program = program
 	l.FileName = filename
 	return l
 }
@@ -38,21 +39,20 @@ func newToken(line int, col int, value string) *Token {
 }
 
 //Lex takes a sourcecode string and transforms it into usable tokens to build an AST with
-func (l *Lexer) Lex(sourceCode string) {
+func (l *Lexer) Lex() {
 
-	for l.currentIndex < len(sourceCode) {
-		currTok := newToken(l.currentLine, l.currentCol, string(sourceCode[l.currentIndex]))
+	for l.currentIndex < len(l.Program) {
+		currTok := newToken(l.currentLine, l.currentCol, l.currentChar())
 		appendToken := true
 		switch currTok.Type {
 		case "character":
-			currTok.Value = l.peekTypeN("character", sourceCode)
+			currTok.Value = l.peekTypeN("character")
 			l.currentCol += len(currTok.Value)
 		case "integer":
-			currTok.Value = l.peekTypeN("integer", sourceCode)
+			currTok.Value = l.peekTypeN("integer")
 			l.currentCol += len(currTok.Value)
 		case "comment":
 			appendToken = false
-			l.readComment(sourceCode)
 			l.currentCol = 0
 		case "left_arrow":
 			fallthrough
@@ -92,31 +92,42 @@ func (l *Lexer) advance() {
 	l.currentIndex++
 }
 
-func (l *Lexer) readComment(program string) {
+func (l *Lexer) readComment() {
 	l.currentIndex++
-	for t := determineType(string(program[l.currentIndex])); t != "newline"; t = determineType(string(program[l.currentIndex])) {
+	for t := determineType(l.currentChar()); t != "newline"; t = determineType(l.currentChar()) {
 		l.currentIndex++
 	}
 }
 
-func (l *Lexer) peekTypeN(typeName string, program string) string {
+func (l *Lexer) peekTypeN(typeName string) string {
 	var currentString bytes.Buffer
-	for t := determineType(string(program[l.currentIndex])); t == typeName; t = determineType(string(program[l.currentIndex])) {
-		if l.currentIndex+1 >= len(program) {
-			currentString.WriteString(string(program[l.currentIndex]))
-			l.currentIndex++
+
+	for t := determineType(l.currentChar()); t == typeName; t = determineType(l.currentChar()) {
+		char := l.currentChar()
+
+		//we do this to avoid index out of range errors
+		if l.currentIndex+1 >= len(l.Program) {
+
+			currentString.WriteString(char)
+			l.advance()
+
 			return currentString.String()
 		}
-		currentString.WriteString(string(program[l.currentIndex]))
-		l.currentIndex++
+		currentString.WriteString(char)
+		l.advance()
 	}
+
 	return currentString.String()
 }
 
+func (l *Lexer) currentChar() string {
+	return string(l.Program[l.currentIndex])
+}
+
 func (l *Lexer) tagKeywords() {
-	for i := 0; i < len(l.Tokens); i++ {
-		if l.Tokens[i].Type == "character" {
-			l.Tokens[i].Type = getKeyword(&l.Tokens[i])
+	for i, token := range l.Tokens {
+		if token.Type == "character" {
+			l.Tokens[i].Type = getKeyword(&token)
 		}
 	}
 }

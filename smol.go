@@ -34,8 +34,8 @@ func (smol *Smol) RunFile(filename string) {
 
 //Run exectues a given script
 func (smol *Smol) Run(sourceCode string, filename string) {
-	l := lexer.NewLexer(filename)
-	l.Lex(sourceCode)
+	l := lexer.NewLexer(filename, sourceCode)
+	l.Lex()
 	p := ast.NewParser(filename)
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
@@ -48,8 +48,8 @@ func (smol *Smol) Run(sourceCode string, filename string) {
 //RunRepl is the same as Run except it allows you to pass our own interpreter so we can keep the state
 //of it after the line has been executed
 func (smol *Smol) RunRepl(sourceCode string, filename string, statefullInterpreter *interpreter.Interpreter) {
-	l := lexer.NewLexer(filename)
-	l.Lex(sourceCode)
+	l := lexer.NewLexer(filename, sourceCode)
+	l.Lex()
 	p := ast.NewParser(filename)
 
 	//Add an EOF token so semicolon errors dont index out of range
