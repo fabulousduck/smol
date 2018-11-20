@@ -1,60 +1,36 @@
 package lexer
 
+import (
+	"strings"
+)
+
 type typename map[string]string
 
 func determineType(character string) string {
-	chars := []string{
-		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-		"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_",
-		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-		"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+
+	usableChar := strings.ToLower(character)
+	types := map[string][]string{
+		"character":     []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "_"},
+		"integer":       []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+		"left_arrow":    []string{"<"},
+		"comma":         []string{","},
+		"right_arrow":   []string{">"},
+		"semicolon":     []string{";"},
+		"left_bracket":  []string{"["},
+		"right_bracket": []string{"]"},
+		"double_dot":    []string{":"},
+		"comment":       []string{"#"},
+		"newline":       []string{"\r", "\n"},
+		"tab":           []string{"\t"},
+		"space":         []string{" "},
 	}
 
-	symbols := typename{
-		"<": "LEFT_ARROW",
-		",": "COMMA",
-		">": "RIGHT_ARROW",
-		";": "SEMI_COLON",
-		"[": "LEFT_BRACKET",
-		"]": "RIGHT_BRACKET",
-		":": "DOUBLE_DOT",
+	for key, values := range types {
+		if contains(usableChar, values) {
+			return key
+		}
 	}
-
-	if character == "#" {
-		return "COMMENT"
-	}
-
-	escapeChars := typename{
-		"\r": "WIN_NEWLINE",
-		"\n": "UNIX_NEWLINE",
-		"\t": "TAB",
-	}
-
-	numbers := []string{
-		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-	}
-
-	if contains(character, chars) {
-		return "CHAR"
-	}
-
-	if val, ok := symbols[character]; ok {
-		return val
-	}
-
-	if val, ok := escapeChars[character]; ok {
-		return val
-	}
-
-	if contains(character, numbers) {
-		return "NUMB"
-	}
-
-	if character == " " {
-		return "SPACE"
-	}
-
-	return "UDEF"
+	return "undefined_symbol"
 }
 
 func contains(name string, list []string) bool {

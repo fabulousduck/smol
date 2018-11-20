@@ -227,7 +227,7 @@ func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
 			node, tokensConsumed := p.createFunctionCall(tokens, i)
 			i += tokensConsumed
 			nodes = append(nodes, node)
-		case "CHAR":
+		case "character":
 			node, tokensConsumed := p.createFunctionCall(tokens, i)
 			i += tokensConsumed
 			nodes = append(nodes, node)
@@ -269,7 +269,7 @@ func (p *Parser) createEOSStatement(tokens []lexer.Token, index int) (*Eos, int)
 	eos := new(Eos)
 	tokensConsumed := 0
 
-	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	body, consumed := p.Parse(tokens[index+tokensConsumed:])
@@ -283,11 +283,11 @@ func (p *Parser) createSwitchCase(tokens []lexer.Token, index int) (*SwitchCase,
 	sc := new(SwitchCase)
 	tokensConsumed := 0
 
-	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
 	sc.MatchValue = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	body, consumed := p.Parse(tokens[index+tokensConsumed:])
@@ -301,17 +301,17 @@ func (p *Parser) createSwitchStatement(tokens []lexer.Token, index int) (*Switch
 	st := new(SwitchStatement)
 	tokensConsumed := 0
 
-	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
 	st.MatchValue = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
+	p.expect([]string{"right_bracket"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	body, consumed := p.Parse(tokens[index+tokensConsumed:])
@@ -328,24 +328,24 @@ func (p *Parser) createComparisonHeader(tokens []lexer.Token, index int) (*Compa
 	ch.Operator = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
-	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
 	ch.LHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"COMMA"}, tokens[index+tokensConsumed])
+	p.expect([]string{"comma"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
 	ch.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
+	p.expect([]string{"right_bracket"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return ch, tokensConsumed
@@ -358,15 +358,15 @@ func (p *Parser) createMathStatement(tokens []lexer.Token, index int) (Node, int
 	ms.LHS = tokens[index].Value
 	tokensConsumed++
 
-	p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "string"}, tokens[index+tokensConsumed])
 	ms.MHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
 	ms.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return ms, tokensConsumed
@@ -377,7 +377,7 @@ func (p *Parser) createSingleWordStatement(tokens []lexer.Token, index int, t st
 	tokensConsumed := 0
 
 	s.LHS = t
-	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return s, tokensConsumed
@@ -386,16 +386,16 @@ func (p *Parser) createSingleWordStatement(tokens []lexer.Token, index int, t st
 func (p *Parser) createFunctionCall(tokens []lexer.Token, index int) (*FunctionCall, int) {
 	fc := new(FunctionCall)
 	tokensConsumed := 0
-	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
+	p.expect([]string{"string", "character"}, tokens[index+tokensConsumed])
 	fc.Name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
-	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "RIGHT_BRACKET"; currentToken = tokens[index+tokensConsumed] {
-		if currentToken.Type == "COMMA" {
-			p.expect([]string{"CHAR", "string", "NUMB"}, tokens[index+tokensConsumed+1])
+	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "right_bracket"; currentToken = tokens[index+tokensConsumed] {
+		if currentToken.Type == "comma" {
+			p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed+1])
 			tokensConsumed++
 			continue
 		}
@@ -404,7 +404,7 @@ func (p *Parser) createFunctionCall(tokens []lexer.Token, index int) (*FunctionC
 	}
 
 	tokensConsumed++
-	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 	return fc, tokensConsumed
 }
@@ -415,15 +415,15 @@ func (p *Parser) createSetStatement(tokens []lexer.Token, index int, t string) (
 
 	ss.LHS = t
 
-	p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "string"}, tokens[index+tokensConsumed])
 	ss.MHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"NUMB", "CHAR", "string"}, tokens[index+tokensConsumed])
+	p.expect([]string{"integer", "character", "string"}, tokens[index+tokensConsumed])
 	ss.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return ss, tokensConsumed
@@ -435,18 +435,18 @@ func (p *Parser) createStatement(tokens []lexer.Token, index int, t string) (*St
 
 	s.LHS = t
 
-	p.expect([]string{"string", "CHAR", "NUMB"}, tokens[index+tokensConsumed])
+	p.expect([]string{"string", "character", "integer"}, tokens[index+tokensConsumed])
 	s.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return s, tokensConsumed
 }
 
 func createLit(token lexer.Token) Node {
-	if token.Type == "NUMB" {
+	if token.Type == "integer" {
 		nm := new(NumLit)
 		nm.Value = token.Value
 		return nm
@@ -460,25 +460,25 @@ func (p *Parser) createLNR(tokens []lexer.Token, index int) (*Anb, int) {
 	anb := new(Anb)
 	tokensConsumed := 0
 
-	p.expect([]string{"LEFT_BRACKET"}, tokens[index+tokensConsumed])
+	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "integer", "string"}, tokens[index+tokensConsumed])
 
 	anb.LHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"COMMA"}, tokens[index+tokensConsumed])
+	p.expect([]string{"comma"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"CHAR", "NUMB", "string"}, tokens[index+tokensConsumed])
+	p.expect([]string{"character", "integer", "string"}, tokens[index+tokensConsumed])
 	anb.RHS = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"RIGHT_BRACKET"}, tokens[index+tokensConsumed])
+	p.expect([]string{"right_bracket"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 
 	return anb, tokensConsumed
@@ -487,20 +487,20 @@ func (p *Parser) createLNR(tokens []lexer.Token, index int) (*Anb, int) {
 func (p *Parser) createFunctionHeader(tokens []lexer.Token, index int) (*Function, int) {
 	f := new(Function)
 	tokensConsumed := 0
-	p.expect([]string{"string", "CHAR"}, tokens[index+tokensConsumed])
+	p.expect([]string{"string", "character"}, tokens[index+tokensConsumed])
 	f.Name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
-	p.expect([]string{"LEFT_ARROW", "DOUBLE_DOT"}, tokens[index+tokensConsumed])
-	if tokens[index+tokensConsumed].Type == "DOUBLE_DOT" {
+	p.expect([]string{"left_arrow", "double_dot"}, tokens[index+tokensConsumed])
+	if tokens[index+tokensConsumed].Type == "double_dot" {
 		tokensConsumed++
 		return f, tokensConsumed
 	}
 	tokensConsumed++
-	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "RIGHT_ARROW"; currentToken = tokens[index+tokensConsumed] {
-		p.expect([]string{"string", "CHAR", "COMMA"}, currentToken)
-		if currentToken.Type == "COMMA" {
-			p.expect([]string{"CHAR", "string"}, tokens[index+tokensConsumed+1])
+	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "right_arrow"; currentToken = tokens[index+tokensConsumed] {
+		p.expect([]string{"string", "character", "comma"}, currentToken)
+		if currentToken.Type == "comma" {
+			p.expect([]string{"character", "string"}, tokens[index+tokensConsumed+1])
 			tokensConsumed++
 			continue
 		}
@@ -508,7 +508,7 @@ func (p *Parser) createFunctionHeader(tokens []lexer.Token, index int) (*Functio
 		tokensConsumed++
 	}
 	tokensConsumed++
-	p.expect([]string{"DOUBLE_DOT"}, tokens[index+tokensConsumed])
+	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 	return f, tokensConsumed
 }
@@ -517,7 +517,7 @@ func (p *Parser) createVariable(tokens []lexer.Token, index int) (*Variable, int
 	variable := new(Variable)
 	tokensConsumed := 0
 	expectedNameTypes := []string{
-		"CHAR",
+		"character",
 		"string",
 	}
 
@@ -525,12 +525,12 @@ func (p *Parser) createVariable(tokens []lexer.Token, index int) (*Variable, int
 	variable.Name = tokens[index+tokensConsumed].Value
 	tokensConsumed++
 
-	expectedValueTypes := []string{"NUMB", "CHAR", "string"}
+	expectedValueTypes := []string{"integer", "character", "string"}
 	p.expect(expectedValueTypes, tokens[index+tokensConsumed])
 	variable.Value = createLit(tokens[index+tokensConsumed])
 	tokensConsumed++
 
-	p.expect([]string{"SEMICOLON"}, tokens[index+tokensConsumed])
+	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
 	tokensConsumed++
 	return variable, tokensConsumed
 }

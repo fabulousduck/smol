@@ -39,66 +39,64 @@ func (l *Lexer) Lex(sourceCode string) {
 		currTok.Type = determineType(currentChar)
 		appendToken := true
 		switch currTok.Type {
-		case "CHAR":
-			currTok.Value = l.peekTypeN("CHAR", sourceCode)
+		case "character":
+			currTok.Value = l.peekTypeN("character", sourceCode)
 			l.currentCol += len(currTok.Value)
-		case "NUMB":
-			currTok.Value = l.peekTypeN("NUMB", sourceCode)
+		case "integer":
+			currTok.Value = l.peekTypeN("integer", sourceCode)
 			l.currentCol += len(currTok.Value)
-		case "COMMENT":
+		case "comment":
 			appendToken = false
 			l.readComment(sourceCode)
 			l.currentCol = 0
-		case "LEFT_ARROW":
+		case "left_arrow":
 			currTok.Value = "<"
-			currTok.Type = "LEFT_ARROW"
+			currTok.Type = "left_arrow"
 			l.currentCol++
 			l.currentIndex++
-		case "RIGHT_ARROW":
+		case "right_arrow":
 			currTok.Value = ">"
-			currTok.Type = "RIGHT_ARROW"
+			currTok.Type = "right_arrow"
 			l.currentCol++
 			l.currentIndex++
-		case "COMMA":
+		case "comma":
 			currTok.Value = ","
-			currTok.Type = "COMMA"
+			currTok.Type = "comma"
 			l.currentCol++
 			l.currentIndex++
-		case "LEFT_BRACKET":
+		case "left_bracket":
 			currTok.Value = "["
-			currTok.Type = "LEFT_BRACKET"
+			currTok.Type = "left_bracket"
 			l.currentCol++
 			l.currentIndex++
-		case "RIGHT_BRACKET":
+		case "right_bracket":
 			currTok.Value = "]"
-			currTok.Type = "RIGHT_BRACKET"
+			currTok.Type = "right_bracket"
 			l.currentCol++
 			l.currentIndex++
-		case "DOUBLE_DOT":
+		case "double_dot":
 			currTok.Value = ":"
-			currTok.Type = "DOUBLE_DOT"
+			currTok.Type = "double_dot"
 			l.currentCol++
 			l.currentIndex++
-		case "SEMI_COLON":
+		case "semicolon":
 			currTok.Value = ";"
-			currTok.Type = "SEMICOLON"
+			currTok.Type = "semicolon"
 			l.currentCol++
 			l.currentIndex++
-		case "SPACE":
+		case "space":
 			l.currentCol++
 			l.currentIndex++
 			appendToken = false
-		case "UDEF":
+		case "undefined_symbol":
 			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
 			os.Exit(65)
-		case "WIN_NEWLINE":
-			fallthrough
-		case "UNIX_NEWLINE":
+		case "newline":
 			l.currentCol = 0
 			l.currentLine++
 			l.currentIndex++
 			appendToken = false
-		case "TAB":
+		case "tab":
 			l.currentCol++
 			l.currentIndex++
 			appendToken = false
@@ -113,14 +111,13 @@ func (l *Lexer) Lex(sourceCode string) {
 
 func (l *Lexer) readComment(program string) {
 	l.currentIndex++
-	for t := determineType(string(program[l.currentIndex])); t != "UNIX_NEWLINE" && t != "WIN_NEWLINE"; t = determineType(string(program[l.currentIndex])) {
+	for t := determineType(string(program[l.currentIndex])); t != "newline"; t = determineType(string(program[l.currentIndex])) {
 		l.currentIndex++
 	}
 }
 
 func (l *Lexer) peekTypeN(typeName string, program string) string {
 	var currentString bytes.Buffer
-
 	for t := determineType(string(program[l.currentIndex])); t == typeName; t = determineType(string(program[l.currentIndex])) {
 		if l.currentIndex+1 >= len(program) {
 			currentString.WriteString(string(program[l.currentIndex]))
@@ -135,7 +132,7 @@ func (l *Lexer) peekTypeN(typeName string, program string) string {
 
 func (l *Lexer) tagKeywords() {
 	for i := 0; i < len(l.Tokens); i++ {
-		if l.Tokens[i].Type == "CHAR" {
+		if l.Tokens[i].Type == "character" {
 			l.Tokens[i].Type = getKeyword(&l.Tokens[i])
 		}
 	}
