@@ -168,45 +168,45 @@ func NewParser(filename string) *Parser {
 //Parse takes a set of tokens and generates an AST from them
 func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
 	nodes := []Node{}
-	for i := 0; i < len(tokens); {
-		switch tokens[i].Type {
+	for totalTokensConsumed := 0; totalTokensConsumed < len(tokens); {
+		switch tokens[totalTokensConsumed].Type {
 		case "variable_assignment":
-			node, tokensConsumed := p.createVariable(tokens, i+1)
-			i += tokensConsumed + 1
+			node, tokensConsumed := p.createVariable(tokens, totalTokensConsumed+1)
+			totalTokensConsumed += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "function_definition":
-			node, tokensConsumed := p.createFunctionHeader(tokens, i+1)
-			i += tokensConsumed + 1
-			body, consumed := p.Parse(tokens[i:])
+			node, tokensConsumed := p.createFunctionHeader(tokens, totalTokensConsumed+1)
+			totalTokensConsumed += tokensConsumed + 1
+			body, consumed := p.Parse(tokens[totalTokensConsumed:])
 			node.Body = body
-			i += consumed
+			totalTokensConsumed += consumed
 			nodes = append(nodes, node)
 		case "left_not_right":
-			node, tokensConsumed := p.createLNR(tokens, i+1)
-			i += tokensConsumed + 1
-			body, consumed := p.Parse(tokens[i:])
+			node, tokensConsumed := p.createLNR(tokens, totalTokensConsumed+1)
+			totalTokensConsumed += tokensConsumed + 1
+			body, consumed := p.Parse(tokens[totalTokensConsumed:])
 			node.Body = body
-			i += consumed
+			totalTokensConsumed += consumed
 			nodes = append(nodes, node)
 		case "print_integer":
-			node, tokensConsumed := p.createStatement(tokens, i+1, "PRI")
-			i += tokensConsumed + 1
+			node, tokensConsumed := p.createStatement(tokens, totalTokensConsumed+1, "PRI")
+			totalTokensConsumed += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "print_break":
-			node, tokensConsumed := p.createSingleWordStatement(tokens, i+1, "BRK")
-			i += tokensConsumed + 1
+			node, tokensConsumed := p.createSingleWordStatement(tokens, totalTokensConsumed+1, "BRK")
+			totalTokensConsumed += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "print_ascii":
-			node, tokensConsumed := p.createStatement(tokens, i+1, "PRU")
-			i += tokensConsumed + 1
+			node, tokensConsumed := p.createStatement(tokens, totalTokensConsumed+1, "PRU")
+			totalTokensConsumed += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "increment_value":
-			node, tokensConsumed := p.createStatement(tokens, i+1, "INC")
-			i += tokensConsumed + 1
+			node, tokensConsumed := p.createStatement(tokens, totalTokensConsumed+1, "INC")
+			totalTokensConsumed += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "set_variable":
-			node, tokensConsumed := p.createSetStatement(tokens, i+1, "SET")
-			i += tokensConsumed + 1
+			node, tokensConsumed := p.createSetStatement(tokens, totalTokensConsumed+1, "SET")
+			totalTokensConsumed += tokensConsumed + 1
 			nodes = append(nodes, node)
 		case "addition":
 			fallthrough
@@ -217,19 +217,19 @@ func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
 		case "multiplication":
 			fallthrough
 		case "division":
-			node, tokensConsumed := p.createMathStatement(tokens, i)
-			i += tokensConsumed
+			node, tokensConsumed := p.createMathStatement(tokens, totalTokensConsumed)
+			totalTokensConsumed += tokensConsumed
 			nodes = append(nodes, node)
 		case "close_block":
-			i++
-			return nodes, i
+			totalTokensConsumed++
+			return nodes, totalTokensConsumed
 		case "string":
-			node, tokensConsumed := p.createFunctionCall(tokens, i)
-			i += tokensConsumed
+			node, tokensConsumed := p.createFunctionCall(tokens, totalTokensConsumed)
+			totalTokensConsumed += tokensConsumed
 			nodes = append(nodes, node)
 		case "character":
-			node, tokensConsumed := p.createFunctionCall(tokens, i)
-			i += tokensConsumed
+			node, tokensConsumed := p.createFunctionCall(tokens, totalTokensConsumed)
+			totalTokensConsumed += tokensConsumed
 			nodes = append(nodes, node)
 		case "equals":
 			fallthrough
@@ -238,24 +238,24 @@ func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
 		case "less_than":
 			fallthrough
 		case "greater_than":
-			node, tokensConsumed := p.createComparisonHeader(tokens, i)
-			i += tokensConsumed
-			body, consumed := p.Parse(tokens[i:])
+			node, tokensConsumed := p.createComparisonHeader(tokens, totalTokensConsumed)
+			totalTokensConsumed += tokensConsumed
+			body, consumed := p.Parse(tokens[totalTokensConsumed:])
 			node.Body = body
-			i += consumed
+			totalTokensConsumed += consumed
 			nodes = append(nodes, node)
 		case "switch":
-			node, tokensConsumed := p.createSwitchStatement(tokens, i+1)
-			i += tokensConsumed
+			node, tokensConsumed := p.createSwitchStatement(tokens, totalTokensConsumed+1)
+			totalTokensConsumed += tokensConsumed
 			nodes = append(nodes, node)
 		case "case":
-			node, tokensConsumed := p.createSwitchCase(tokens, i+1)
+			node, tokensConsumed := p.createSwitchCase(tokens, totalTokensConsumed+1)
 			nodes = append(nodes, node)
-			i += tokensConsumed
+			totalTokensConsumed += tokensConsumed
 		case "end_of_switch":
-			node, tokensConsumed := p.createEOSStatement(tokens, i+1)
+			node, tokensConsumed := p.createEOSStatement(tokens, totalTokensConsumed+1)
 			nodes = append(nodes, node)
-			i += tokensConsumed
+			totalTokensConsumed += tokensConsumed
 		default:
 			//TODO: make an error for this
 			fmt.Println("Unknown token type found.")
