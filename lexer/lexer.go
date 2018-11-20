@@ -28,15 +28,20 @@ func NewLexer(filename string) *Lexer {
 	return l
 }
 
+func newToken(line int, col int, value string) *Token {
+	t := new(Token)
+	t.Line = line
+	t.Col = col
+	t.Type = determineType(value)
+	t.Value = value
+	return t
+}
+
 //Lex takes a sourcecode string and transforms it into usable tokens to build an AST with
 func (l *Lexer) Lex(sourceCode string) {
 
 	for l.currentIndex < len(sourceCode) {
-		currentChar := string(sourceCode[l.currentIndex])
-		currTok := new(Token)
-		currTok.Line = l.currentLine
-		currTok.Col = l.currentCol
-		currTok.Type = determineType(currentChar)
+		currTok := newToken(l.currentLine, l.currentCol, string(sourceCode[l.currentIndex]))
 		appendToken := true
 		switch currTok.Type {
 		case "character":
@@ -62,10 +67,7 @@ func (l *Lexer) Lex(sourceCode string) {
 		case "double_dot":
 			fallthrough
 		case "semicolon":
-			fallthrough
-		case "space":
 			l.advance()
-			appendToken = false
 		case "undefined_symbol":
 			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
 			os.Exit(65)
@@ -73,7 +75,7 @@ func (l *Lexer) Lex(sourceCode string) {
 			l.currentCol = 0
 			l.advance()
 			appendToken = false
-		case "tab":
+		case "ignoreable":
 			l.advance()
 			appendToken = false
 		}

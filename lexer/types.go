@@ -21,8 +21,7 @@ func determineType(character string) string {
 		"double_dot":    []string{":"},
 		"comment":       []string{"#"},
 		"newline":       []string{"\r", "\n"},
-		"tab":           []string{"\t"},
-		"space":         []string{" "},
+		"ignoreable":    []string{"\t", " "},
 	}
 
 	for key, values := range types {
