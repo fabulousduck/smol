@@ -50,55 +50,31 @@ func (l *Lexer) Lex(sourceCode string) {
 			l.readComment(sourceCode)
 			l.currentCol = 0
 		case "left_arrow":
-			currTok.Value = "<"
-			currTok.Type = "left_arrow"
-			l.currentCol++
-			l.currentIndex++
+			fallthrough
 		case "right_arrow":
-			currTok.Value = ">"
-			currTok.Type = "right_arrow"
-			l.currentCol++
-			l.currentIndex++
+			fallthrough
 		case "comma":
-			currTok.Value = ","
-			currTok.Type = "comma"
-			l.currentCol++
-			l.currentIndex++
+			fallthrough
 		case "left_bracket":
-			currTok.Value = "["
-			currTok.Type = "left_bracket"
-			l.currentCol++
-			l.currentIndex++
+			fallthrough
 		case "right_bracket":
-			currTok.Value = "]"
-			currTok.Type = "right_bracket"
-			l.currentCol++
-			l.currentIndex++
+			fallthrough
 		case "double_dot":
-			currTok.Value = ":"
-			currTok.Type = "double_dot"
-			l.currentCol++
-			l.currentIndex++
+			fallthrough
 		case "semicolon":
-			currTok.Value = ";"
-			currTok.Type = "semicolon"
-			l.currentCol++
-			l.currentIndex++
+			l.advance()
 		case "space":
-			l.currentCol++
-			l.currentIndex++
+			l.advance()
 			appendToken = false
 		case "undefined_symbol":
 			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
 			os.Exit(65)
 		case "newline":
 			l.currentCol = 0
-			l.currentLine++
-			l.currentIndex++
+			l.advance()
 			appendToken = false
 		case "tab":
-			l.currentCol++
-			l.currentIndex++
+			l.advance()
 			appendToken = false
 		}
 
@@ -107,6 +83,11 @@ func (l *Lexer) Lex(sourceCode string) {
 		}
 	}
 	l.tagKeywords()
+}
+
+func (l *Lexer) advance() {
+	l.currentCol++
+	l.currentIndex++
 }
 
 func (l *Lexer) readComment(program string) {
