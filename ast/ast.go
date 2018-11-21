@@ -251,8 +251,7 @@ func (p *Parser) createEOSStatement() *Eos {
 	eosParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
 	body, consumed := eosParser.Parse()
 	eos.Body = body
-	//this used to be 	tokensConsumed += consumed + 1
-	//if this breaks, we need to figure out why the +1 is there
+
 	p.advanceN(consumed)
 
 	return eos
@@ -271,8 +270,7 @@ func (p *Parser) createSwitchCase() *SwitchCase {
 	switchParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
 	body, consumed := switchParser.Parse()
 	sc.Body = body
-	//this used to be 	tokensConsumed += consumed + 1
-	//if this breaks, we need to figure out why the +1 is there
+
 	p.advanceN(consumed)
 
 	return sc
