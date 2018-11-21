@@ -36,10 +36,10 @@ func (smol *Smol) RunFile(filename string) {
 func (smol *Smol) Run(sourceCode string, filename string) {
 	l := lexer.NewLexer(filename, sourceCode)
 	l.Lex()
-	p := ast.NewParser(filename)
+	p := ast.NewParser(filename, l.Tokens)
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
-	p.Ast, _ = p.Parse(l.Tokens)
+	p.Ast, _ = p.Parse()
 
 	i := interpreter.NewInterpreter()
 	i.Interpret(p.Ast)
@@ -50,15 +50,15 @@ func (smol *Smol) Run(sourceCode string, filename string) {
 func (smol *Smol) RunRepl(sourceCode string, filename string, statefullInterpreter *interpreter.Interpreter) {
 	l := lexer.NewLexer(filename, sourceCode)
 	l.Lex()
-	p := ast.NewParser(filename)
+	p := ast.NewParser(filename, l.Tokens)
 
 	//Add an EOF token so semicolon errors dont index out of range
-	l.Tokens = append(l.Tokens, lexer.Token{
+	p.Tokens = append(l.Tokens, lexer.Token{
 		Value: "EOF",
 		Type:  "EOF",
 	})
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
-	p.Ast, _ = p.Parse(l.Tokens)
+	p.Ast, _ = p.Parse()
 	statefullInterpreter.Interpret(p.Ast)
 }

@@ -108,7 +108,6 @@ func (c Comparison) GetNodeName() string {
 
 //SetStatement is used when a value needs to be set to a variable. Instructions that could make use of this are SET
 type SetStatement struct {
-	LHS string
 	MHS Node
 	RHS Node
 }
@@ -154,60 +153,50 @@ func (fc FunctionCall) GetNodeName() string {
 
 //Parser contains the final AST and forms a base for all ast generating functions
 type Parser struct {
-	Ast      []Node
-	Filename string
+	Tokens         []lexer.Token
+	Ast            []Node
+	Filename       string
+	TokensConsumed int
 }
 
 //NewParser returns a new Parser instance with the given file
-func NewParser(filename string) *Parser {
+func NewParser(filename string, tokens []lexer.Token) *Parser {
 	p := new(Parser)
 	p.Filename = filename
+	p.TokensConsumed = 0
+	p.Tokens = tokens
 	return p
 }
 
 //Parse takes a set of tokens and generates an AST from them
-func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
+func (p *Parser) Parse() ([]Node, int) {
 	nodes := []Node{}
-	for totalTokensConsumed := 0; totalTokensConsumed < len(tokens); {
-		switch tokens[totalTokensConsumed].Type {
+	for p.TokensConsumed < len(p.Tokens) {
+		switch p.currentToken().Type {
 		case "variable_assignment":
-			node, tokensConsumed := p.createVariable(tokens, totalTokensConsumed+1)
-			totalTokensConsumed += tokensConsumed + 1
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createVariable())
 		case "function_definition":
-			node, tokensConsumed := p.createFunctionHeader(tokens, totalTokensConsumed+1)
-			totalTokensConsumed += tokensConsumed + 1
-			body, consumed := p.Parse(tokens[totalTokensConsumed:])
-			node.Body = body
-			totalTokensConsumed += consumed
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createFunction())
 		case "left_not_right":
-			node, tokensConsumed := p.createLNR(tokens, totalTokensConsumed+1)
-			totalTokensConsumed += tokensConsumed + 1
-			body, consumed := p.Parse(tokens[totalTokensConsumed:])
-			node.Body = body
-			totalTokensConsumed += consumed
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createLNR())
 		case "print_integer":
-			node, tokensConsumed := p.createStatement(tokens, totalTokensConsumed+1, "PRI")
-			totalTokensConsumed += tokensConsumed + 1
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createStatement("PRI"))
 		case "print_break":
-			node, tokensConsumed := p.createSingleWordStatement(tokens, totalTokensConsumed+1, "BRK")
-			totalTokensConsumed += tokensConsumed + 1
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createSingleWordStatement("BRK"))
 		case "print_ascii":
-			node, tokensConsumed := p.createStatement(tokens, totalTokensConsumed+1, "PRU")
-			totalTokensConsumed += tokensConsumed + 1
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createStatement("PRU"))
 		case "increment_value":
-			node, tokensConsumed := p.createStatement(tokens, totalTokensConsumed+1, "INC")
-			totalTokensConsumed += tokensConsumed + 1
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createStatement("INC"))
 		case "set_variable":
-			node, tokensConsumed := p.createSetStatement(tokens, totalTokensConsumed+1, "SET")
-			totalTokensConsumed += tokensConsumed + 1
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createSetStatement())
 		case "addition":
 			fallthrough
 		case "subtraction":
@@ -217,20 +206,14 @@ func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
 		case "multiplication":
 			fallthrough
 		case "division":
-			node, tokensConsumed := p.createMathStatement(tokens, totalTokensConsumed)
-			totalTokensConsumed += tokensConsumed
-			nodes = append(nodes, node)
+			nodes = append(nodes, p.createMathStatement())
 		case "close_block":
-			totalTokensConsumed++
-			return nodes, totalTokensConsumed
-		case "string":
-			node, tokensConsumed := p.createFunctionCall(tokens, totalTokensConsumed)
-			totalTokensConsumed += tokensConsumed
-			nodes = append(nodes, node)
+			p.advance()
+			return nodes, p.TokensConsumed
+		case "string": //we are allowed to assume a character or string means a function call since every thing else gets tagged as either a variable or statement
+			fallthrough
 		case "character":
-			node, tokensConsumed := p.createFunctionCall(tokens, totalTokensConsumed)
-			totalTokensConsumed += tokensConsumed
-			nodes = append(nodes, node)
+			nodes = append(nodes, p.createFunctionCall())
 		case "equals":
 			fallthrough
 		case "not_equals":
@@ -238,211 +221,209 @@ func (p *Parser) Parse(tokens []lexer.Token) ([]Node, int) {
 		case "less_than":
 			fallthrough
 		case "greater_than":
-			node, tokensConsumed := p.createComparisonHeader(tokens, totalTokensConsumed)
-			totalTokensConsumed += tokensConsumed
-			body, consumed := p.Parse(tokens[totalTokensConsumed:])
-			node.Body = body
-			totalTokensConsumed += consumed
-			nodes = append(nodes, node)
+			nodes = append(nodes, p.createComparison())
 		case "switch":
-			node, tokensConsumed := p.createSwitchStatement(tokens, totalTokensConsumed+1)
-			totalTokensConsumed += tokensConsumed
-			nodes = append(nodes, node)
+			p.advance()
+			nodes = append(nodes, p.createSwitchStatement())
 		case "case":
-			node, tokensConsumed := p.createSwitchCase(tokens, totalTokensConsumed+1)
-			nodes = append(nodes, node)
-			totalTokensConsumed += tokensConsumed
+			p.advance()
+			nodes = append(nodes, p.createSwitchCase())
 		case "end_of_switch":
-			node, tokensConsumed := p.createEOSStatement(tokens, totalTokensConsumed+1)
-			nodes = append(nodes, node)
-			totalTokensConsumed += tokensConsumed
+			p.advance()
+			nodes = append(nodes, p.createEOSStatement())
+
 		default:
 			//TODO: make an error for this
 			fmt.Println("Unknown token type found.")
 		}
+
 	}
 
-	return nodes, len(tokens)
+	return nodes, p.TokensConsumed
 }
 
-func (p *Parser) createEOSStatement(tokens []lexer.Token, index int) (*Eos, int) {
+func (p *Parser) createEOSStatement() *Eos {
 	eos := new(Eos)
-	tokensConsumed := 0
 
-	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
 
-	body, consumed := p.Parse(tokens[index+tokensConsumed:])
+	eosParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+	body, consumed := eosParser.Parse()
 	eos.Body = body
-	tokensConsumed += consumed + 1
+	//this used to be 	tokensConsumed += consumed + 1
+	//if this breaks, we need to figure out why the +1 is there
+	p.advanceN(consumed)
 
-	return eos, tokensConsumed
+	return eos
 }
 
-func (p *Parser) createSwitchCase(tokens []lexer.Token, index int) (*SwitchCase, int) {
+func (p *Parser) createSwitchCase() *SwitchCase {
 	sc := new(SwitchCase)
-	tokensConsumed := 0
 
-	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
-	sc.MatchValue = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "string", "integer"})
+	sc.MatchValue = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
 
-	body, consumed := p.Parse(tokens[index+tokensConsumed:])
+	switchParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+	body, consumed := switchParser.Parse()
 	sc.Body = body
-	tokensConsumed += consumed + 1
+	//this used to be 	tokensConsumed += consumed + 1
+	//if this breaks, we need to figure out why the +1 is there
+	p.advanceN(consumed)
 
-	return sc, tokensConsumed
+	return sc
 }
 
-func (p *Parser) createSwitchStatement(tokens []lexer.Token, index int) (*SwitchStatement, int) {
+func (p *Parser) createSwitchStatement() *SwitchStatement {
 	st := new(SwitchStatement)
-	tokensConsumed := 0
 
-	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
 
-	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
-	st.MatchValue = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "string", "integer"})
+	st.MatchValue = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"right_bracket"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"right_bracket"})
+	p.advance()
 
-	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
 
-	body, consumed := p.Parse(tokens[index+tokensConsumed:])
+	switchParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := switchParser.Parse()
 	st.Cases = body
-	tokensConsumed += consumed
+	p.advanceN(consumed)
 
-	return st, tokensConsumed
+	return st
 }
 
-func (p *Parser) createComparisonHeader(tokens []lexer.Token, index int) (*Comparison, int) {
+func (p *Parser) createComparison() *Comparison {
 	ch := new(Comparison)
-	tokensConsumed := 0
 
-	ch.Operator = tokens[index+tokensConsumed].Value
-	tokensConsumed++
+	ch.Operator = p.currentToken().Value
+	p.advance()
 
-	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
 
-	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
-	ch.LHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ch.LHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"comma"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"comma"})
+	p.advance()
 
-	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
-	ch.RHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ch.RHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"right_bracket"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"right_bracket"})
+	p.advance()
 
-	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
 
-	return ch, tokensConsumed
+	comparisonParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := comparisonParser.Parse()
+	ch.Body = body
+	p.advanceN(consumed)
+
+	return ch
 }
 
-func (p *Parser) createMathStatement(tokens []lexer.Token, index int) (Node, int) {
+func (p *Parser) createMathStatement() *MathStatement {
 	ms := new(MathStatement)
-	tokensConsumed := 0
 
-	ms.LHS = tokens[index].Value
-	tokensConsumed++
+	ms.LHS = p.currentToken().Value
+	p.advance()
 
-	p.expect([]string{"character", "string"}, tokens[index+tokensConsumed])
-	ms.MHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "string"})
+	ms.MHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed])
-	ms.RHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ms.RHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
 
-	return ms, tokensConsumed
+	return ms
 }
 
-func (p *Parser) createSingleWordStatement(tokens []lexer.Token, index int, t string) (*Statement, int) {
+func (p *Parser) createSingleWordStatement(lhs string) *Statement {
 	s := new(Statement)
-	tokensConsumed := 0
 
-	s.LHS = t
-	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	s.LHS = lhs
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
 
-	return s, tokensConsumed
+	return s
 }
 
-func (p *Parser) createFunctionCall(tokens []lexer.Token, index int) (*FunctionCall, int) {
+func (p *Parser) createFunctionCall() *FunctionCall {
 	fc := new(FunctionCall)
-	tokensConsumed := 0
-	p.expect([]string{"string", "character"}, tokens[index+tokensConsumed])
-	fc.Name = tokens[index+tokensConsumed].Value
-	tokensConsumed++
+	p.expectCurrent([]string{"string", "character"})
+	fc.Name = p.currentToken().Value
+	p.advance()
 
-	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
 
-	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "right_bracket"; currentToken = tokens[index+tokensConsumed] {
+	for currentToken := p.currentToken(); currentToken.Type != "right_bracket"; currentToken = p.currentToken() {
 		if currentToken.Type == "comma" {
-			p.expect([]string{"character", "string", "integer"}, tokens[index+tokensConsumed+1])
-			tokensConsumed++
+			p.expectNext([]string{"character", "string", "integer"})
+			p.advance()
 			continue
 		}
 		fc.Args = append(fc.Args, currentToken.Value)
-		tokensConsumed++
+		p.advance()
 	}
 
-	tokensConsumed++
-	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
-	tokensConsumed++
-	return fc, tokensConsumed
+	//Todo: figure out why this advance needs to be here
+	p.advance()
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+	return fc
 }
 
-func (p *Parser) createSetStatement(tokens []lexer.Token, index int, t string) (*SetStatement, int) {
+func (p *Parser) createSetStatement() *SetStatement {
 	ss := new(SetStatement)
-	tokensConsumed := 0
 
-	ss.LHS = t
+	p.expectCurrent([]string{"character", "string"})
+	ss.MHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"character", "string"}, tokens[index+tokensConsumed])
-	ss.MHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"integer", "character", "string"})
+	ss.RHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"integer", "character", "string"}, tokens[index+tokensConsumed])
-	ss.RHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
 
-	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
-	tokensConsumed++
-
-	return ss, tokensConsumed
+	return ss
 }
 
-func (p *Parser) createStatement(tokens []lexer.Token, index int, t string) (*Statement, int) {
+func (p *Parser) createStatement(lhs string) *Statement {
 	s := new(Statement)
-	tokensConsumed := 0
 
-	s.LHS = t
+	s.LHS = lhs
 
-	p.expect([]string{"string", "character", "integer"}, tokens[index+tokensConsumed])
-	s.RHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"string", "character", "integer"})
+	s.RHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
 
-	return s, tokensConsumed
+	return s
 }
 
 func createLit(token lexer.Token) Node {
@@ -456,88 +437,126 @@ func createLit(token lexer.Token) Node {
 	return sv
 }
 
-func (p *Parser) createLNR(tokens []lexer.Token, index int) (*Anb, int) {
+func (p *Parser) createLNR() *Anb {
 	anb := new(Anb)
-	tokensConsumed := 0
 
-	p.expect([]string{"left_bracket"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
 
-	p.expect([]string{"character", "integer", "string"}, tokens[index+tokensConsumed])
+	p.expectCurrent([]string{"character", "integer", "string"})
 
-	anb.LHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	anb.LHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"comma"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"comma"})
+	p.advance()
 
-	p.expect([]string{"character", "integer", "string"}, tokens[index+tokensConsumed])
-	anb.RHS = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "integer", "string"})
+	anb.RHS = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"right_bracket"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"right_bracket"})
+	p.advance()
 
-	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
 
-	return anb, tokensConsumed
+	anbParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := anbParser.Parse()
+	anb.Body = body
+	p.advanceN(consumed)
+
+	return anb
 }
 
-func (p *Parser) createFunctionHeader(tokens []lexer.Token, index int) (*Function, int) {
+func (p *Parser) createFunction() *Function {
 	f := new(Function)
-	tokensConsumed := 0
-	p.expect([]string{"string", "character"}, tokens[index+tokensConsumed])
-	f.Name = tokens[index+tokensConsumed].Value
-	tokensConsumed++
 
-	p.expect([]string{"left_arrow", "double_dot"}, tokens[index+tokensConsumed])
-	if tokens[index+tokensConsumed].Type == "double_dot" {
-		tokensConsumed++
-		return f, tokensConsumed
+	p.expectCurrent([]string{"string", "character"})
+	f.Name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"left_arrow", "double_dot"})
+	if p.currentToken().Type == "double_dot" {
+		p.advance()
+		return f
 	}
-	tokensConsumed++
-	for currentToken := tokens[index+tokensConsumed]; currentToken.Type != "right_arrow"; currentToken = tokens[index+tokensConsumed] {
-		p.expect([]string{"string", "character", "comma"}, currentToken)
+	p.advance()
+
+	for currentToken := p.currentToken(); currentToken.Type != "right_arrow"; currentToken = p.currentToken() {
+		p.expectCurrent([]string{"string", "character", "comma"})
+
+		//we expect there to be another parameter when we see a comma
 		if currentToken.Type == "comma" {
-			p.expect([]string{"character", "string"}, tokens[index+tokensConsumed+1])
-			tokensConsumed++
+			p.expectNext([]string{"character", "string"})
+			p.advance()
 			continue
 		}
+
 		f.Params = append(f.Params, currentToken.Value)
-		tokensConsumed++
+		p.advance()
+
 	}
-	tokensConsumed++
-	p.expect([]string{"double_dot"}, tokens[index+tokensConsumed])
-	tokensConsumed++
-	return f, tokensConsumed
+
+	p.advance()
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	functionParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := functionParser.Parse()
+	f.Body = body
+	p.advanceN(consumed)
+
+	return f
 }
 
-func (p *Parser) createVariable(tokens []lexer.Token, index int) (*Variable, int) {
+func (p *Parser) createVariable() *Variable {
 	variable := new(Variable)
-	tokensConsumed := 0
-	expectedNameTypes := []string{
-		"character",
-		"string",
-	}
 
-	p.expect(expectedNameTypes, tokens[index+tokensConsumed])
-	variable.Name = tokens[index+tokensConsumed].Value
-	tokensConsumed++
+	p.expectCurrent([]string{"character", "string"})
+	variable.Name = p.currentToken().Value
+	p.advance()
 
-	expectedValueTypes := []string{"integer", "character", "string"}
-	p.expect(expectedValueTypes, tokens[index+tokensConsumed])
-	variable.Value = createLit(tokens[index+tokensConsumed])
-	tokensConsumed++
+	p.expectCurrent([]string{"integer", "character", "string"})
+	variable.Value = createLit(p.currentToken())
+	p.advance()
 
-	p.expect([]string{"semicolon"}, tokens[index+tokensConsumed])
-	tokensConsumed++
-	return variable, tokensConsumed
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+	return variable
 }
 
-func (p *Parser) expect(expectedValues []string, token lexer.Token) {
-	if !types.Contains(token.Type, expectedValues) {
-		lexer.ThrowSemanticError(&token, expectedValues, p.Filename)
+func (p *Parser) expectCurrent(expectedValues []string) {
+	currentToken := p.currentToken()
+	if !types.Contains(currentToken.Type, expectedValues) {
+
+		lexer.ThrowSemanticError(&currentToken, expectedValues, p.Filename)
 		os.Exit(65)
 	}
+}
+
+func (p *Parser) expectNext(expectedValues []string) {
+	nextToken := p.nextToken()
+	if !types.Contains(nextToken.Type, expectedValues) {
+		lexer.ThrowSemanticError(&nextToken, expectedValues, p.Filename)
+		os.Exit(65)
+	}
+}
+
+func (p *Parser) currentToken() lexer.Token {
+	return p.Tokens[p.TokensConsumed]
+}
+
+func (p *Parser) nextToken() lexer.Token {
+	return p.Tokens[p.TokensConsumed+1]
+}
+
+func (p *Parser) advance() {
+	p.TokensConsumed++
+}
+
+func (p *Parser) advanceN(n int) {
+	p.TokensConsumed += n
 }
