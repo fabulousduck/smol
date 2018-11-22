@@ -231,7 +231,8 @@ func (p *Parser) Parse() ([]Node, int) {
 		case "end_of_switch":
 			p.advance()
 			nodes = append(nodes, p.createEOSStatement())
-
+		case "end_of_file":
+			return nodes, p.TokensConsumed
 		default:
 			//TODO: make an error for this
 			fmt.Println("Unknown token type found.")

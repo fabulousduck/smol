@@ -54,8 +54,8 @@ func (smol *Smol) RunRepl(sourceCode string, filename string, statefullInterpret
 
 	//Add an EOF token so semicolon errors dont index out of range
 	p.Tokens = append(l.Tokens, lexer.Token{
-		Value: "EOF",
-		Type:  "EOF",
+		Value: "end_of_file",
+		Type:  "end_of_file",
 	})
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
