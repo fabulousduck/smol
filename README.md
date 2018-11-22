@@ -177,7 +177,7 @@ Example:
 MEM A 30;
 MEM B 10;
 
-SWT[B]: #SWiTch
+SWT[B]: #Switch
     CAS 10: #case
         PRI 700;
         BRK;
