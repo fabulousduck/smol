@@ -144,7 +144,7 @@ func (v Variable) GetNodeName() string {
 //FunctionCall specifies a function call and the arguments given
 type FunctionCall struct {
 	Name string
-	Args []string
+	Args []Node
 }
 
 func (fc FunctionCall) GetNodeName() string {
@@ -368,6 +368,7 @@ func (p *Parser) createSingleWordStatement(lhs string) *Statement {
 
 func (p *Parser) createFunctionCall() *FunctionCall {
 	fc := new(FunctionCall)
+
 	p.expectCurrent([]string{"string", "character"})
 	fc.Name = p.currentToken().Value
 	p.advance()
@@ -381,7 +382,8 @@ func (p *Parser) createFunctionCall() *FunctionCall {
 			p.advance()
 			continue
 		}
-		fc.Args = append(fc.Args, currentToken.Value)
+
+		fc.Args = append(fc.Args, createLit(currentToken))
 		p.advance()
 	}
 
@@ -490,6 +492,10 @@ func (p *Parser) createFunction() *Function {
 			p.expectNext([]string{"character", "string"})
 			p.advance()
 			continue
+		}
+
+		if currentToken.Type == "string" || currentToken.Type == "character" {
+
 		}
 
 		f.Params = append(f.Params, currentToken.Value)

@@ -8,7 +8,6 @@ import (
 
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
-	"github.com/fabulousduck/smol/lexer"
 )
 
 type tuple struct {
@@ -144,24 +143,15 @@ func (i *Interpreter) execComparison(cm *ast.Comparison) {
 
 func (i *Interpreter) execMathStatement(ms *ast.MathStatement) {
 	operator := ms.LHS
+
 	if ms.MHS.GetNodeName() != "statVar" {
 		errors.MathInvalidReceiverError()
 	}
 
-	receiverVariableName := ms.MHS.(*ast.StatVar).Value
-	receiverVariableScopeLevel, receiverVariableIndex := i.Stacks.find(receiverVariableName)
-	receiverVariableValue := i.Stacks[receiverVariableScopeLevel][receiverVariableIndex].value
-	result := ""
-	if ms.RHS.GetNodeName() == "statVar" {
-		scopeLevel, index := i.Stacks.find(ms.RHS.(*ast.StatVar).Value)
-		RHS := i.Stacks[scopeLevel][index].value
-		result = evalMathExpression(operator, receiverVariableValue, RHS)
-	} else {
-		RHS := ms.RHS.(*ast.NumLit).Value
-		result = evalMathExpression(operator, receiverVariableValue, RHS)
-	}
+	receiverVariable := i.Stacks.resolveVariable(ms.MHS)
+	combinatorValue := i.Stacks.resolveValue(ms.RHS)
 
-	i.Stacks.set(receiverVariableScopeLevel, receiverVariableIndex, result)
+	i.Stacks.set(receiverVariable.key, evalMathExpression(operator, receiverVariable.value, combinatorValue))
 
 }
 
@@ -191,38 +181,36 @@ func (i *Interpreter) setVariableValue(ss *ast.SetStatement) {
 		os.Exit(65)
 	}
 
-	scopeLevel, index := i.Stacks.find(ss.MHS.(*ast.StatVar).Value)
-	if ss.RHS.GetNodeName() == "statVar" {
-		rhsScopeLevel, rhsIndex := i.Stacks.find(ss.RHS.(*ast.StatVar).Value)
-		i.Stacks[scopeLevel][index].value = i.Stacks[rhsScopeLevel][rhsIndex].value
-		return
-	}
-	i.Stacks[scopeLevel][index].value = ss.RHS.(*ast.NumLit).Value
+	receiverVariable := i.Stacks.resolveVariable(ss.MHS)
+	rhs := i.Stacks.resolveValue(ss.RHS)
+
+	i.Stacks.set(receiverVariable.key, rhs)
 
 }
 
 func (i *Interpreter) execFunctionCall(fc *ast.FunctionCall) {
-	functionDecl := i.Heap[i.Heap.find(fc.Name)]
-	if len(fc.Args) != len(functionDecl.Params) {
+	functionDecl := i.Heap.resolveFunction(fc.Name)
 
+	if len(fc.Args) != len(functionDecl.Params) {
 		errors.IncorrectFunctionParamCountError(functionDecl.Name, len(fc.Args), len(functionDecl.Params))
 		os.Exit(65)
 		return
 	}
+
 	beforeScopeLevel := len(i.Stacks)
 	scopedStack := stack{}
-	for j := 0; j < len(functionDecl.Params); j++ {
 
-		//if the value given is a variable, resolve it
-		if lexer.DetermineStringType(fc.Args[j]) == "character" {
-			scopeLevel, index := i.Stacks.find(fc.Args[j])
-			value := i.Stacks[scopeLevel][index].value
-			scopedStack = append(scopedStack, &tuple{key: functionDecl.Params[j], value: value})
-			continue
+	for paramListIndex, param := range functionDecl.Params {
+
+		if ast.NodeIsVariable(fc.Args[paramListIndex]) {
+			scopedStack = append(scopedStack, i.Stacks.resolveVariable(fc.Args[paramListIndex]))
+		} else {
+			scopedStack = append(scopedStack, &tuple{key: param, value: fc.Args[paramListIndex].(*ast.NumLit).Value})
 		}
-
-		scopedStack = append(scopedStack, &tuple{key: functionDecl.Params[j], value: fc.Args[j]})
 	}
+
+	//left off here refactoring
+
 	i.Stacks = append(i.Stacks, scopedStack)
 	i.Interpret(functionDecl.Body)
 	i.Stacks = i.Stacks[:beforeScopeLevel]
@@ -235,40 +223,24 @@ func (i *Interpreter) execFunctionDecl(f *ast.Function) {
 func (i *Interpreter) stackAlloc(scopeLevel int, v *ast.Variable) {
 	stackTuple := new(tuple)
 	stackTuple.key = v.Name
-	if v.Value.GetNodeName() == "statVar" {
-		scopeLevel, index := i.Stacks.find(v.Value.(*ast.StatVar).Value)
-		stackTuple.value = i.Stacks[scopeLevel][index].value
-	} else {
-		stackTuple.value = v.Value.(*ast.NumLit).Value
-	}
+
+	stackTuple.value = i.Stacks.resolveValue(v.Value)
+
 	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel], stackTuple)
 }
 
 func (i *Interpreter) execANB(anb *ast.Anb) {
-	var LHS *string
-	var RHS *string
+	LHS := i.Stacks.resolvePtrValue(anb.LHS)
+	RHS := i.Stacks.resolvePtrValue(anb.RHS)
 
-	if anb.LHS.GetNodeName() == "statVar" {
-		scopeLevel, index := i.Stacks.find(anb.LHS.(*ast.StatVar).Value)
-		LHS = &i.Stacks[scopeLevel][index].value
-	} else {
-		LHS = &anb.LHS.(*ast.NumLit).Value
-	}
-
-	if anb.RHS.GetNodeName() == "statVar" {
-		scopeLevel, index := i.Stacks.find(anb.RHS.(*ast.StatVar).Value)
-		RHS = &i.Stacks[scopeLevel][index].value
-	} else {
-		RHS = &anb.RHS.(*ast.NumLit).Value
-	}
-	scopedStack := stack{}
-	i.Stacks = append(i.Stacks, scopedStack)
+	i.Stacks = append(i.Stacks, stack{})
 	scopeLevel := len(i.Stacks)
 	v, _ := strconv.Atoi(*LHS)
 	n, _ := strconv.Atoi(*RHS)
 	for v != n {
 
 		i.Interpret(anb.Body)
+		//check if it works without htis
 		v, _ = strconv.Atoi(*LHS)
 		n, _ = strconv.Atoi(*RHS)
 	}
@@ -282,26 +254,10 @@ func (i *Interpreter) execStatement(s *ast.Statement) {
 		fmt.Printf("\n")
 		return
 	case "PRI":
-		if s.RHS.GetNodeName() == "statVar" {
-			RHS := s.RHS.(*ast.StatVar)
-			//scope level 0 is local block scope, and then works its way up
-			scopeLevel, index := i.Stacks.find(RHS.Value)
-			fmt.Printf("%s", i.Stacks[scopeLevel][index].value)
-			return
-		}
-
-		fmt.Printf("%s", s.RHS.(*ast.NumLit).Value)
+		fmt.Printf("%s", i.Stacks.resolveValue(s.RHS))
 		return
 	case "PRU":
-		if s.RHS.GetNodeName() == "statVar" {
-			RHS := s.RHS.(*ast.StatVar)
-			scopeLevel, index := i.Stacks.find(RHS.Value)
-			cast, _ := strconv.Atoi(i.Stacks[scopeLevel][index].value)
-			fmt.Printf("%c", cast)
-			return
-		}
-
-		cast, _ := strconv.Atoi(s.RHS.(*ast.NumLit).Value)
+		cast, _ := strconv.Atoi(i.Stacks.resolveValue(s.RHS))
 		fmt.Printf("%c", cast)
 		return
 	case "INC":
@@ -310,15 +266,17 @@ func (i *Interpreter) execStatement(s *ast.Statement) {
 			os.Exit(65)
 		}
 
-		scopeLevel, index := i.Stacks.find(s.RHS.(*ast.StatVar).Value)
-		vc, _ := strconv.Atoi(i.Stacks[scopeLevel][index].value)
-		vc++
-		i.Stacks.set(scopeLevel, index, strconv.Itoa(vc))
+		variableValue := i.Stacks.resolveVariable(s.RHS)
+		cast, _ := strconv.Atoi(variableValue.value)
+		cast++
+		castBack := strconv.Itoa(cast)
+		i.Stacks.set(variableValue.key, castBack)
 		return
 	}
 }
 
-func (s Stacks) set(scopeLevel int, index int, value string) {
+func (s Stacks) set(name string, value string) {
+	scopeLevel, index := s.find(name)
 	s[scopeLevel][index].value = value
 }
 
@@ -358,12 +316,23 @@ func (h Heap) find(name string) int {
 	return -1
 }
 
+func (h Heap) resolveFunction(name string) *ast.Function {
+	return h[h.find(name)]
+}
+
 func (s *Stacks) get(scopeLevel int, index int) *tuple {
 	return (*s)[scopeLevel][index]
 }
 
 func (s *Stacks) resolveVariable(node ast.Node) *tuple {
 	return s.get(s.find(node.(*ast.StatVar).Value))
+}
+
+func (s *Stacks) resolvePtrValue(node ast.Node) *string {
+	if ast.NodeIsVariable(node) {
+		return &s.resolveVariable(node).value
+	}
+	return &node.(*ast.NumLit).Value
 }
 
 func (s *Stacks) resolveValue(node ast.Node) string {
