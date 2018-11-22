@@ -558,3 +558,8 @@ func (p *Parser) advance() {
 func (p *Parser) advanceN(n int) {
 	p.TokensConsumed += n
 }
+
+//NodeIsVariable allows for nice statements like if NodeIsVariable(node) {}
+func NodeIsVariable(node Node) bool {
+	return node.GetNodeName() == "statVar"
+}

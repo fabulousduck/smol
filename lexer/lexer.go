@@ -46,10 +46,8 @@ func (l *Lexer) Lex() {
 		switch currTok.Type {
 		case "character":
 			currTok.Value = l.peekTypeN("character")
-			l.currentCol += len(currTok.Value)
 		case "integer":
 			currTok.Value = l.peekTypeN("integer")
-			l.currentCol += len(currTok.Value)
 		case "comment":
 			l.readComment()
 			l.advance()

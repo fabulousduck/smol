@@ -1,5 +1,5 @@
 MEM A 30;
-MEM B 10;
+MEM B 20;
 
 SWT[B]: #SWiTch
     CAS 10: #case

@@ -47,78 +47,60 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 		nodeType := node.GetNodeName()
 		switch nodeType {
 		case "variable":
-			v := node.(*ast.Variable)
 			//we can do this since only ints exist in our language
-			i.stackAlloc(len(i.Stacks)-1, v)
+			i.stackAlloc(len(i.Stacks)-1, node.(*ast.Variable))
 		case "statement":
-			s := node.(*ast.Statement)
-			i.execStatement(s)
+			i.execStatement(node.(*ast.Statement))
 		case "anb":
-			anb := node.(*ast.Anb)
-			i.execANB(anb)
+			i.execANB(node.(*ast.Anb))
 		case "function":
-			function := node.(*ast.Function)
-			i.execFunctionDecl(function)
+			i.execFunctionDecl(node.(*ast.Function))
 		case "functionCall":
-			fc := node.(*ast.FunctionCall)
-			i.execFunctionCall(fc)
+			i.execFunctionCall(node.(*ast.FunctionCall))
 		case "setStatement":
-			ss := node.(*ast.SetStatement)
-			i.setVariableValue(ss)
+			i.setVariableValue(node.(*ast.SetStatement))
 		case "mathStatement":
-			ms := node.(*ast.MathStatement)
-			i.execMathStatement(ms)
+			i.execMathStatement(node.(*ast.MathStatement))
 		case "comparison":
-			cm := node.(*ast.Comparison)
-			i.execComparison(cm)
+			i.execComparison(node.(*ast.Comparison))
 		case "switchStatement":
-			ss := node.(*ast.SwitchStatement)
-			i.execSwitchStatement(ss)
+			i.execSwitchStatement(node.(*ast.SwitchStatement))
 		}
 	}
 }
 
 func (i *Interpreter) execSwitchStatement(ss *ast.SwitchStatement) {
-	matchValue := ""
 	var defaultCase []ast.Node
-	matchExecuted := false
-	if ss.MatchValue.GetNodeName() == "statVar" {
-		scopeLevel, index := i.Stacks.find(ss.MatchValue.(*ast.StatVar).Value)
-		matchValue = i.Stacks[scopeLevel][index].value
+	var caseMatchValue string
+	var matchValue string
+
+	if ast.NodeIsVariable(ss.MatchValue) {
+		matchValue = i.Stacks.resolveVariable(ss.MatchValue).value
 	} else {
 		matchValue = ss.MatchValue.(*ast.NumLit).Value
 	}
 
-	for j := 0; j < len(ss.Cases); j++ {
-		if ss.Cases[j].GetNodeName() != "switchCase" && ss.Cases[j].GetNodeName() != "end_of_switch" {
+	for _, switchCase := range ss.Cases {
+		if switchCase.GetNodeName() != "switchCase" && switchCase.GetNodeName() != "end_of_switch" {
 			errors.UnknownSwitchNode()
 			os.Exit(65)
 		}
-		if ss.Cases[j].GetNodeName() == "end_of_switch" {
-			defaultCase = ss.Cases[j].(*ast.Eos).Body
+		if switchCase.GetNodeName() == "end_of_switch" {
+			defaultCase = switchCase.(*ast.Eos).Body
 			continue
 		}
 
-		caseMatchValue := ""
-		if ss.Cases[j].(*ast.SwitchCase).MatchValue.GetNodeName() == "statVar" {
-			scopeLevel, index := i.Stacks.find(ss.Cases[j].(*ast.SwitchCase).MatchValue.(*ast.StatVar).Value)
-			caseMatchValue = i.Stacks[scopeLevel][index].value
-		} else {
-			caseMatchValue = ss.Cases[j].(*ast.SwitchCase).MatchValue.(*ast.NumLit).Value
-		}
+		currentCase := switchCase.(*ast.SwitchCase)
+		caseMatchValue = i.Stacks.resolveValue(currentCase.MatchValue)
 
 		if matchValue == caseMatchValue {
-
-			i.Interpret(ss.Cases[j].(*ast.SwitchCase).Body)
-			matchExecuted = true
+			i.Interpret(currentCase.Body)
 			return
 		}
 	}
 
-	if !matchExecuted {
-		if defaultCase != nil {
-			i.Interpret(defaultCase)
-		}
+	if defaultCase != nil {
+		i.Interpret(defaultCase)
 	}
 
 	return
@@ -386,4 +368,20 @@ func (h Heap) find(name string) int {
 	errors.UndefinedFunctionReferenceError(name)
 	os.Exit(65)
 	return -1
+}
+
+func (s *Stacks) get(scopeLevel int, index int) *tuple {
+	return (*s)[scopeLevel][index]
+}
+
+func (s *Stacks) resolveVariable(node ast.Node) *tuple {
+	return s.get(s.find(node.(*ast.StatVar).Value))
+}
+
+func (s *Stacks) resolveValue(node ast.Node) string {
+	if ast.NodeIsVariable(node) {
+		return s.resolveVariable(node).value
+	}
+	return node.(*ast.NumLit).Value
+
 }
