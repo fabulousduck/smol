@@ -111,45 +111,33 @@ func (i *Interpreter) execComparison(cm *ast.Comparison) {
 	clhs := 0
 	crhs := 0
 	beforeScopeLevel := len(i.Stacks)
-	scopedStack := stack{}
 
-	if cm.LHS.GetNodeName() == "statVar" {
-		scopeLevel, index := i.Stacks.find(cm.LHS.(*ast.StatVar).Value)
-		clhs, _ = strconv.Atoi(i.Stacks[scopeLevel][index].value)
-	} else {
-		clhs, _ = strconv.Atoi(cm.LHS.(*ast.NumLit).Value)
-	}
+	clhs, _ = strconv.Atoi(i.Stacks.resolveValue(cm.LHS))
+	crhs, _ = strconv.Atoi(i.Stacks.resolveValue(cm.RHS))
 
-	if cm.RHS.GetNodeName() == "statVar" {
-		scopeLevel, index := i.Stacks.find(cm.RHS.(*ast.StatVar).Value)
-		crhs, _ = strconv.Atoi(i.Stacks[scopeLevel][index].value)
-	} else {
-		crhs, _ = strconv.Atoi(cm.RHS.(*ast.NumLit).Value)
-	}
+	//create a stack for the block inside the comparisons body
+	i.Stacks = append(i.Stacks, stack{})
 
 	// do static analysis on same variable comparisons
 	switch cm.Operator {
 	case "LT":
 		if clhs < crhs {
-			i.Stacks = append(i.Stacks, scopedStack)
 			i.Interpret(cm.Body)
 		}
 	case "GT":
 		if clhs > crhs {
-			i.Stacks = append(i.Stacks, scopedStack)
 			i.Interpret(cm.Body)
 		}
 	case "EQ":
 		if clhs == crhs {
-			i.Stacks = append(i.Stacks, scopedStack)
 			i.Interpret(cm.Body)
 		}
 	case "NEQ":
 		if clhs != crhs {
-			i.Stacks = append(i.Stacks, scopedStack)
 			i.Interpret(cm.Body)
 		}
 	}
+
 	i.Stacks = i.Stacks[:beforeScopeLevel]
 	return
 }
