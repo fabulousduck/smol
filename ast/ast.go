@@ -8,6 +8,15 @@ import (
 	"github.com/fabulousduck/smol/lexer"
 )
 
+//ReleaseStatement is an instruction that frees a variable from the stack
+type ReleaseStatement struct {
+	Variable Node
+}
+
+func (r ReleaseStatement) GetNodeName() string {
+	return "releaseStatement"
+}
+
 //Node is a wrapper interface that AST nodes can implement
 type Node interface {
 	GetNodeName() string //GetNodeName Gets the identifier of a AST node describing what it is
@@ -222,6 +231,9 @@ func (p *Parser) Parse() ([]Node, int) {
 			fallthrough
 		case "greater_than":
 			nodes = append(nodes, p.createComparison())
+		case "release":
+			p.advance()
+			nodes = append(nodes, p.createReleaseStatement())
 		case "switch":
 			p.advance()
 			nodes = append(nodes, p.createSwitchStatement())
@@ -241,6 +253,19 @@ func (p *Parser) Parse() ([]Node, int) {
 	}
 
 	return nodes, p.TokensConsumed
+}
+
+func (p *Parser) createReleaseStatement() *ReleaseStatement {
+	r := new(ReleaseStatement)
+
+	p.expectCurrent([]string{"string", "character"})
+	r.Variable = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return r
 }
 
 func (p *Parser) createEOSStatement() *Eos {

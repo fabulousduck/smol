@@ -20,6 +20,11 @@ func ConcatVariables(vars []string, sep string) string {
 	return currentString.String()
 }
 
+//LitteralRelease error can be thrown when the programmer wants to release a number litteral
+func LitteralRelease() {
+	fmt.Printf("Cannot release a number litteral\n")
+}
+
 //UndefinedVariableError can be thrown at interpret time when a variable is not found on the local scope or higher level scopes
 func UndefinedVariableError(variableName string) {
 	//TODO: make this somewhat more informative
