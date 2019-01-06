@@ -1,0 +1,6 @@
+IMPL CH8
+
+MEM X 10;
+MEM Y 10;
+
+PLOT X Y;

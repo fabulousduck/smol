@@ -9,7 +9,7 @@ DEF FIB<RANGE>:
         LT[COUNTER, 1]:
             SET NEXT COUNTER;
         END
-
+ 
         EQ[COUNTER, 1]:
              SET NEXT COUNTER;
         END

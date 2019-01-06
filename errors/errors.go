@@ -20,6 +20,11 @@ func ConcatVariables(vars []string, sep string) string {
 	return currentString.String()
 }
 
+//UnknownTypeError is an error for the AST generator for when it encounters a token that it does not have a name for
+func UnknownTypeError() {
+	fmt.Printf("Unknown token type found.")
+}
+
 //LitteralRelease error can be thrown when the programmer wants to release a number litteral
 func LitteralRelease() {
 	fmt.Printf("Cannot release a number litteral\n")
@@ -65,4 +70,14 @@ func UnknownSwitchNode() {
 //while it still expects there to be a token or character.
 func EOFError() {
 	fmt.Printf("EOF found in program execution.")
+}
+
+//OutOfRegistersError is and error that indicates someone tried to assign more values than is allowed by the bytecode generator
+func OutOfRegistersError() {
+	fmt.Printf("Tried to store more variables than available registers (15) ")
+}
+
+//OutOfMemoryError can be thrown when the compiler has no more space to place a variable
+func OutOfMemoryError() {
+	fmt.Printf("Out of memory error")
 }

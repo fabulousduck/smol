@@ -1,10 +1,10 @@
 package ast
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/fabulousduck/proto/src/types"
+	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
 
@@ -132,6 +132,14 @@ type MathStatement struct {
 	RHS Node
 }
 
+type UseStatement struct {
+	name string
+}
+
+func (us UseStatement) GetNodeName() string {
+	return "useStatement"
+}
+
 func (ms MathStatement) GetNodeName() string {
 	return "mathStatement"
 }
@@ -182,6 +190,9 @@ func (p *Parser) Parse() ([]Node, int) {
 	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
 		switch p.currentToken().Type {
+		case "use":
+			p.advance()
+			nodes = append(nodes, p.createUse())
 		case "variable_assignment":
 			p.advance()
 			nodes = append(nodes, p.createVariable())
@@ -247,12 +258,25 @@ func (p *Parser) Parse() ([]Node, int) {
 			return nodes, p.TokensConsumed
 		default:
 			//TODO: make an error for this
-			fmt.Println("Unknown token type found.")
+			errors.UnknownTypeError()
 		}
 
 	}
 
 	return nodes, p.TokensConsumed
+}
+
+func (p *Parser) createUse() *UseStatement {
+	us := new(UseStatement)
+
+	p.expectCurrent([]string{"string"})
+	us.name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return us
 }
 
 func (p *Parser) createReleaseStatement() *ReleaseStatement {
