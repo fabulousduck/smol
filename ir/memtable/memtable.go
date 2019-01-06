@@ -7,29 +7,13 @@ import (
 /*
 MemTable is a simple collection of memory regions in use
 */
-type MemTable []*MemRegion
+type MemTable map[string]*MemRegion
 
 /*
 MemRegion represents a region of memory in the IR
 */
 type MemRegion struct {
 	Addr, Size, Value int
-	Name              string
-}
-
-/*
-Find finds a variable on the memory table
-Returns the index at which it is found
-Returns -1 if the value cannot be found
-*/
-func (table MemTable) Find(name string) int {
-	for i := 0; i < len(table); i++ {
-		region := table[i]
-		if region.Name == name {
-			return i
-		}
-	}
-	return -1
 }
 
 /*
@@ -44,17 +28,24 @@ func (table *MemTable) Put(name string, value int) *MemRegion {
 	region := new(MemRegion)
 	//check if there is any memory left for our variable
 	currentMemSize := table.getSize()
-	if currentMemSize >= 4096 {
+	if currentMemSize >= 95 {
 		errors.OutOfMemoryError()
 	}
 
 	region.Addr = table.findNextEmptyAddr()
 	region.Size = 2
 	region.Value = value
-	region.Name = name
 
-	*table = append(*table, region)
+	(*table)[name] = region
 	return region
+}
+
+func (table *MemTable) lookupVariable(name string) *MemRegion {
+	if val, ok := (*table)[name]; ok {
+		return val
+	}
+	errors.UndefinedVariableError(name)
+	return nil
 }
 
 func (table MemTable) findNextEmptyAddr() int {
@@ -77,10 +68,5 @@ func (table MemTable) findNextEmptyAddr() int {
 }
 
 func (table MemTable) getSize() int {
-	totalSize := 0
-	for i := 0; i < len(table); i++ {
-		totalSize += table[i].Size
-	}
-
-	return totalSize
+	return len(table)
 }

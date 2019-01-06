@@ -82,7 +82,7 @@ func (g *Generator) Generate(AST []ast.Node) {
 
 			//check if its a reference
 			if ast.NodeIsVariable(variable.Value) {
-				g.ir = append(g.ir, g.newMovInstruction(variable))
+				g.ir = append(g.ir, g.newMovInstruction(variable, true))
 			} else {
 				variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
 				g.ir = append(g.ir, g.newSetInstruction(variable, variableValue))
@@ -121,9 +121,13 @@ func (g *Generator) newLDRInstruction(v *ast.Variable) LDR {
 /*
 	used for 6XNN
 */
-func (g *Generator) newMovInstruction(v *ast.Variable) MOV {
+func (g *Generator) newMovInstruction(v *ast.Variable, resolve bool) MOV {
 	instr := MOV{}
+	if resolve {
+		resolutionName := v.Value.(*ast.StatVar).Value
+		spew.Dump(resolutionName)
 
+	}
 	return instr
 }
 
