@@ -1,4 +1,2 @@
 MEM A 10;
 MEM B A;
-PRI B;
-BRK;

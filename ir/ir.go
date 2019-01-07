@@ -6,12 +6,14 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/ir/memtable"
 	"github.com/fabulousduck/smol/ir/registertable"
 )
 
 type instruction interface {
 	GetInstructionName() string
+	Opcodeable() bool
 }
 
 /*
@@ -25,6 +27,10 @@ func (m MOV) GetInstructionName() string {
 	return "MOV"
 }
 
+func (m MOV) Opcodeable() bool {
+	return true
+}
+
 /*
 LDR MR to R2
 */
@@ -34,6 +40,10 @@ type LDR struct {
 
 func (l LDR) GetInstructionName() string {
 	return "LDR"
+}
+
+func (l LDR) Opcodeable() bool {
+	return true
 }
 
 /*
@@ -47,6 +57,10 @@ func (s SET) GetInstructionName() string {
 	return "SET"
 }
 
+func (s SET) Opcodeable() bool {
+	return false
+}
+
 //Generator contains all the basic information needed
 //to transform an AST into a chip-8 ROM
 type Generator struct {
@@ -54,15 +68,15 @@ type Generator struct {
 	nodesConsumed            int
 	memorySize, memoryOffset int
 	ir                       []instruction
-	memTable                 *memtable.MemTable
-	regTable                 *registertable.RegisterTable
+	memTable                 memtable.MemTable
+	regTable                 registertable.RegisterTable
 }
 
 //NewGenerator inits the generator
 func NewGenerator(filename string) *Generator {
 	g := new(Generator)
-	g.memTable = new(memtable.MemTable)
-	g.regTable = new(registertable.RegisterTable)
+	g.memTable = make(memtable.MemTable)
+	g.regTable = make(registertable.RegisterTable)
 	g.filename = filename
 	g.nodesConsumed = 0
 	g.memorySize = 4096
@@ -82,10 +96,10 @@ func (g *Generator) Generate(AST []ast.Node) {
 
 			//check if its a reference
 			if ast.NodeIsVariable(variable.Value) {
-				g.ir = append(g.ir, g.newMovInstruction(variable, true))
+				g.ir = append(g.ir, g.newSetInstruction(variable, 0, true))
 			} else {
 				variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
-				g.ir = append(g.ir, g.newSetInstruction(variable, variableValue))
+				g.ir = append(g.ir, g.newSetInstruction(variable, variableValue, false))
 			}
 		case "statement":
 
@@ -106,7 +120,7 @@ func (g *Generator) Generate(AST []ast.Node) {
 		}
 	}
 
-	spew.Dump(g.ir)
+	spew.Dump(g)
 }
 
 /*
@@ -121,18 +135,30 @@ func (g *Generator) newLDRInstruction(v *ast.Variable) LDR {
 /*
 	used for 6XNN
 */
-func (g *Generator) newMovInstruction(v *ast.Variable, resolve bool) MOV {
+func (g *Generator) newMovInstruction(v *ast.Variable) MOV {
 	instr := MOV{}
-	if resolve {
-		resolutionName := v.Value.(*ast.StatVar).Value
-		spew.Dump(resolutionName)
 
-	}
 	return instr
 }
 
-func (g *Generator) newSetInstruction(v *ast.Variable, varValue int) SET {
+/*
+This is used for MEM operations.
+This means that it is used for setting variables into memory before any opcode is executed
+Once a variable is needed for an operation. for instance INC or ANB or any other. It will
+be retreived by MOV and put into a free register
+*/
+func (g *Generator) newSetInstruction(v *ast.Variable, varValue int, resolve bool) SET {
 	isntr := SET{}
+
+	if resolve {
+		resolutionName := v.Value.(*ast.StatVar).Value
+		if val, ok := g.memTable[resolutionName]; ok {
+			varValue = val.Value
+		} else {
+			errors.UndefinedVariableError(resolutionName)
+		}
+	}
+
 	region := g.memTable.Put(v.Name, varValue)
 	isntr.addr = region.Addr
 	isntr.val = varValue

@@ -3,7 +3,7 @@ package registertable
 /*
 RegisterTable is a simple collection of registers so they can be indexed
 */
-type RegisterTable []*Register
+type RegisterTable map[int]Register
 
 /*
 Register simulates a basic CPU register

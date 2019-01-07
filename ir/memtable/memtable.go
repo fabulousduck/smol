@@ -24,7 +24,7 @@ notes
 chip-8's blocks are 8 bit, so 1 byte.
 with a total of 4096 bytes
 */
-func (table *MemTable) Put(name string, value int) *MemRegion {
+func (table MemTable) Put(name string, value int) *MemRegion {
 	region := new(MemRegion)
 	//check if there is any memory left for our variable
 	currentMemSize := table.getSize()
@@ -35,8 +35,8 @@ func (table *MemTable) Put(name string, value int) *MemRegion {
 	region.Addr = table.findNextEmptyAddr()
 	region.Size = 2
 	region.Value = value
+	table[name] = region
 
-	(*table)[name] = region
 	return region
 }
 
