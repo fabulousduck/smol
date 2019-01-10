@@ -8,6 +8,15 @@ import (
 	"github.com/fabulousduck/smol/lexer"
 )
 
+//PlotStatement is a statement that contains all info needed to draw a pixel to the screen
+type PlotStatement struct {
+	X, Y Node
+}
+
+func (p PlotStatement) GetNodeName() string {
+	return "plotStatement"
+}
+
 //ReleaseStatement is an instruction that frees a variable from the stack
 type ReleaseStatement struct {
 	Variable Node
@@ -190,6 +199,9 @@ func (p *Parser) Parse() ([]Node, int) {
 	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
 		switch p.currentToken().Type {
+		case "plot":
+			p.advance()
+			nodes = append(nodes, p.createPlot())
 		case "use":
 			p.advance()
 			nodes = append(nodes, p.createUse())
@@ -264,6 +276,23 @@ func (p *Parser) Parse() ([]Node, int) {
 	}
 
 	return nodes, p.TokensConsumed
+}
+
+func (p *Parser) createPlot() *PlotStatement {
+	ps := new(PlotStatement)
+
+	p.expectCurrent([]string{"character", "string"})
+	ps.X = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string"})
+	ps.Y = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return ps
 }
 
 func (p *Parser) createUse() *UseStatement {

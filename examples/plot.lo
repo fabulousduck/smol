@@ -1,6 +1,7 @@
-IMPL CH8
-
 MEM X 10;
 MEM Y 10;
 
-PLOT X Y;
+#PLT works from the top left of the screen.
+#it will draw a single pixel with offset X and Y
+#from the top left of the screen
+PLT X Y;

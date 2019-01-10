@@ -81,3 +81,18 @@ func OutOfRegistersError() {
 func OutOfMemoryError() {
 	fmt.Printf("Out of memory error")
 }
+
+/*
+MemAddrAdressModeFailure is an internal error where a MOV statement tried to use
+a memory address as arg one
+
+TODO: rename this to something more appropriate
+TODO: maybe even make a separate errors package for internal errors
+*/
+func RegisterAdressModeFailure(attemptedRegisterIndex int) {
+	fmt.Printf("Invalid MOV to register [%d]. 0xF boundary break", attemptedRegisterIndex)
+}
+
+/*
+
+ */

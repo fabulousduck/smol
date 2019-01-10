@@ -27,3 +27,28 @@ func (table RegisterTable) Find(name string) int {
 	}
 	return -1
 }
+
+/*
+Init fills a new table with empty registers
+*/
+func (table RegisterTable) Init() {
+	for i := 0; i < 0x10; i++ {
+		table[i] = Register{
+			Value: 0,
+			Name:  "",
+		}
+	}
+}
+
+/*
+PutRegisterValue set the value of register to value
+*/
+func (table RegisterTable) PutRegisterValue(register int, value int) {
+	if !isValidRegisterIndex(register) {
+
+	}
+}
+
+func isValidRegisterIndex(registerIndex int) bool {
+	return registerIndex < 0xF
+}

@@ -65,7 +65,8 @@ func getKeyword(token *Token) string {
 		"CAS": "case",
 		"EOS": "end_of_switch",
 		"REL": "release",
-		"USE": "use",
+		"USE": "use", //TODO: libs
+		"PLT": "plot",
 	}
 
 	if val, ok := keywords[token.Value]; ok {

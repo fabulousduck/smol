@@ -40,11 +40,26 @@ func (table MemTable) Put(name string, value int) *MemRegion {
 	return region
 }
 
-func (table *MemTable) lookupVariable(name string) *MemRegion {
+/*
+IsValidMemRegion allows the caller to check if an address given
+is a memory region or not
+*/
+func IsValidMemRegion(regionAddr int) bool {
+	return regionAddr > 0xEA0 && regionAddr < 0xEFF
+}
+
+/*
+LookupVariable looks up if a variable has been defined on the memory table
+internal lookups are silent since sometimes we need to do a lookup if an
+internal variable that is not user defined has been set
+*/
+func (table *MemTable) LookupVariable(name string, internalLookup bool) *MemRegion {
 	if val, ok := (*table)[name]; ok {
 		return val
 	}
-	errors.UndefinedVariableError(name)
+	if !internalLookup {
+		errors.UndefinedVariableError(name)
+	}
 	return nil
 }
 
