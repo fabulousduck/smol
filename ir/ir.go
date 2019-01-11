@@ -41,7 +41,7 @@ PLOT X Y
 this is the IR instruction for the draw opcode itself
 */
 type PLOT struct {
-	x, y, h int
+	X, Y, H int
 }
 
 func (p PLOT) GetInstructionName() string {
@@ -71,7 +71,7 @@ func (l LDR) Opcodeable() bool {
 SET val to addr
 */
 type SET struct {
-	val, addr int
+	Val, Addr int
 }
 
 func (s SET) GetInstructionName() string {
@@ -89,7 +89,7 @@ type Generator struct {
 	nodesConsumed            int
 	memorySize, memoryOffset int
 	IRegisterIndex           int
-	ir                       []instruction
+	Ir                       []instruction
 	memTable                 memtable.MemTable
 	regTable                 registertable.RegisterTable
 }
@@ -121,10 +121,10 @@ func (g *Generator) Generate(AST []ast.Node) {
 
 			//check if its a reference
 			if ast.NodeIsVariable(variable.Value) {
-				g.ir = append(g.ir, g.newSetInstruction(variable, 0, true))
+				g.Ir = append(g.Ir, g.newSetInstruction(variable, 0, true))
 			} else {
 				variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
-				g.ir = append(g.ir, g.newSetInstruction(variable, variableValue, false))
+				g.Ir = append(g.Ir, g.newSetInstruction(variable, variableValue, false))
 			}
 		case "statement":
 
@@ -144,7 +144,7 @@ func (g *Generator) Generate(AST []ast.Node) {
 
 		case "plotStatement":
 			plotStatement := AST[i].(*ast.PlotStatement)
-			g.ir = append(g.ir, g.newPlotInstructionSet(plotStatement))
+			g.Ir = append(g.Ir, g.newPlotInstructionSet(plotStatement))
 		}
 	}
 
@@ -171,10 +171,10 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	/*
 		Since we only draw a single pixel, the height of the sprite can always be one
 	*/
-	plotInstr.h = 0
+	plotInstr.H = 1
 
 	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
-		g.memTable.Put(topLeftPixelMemoryName, topLeftPixel)
+		g.Ir = append(g.Ir, g.newSetInstructionFromLoose(topLeftPixelMemoryName, topLeftPixel))
 	}
 
 	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)
@@ -183,7 +183,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 		fill the I register with the memory address of the single pixel value
 		the emulator will read the sprite data from
 	*/
-	g.ir = append(g.ir, g.newMovInstructionFromLoose(g.IRegisterIndex, pixelBufferVariable.Addr))
+	g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.IRegisterIndex, pixelBufferVariable.Addr))
 
 	/*
 		actually set the I register
@@ -201,11 +201,11 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	if ast.NodeIsVariable(plotStatement.X) {
 		variableName := plotStatement.X.(*ast.StatVar).Value
 		variableTableEntry := g.memTable.LookupVariable(variableName, true)
-		plotInstr.x = variableTableEntry.Value
+		plotInstr.X = variableTableEntry.Value
 	} else {
 		variableValue := plotStatement.X.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
-		plotInstr.x = intValue
+		plotInstr.X = intValue
 	}
 
 	/*
@@ -214,11 +214,11 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	if ast.NodeIsVariable(plotStatement.Y) {
 		variableName := plotStatement.Y.(*ast.StatVar).Value
 		variableTableEntry := g.memTable.LookupVariable(variableName, true)
-		plotInstr.y = variableTableEntry.Value
+		plotInstr.Y = variableTableEntry.Value
 	} else {
 		variableValue := plotStatement.Y.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
-		plotInstr.y = intValue
+		plotInstr.Y = intValue
 	}
 
 	return plotInstr
@@ -286,7 +286,15 @@ func (g *Generator) newSetInstruction(v *ast.Variable, varValue int, resolve boo
 	}
 
 	region := g.memTable.Put(v.Name, varValue)
-	isntr.addr = region.Addr
-	isntr.val = varValue
+	isntr.Addr = region.Addr
+	isntr.Val = varValue
 	return isntr
+}
+
+func (g *Generator) newSetInstructionFromLoose(name string, varValue int) SET {
+	instr := SET{}
+	region := g.memTable.Put(name, varValue)
+	instr.Addr = region.Addr
+	instr.Val = varValue
+	return instr
 }

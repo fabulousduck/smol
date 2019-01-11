@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/fabulousduck/smol/bytecode"
+
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/interpreter"
 	"github.com/fabulousduck/smol/ir"
@@ -45,6 +47,8 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	if compile {
 		g := ir.NewGenerator(filename)
 		g.Generate(p.Ast)
+		bg := bytecode.Init(g, filename)
+		bg.CreateRom()
 		return
 	}
 	i := interpreter.NewInterpreter()

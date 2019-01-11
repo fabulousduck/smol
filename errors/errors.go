@@ -90,9 +90,9 @@ TODO: rename this to something more appropriate
 TODO: maybe even make a separate errors package for internal errors
 */
 func RegisterAdressModeFailure(attemptedRegisterIndex int) {
-	fmt.Printf("Invalid MOV to register [%d]. 0xF boundary break", attemptedRegisterIndex)
+	fmt.Printf("Invalid MOV to register [%d]. 0xF boundary exceeded", attemptedRegisterIndex)
 }
 
 /*
-
- */
+s
+*/

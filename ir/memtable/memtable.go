@@ -33,7 +33,7 @@ func (table MemTable) Put(name string, value int) *MemRegion {
 	}
 
 	region.Addr = table.findNextEmptyAddr()
-	region.Size = 2
+	region.Size = 1
 	region.Value = value
 	table[name] = region
 
@@ -64,7 +64,6 @@ func (table *MemTable) LookupVariable(name string, internalLookup bool) *MemRegi
 }
 
 func (table MemTable) findNextEmptyAddr() int {
-	//Note: all ints are padded to by 2 bytes long
 
 	varAddrSpaceStart := 0xEA0
 	varAddrSpaceEnd := 0xEFF
@@ -72,9 +71,8 @@ func (table MemTable) findNextEmptyAddr() int {
 	currentSpaceUsed := 0
 
 	for i := 0; i < len(table); i++ {
-		currentSpaceUsed += 0x2
+		currentSpaceUsed++
 	}
-
 	if varAddrSpaceStart+currentSpaceUsed+0x2 > varAddrSpaceEnd {
 		errors.OutOfMemoryError()
 	}
