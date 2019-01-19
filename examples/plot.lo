@@ -5,3 +5,8 @@ MEM Y 10;
 #it will draw a single pixel with offset X and Y
 #from the top left of the screen
 PLT X Y;
+
+
+PLT 50 50;
+PLT X 200;
+PLT 200 X;

@@ -173,6 +173,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	plotInstr.H = 1
 
 	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
+		spew.Dump("lookup failed")
 		g.Ir = append(g.Ir, g.newSetInstructionFromLoose(topLeftPixelMemoryName, topLeftPixel))
 	}
 	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)
@@ -180,8 +181,12 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	/*
 		fill the I register with the memory address of the single pixel value
 		the emulator will read the sprite data from
+
+		only do this if the I register is not there already
 	*/
-	g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.IRegisterIndex, pixelBufferVariable.Addr))
+	if g.regTable[g.IRegisterIndex].Value != pixelBufferVariable.Addr {
+		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.IRegisterIndex, pixelBufferVariable.Addr))
+	}
 
 	/*
 		actually set the I register

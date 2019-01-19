@@ -281,11 +281,11 @@ func (p *Parser) Parse() ([]Node, int) {
 func (p *Parser) createPlot() *PlotStatement {
 	ps := new(PlotStatement)
 
-	p.expectCurrent([]string{"character", "string"})
+	p.expectCurrent([]string{"character", "string", "integer"})
 	ps.X = createLit(p.currentToken())
 	p.advance()
 
-	p.expectCurrent([]string{"character", "string"})
+	p.expectCurrent([]string{"character", "string", "integer"})
 	ps.Y = createLit(p.currentToken())
 	p.advance()
 
