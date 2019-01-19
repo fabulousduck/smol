@@ -32,6 +32,7 @@ func isError(err error) bool {
 WriteBytes writes bytes to addr in the given file
 */
 func WriteBytes(file *os.File, bytes []byte, particularOffset bool, addr int64) {
+	fmt.Printf("%04X\n", addr)
 	var jmpFileLoc int64
 	if particularOffset {
 		originalOffset, _ := file.Seek(0, 1)

@@ -85,13 +85,13 @@ func (s SET) Opcodeable() bool {
 //Generator contains all the basic information needed
 //to transform an AST into a chip-8 ROM
 type Generator struct {
-	filename                 string
-	nodesConsumed            int
-	memorySize, memoryOffset int
-	IRegisterIndex           int
-	Ir                       []instruction
-	memTable                 memtable.MemTable
-	regTable                 registertable.RegisterTable
+	filename       string
+	nodesConsumed  int
+	memorySize     int
+	IRegisterIndex int
+	Ir             []instruction
+	memTable       memtable.MemTable
+	regTable       registertable.RegisterTable
 }
 
 //NewGenerator inits the generator
@@ -101,8 +101,7 @@ func NewGenerator(filename string) *Generator {
 	g.regTable = make(registertable.RegisterTable)
 	g.filename = filename
 	g.nodesConsumed = 0
-	g.memorySize = 4096
-	g.memoryOffset = 512
+	g.memorySize = 4096 - 0x200 //0x200 is reserved space that we cannot use
 	g.IRegisterIndex = 0xF
 	g.regTable.Init()
 
@@ -176,7 +175,6 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
 		g.Ir = append(g.Ir, g.newSetInstructionFromLoose(topLeftPixelMemoryName, topLeftPixel))
 	}
-
 	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)
 
 	/*

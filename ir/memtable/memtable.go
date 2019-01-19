@@ -45,7 +45,7 @@ IsValidMemRegion allows the caller to check if an address given
 is a memory region or not
 */
 func IsValidMemRegion(regionAddr int) bool {
-	return regionAddr > 0xEA0 && regionAddr < 0xEFF
+	return regionAddr > 0xEA0-0x200 && regionAddr < 0xEFF-0x200
 }
 
 /*
@@ -65,8 +65,8 @@ func (table *MemTable) LookupVariable(name string, internalLookup bool) *MemRegi
 
 func (table MemTable) findNextEmptyAddr() int {
 
-	varAddrSpaceStart := 0xEA0
-	varAddrSpaceEnd := 0xEFF
+	varAddrSpaceStart := 0xEA0 - 0x200
+	varAddrSpaceEnd := 0xEFF - 0x200
 
 	currentSpaceUsed := 0
 

@@ -45,6 +45,7 @@ func (g *Generator) CreateRom() {
 				for 0xANNN
 			*/
 			if movInstruction.R2IsAddr {
+				movInstruction.R2 += 0x200 //generate and address that is relative to the machine, not the file
 				baseByte := 0xA
 				secondaryByte := 0x00
 				baseByte = baseByte<<4 | shiftLeft(movInstruction.R2)
