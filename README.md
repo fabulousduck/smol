@@ -11,7 +11,7 @@ are not that familiar with programming yet.
 
 It at this point has also become an expiriment to see how well a language that does not have expressions fairs.
 
-An for some reason i made it compile chip-8 ROMS. (wip)
+And for some reason i made it compile chip-8 ROMS. (wip)
 # Table of contents
 
 * [table of contents](#Table-of-contents)
