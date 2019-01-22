@@ -20,6 +20,16 @@ func ConcatVariables(vars []string, sep string) string {
 	return currentString.String()
 }
 
+//IlligalRegisterAccess is thrown by the register table when it detects the compilers accesses a non existant register
+func IlligalRegisterAccess(register int) {
+	fmt.Printf("illigal access of register: %d", register)
+}
+
+//UnAssignedMemoryLookupError is an error for the IR to throw when it wants to find a variable by addr in the memtable that does not exist
+func UnAssignedMemoryLookupError() {
+	fmt.Printf("tried to look up register that is empty while expecting it to be full")
+}
+
 //UnknownTypeError is an error for the AST generator for when it encounters a token that it does not have a name for
 func UnknownTypeError() {
 	fmt.Printf("Unknown token type found.")

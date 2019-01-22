@@ -1,5 +1,7 @@
 package registertable
 
+import "github.com/fabulousduck/smol/errors"
+
 /*
 RegisterTable is a simple collection of registers so they can be indexed
 */
@@ -45,8 +47,10 @@ PutRegisterValue set the value of register to value
 */
 func (table RegisterTable) PutRegisterValue(register int, value int) {
 	if !isValidRegisterIndex(register) {
-
+		errors.IlligalRegisterAccess(register)
 	}
+
+	table[register] = Register{value, table[register].Name}
 }
 
 func isValidRegisterIndex(registerIndex int) bool {

@@ -44,7 +44,7 @@ func (g *Generator) CreateRom() {
 			/*
 				for 0xANNN
 			*/
-			if movInstruction.R2IsAddr {
+			if movInstruction.ANNN {
 				movInstruction.R2 += 0x200 //generate and address that is relative to the machine, not the file
 				baseByte := 0xA
 				secondaryByte := 0x00
@@ -53,8 +53,13 @@ func (g *Generator) CreateRom() {
 				secondaryByte = movInstruction.R2 & 0x0FF
 
 				file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
-
+				break
 			}
+
+			baseByte := 0x6
+
+			baseByte = baseByte<<4 | movInstruction.R1
+			file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(movInstruction.R2)}, false, 0)
 		case "PLOT":
 			plotInstruction := g.ir.Ir[i].(*ir.PLOT)
 
@@ -65,10 +70,17 @@ func (g *Generator) CreateRom() {
 
 			file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
 
+			// case "JMP":
+			// 	jmpInstruction := g.Ir[i].(ir.JMP)
+
+			// 	baseByte := 0x1
+			// 	baseByte = baseByte << 4 |
 		}
 	}
 	return
 }
+
+// ????
 
 func shiftLeft(value int) int {
 	if value <= 16 {

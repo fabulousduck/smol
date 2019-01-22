@@ -1,6 +1,8 @@
 package memtable
 
 import (
+	"os"
+
 	"github.com/fabulousduck/smol/errors"
 )
 
@@ -82,4 +84,34 @@ func (table MemTable) findNextEmptyAddr() int {
 
 func (table MemTable) getSize() int {
 	return len(table)
+}
+
+/*
+Move moves a variable on the memory table.
+Mostly used for compression of variable space
+*/
+func (table *MemTable) Move(name string, to int, internal bool) {
+	if val, ok := (*table)[name]; ok {
+		val.Addr = to
+		return
+	}
+
+	if !internal {
+		errors.UndefinedVariableError(name)
+	}
+}
+
+/*
+FindByAddr finds a given memory region by its addres instead of name
+*/
+func (table *MemTable) FindByAddr(addr int) string {
+	for k, v := range *table {
+		if v.Addr == addr {
+			return k
+		}
+	}
+
+	errors.UnAssignedMemoryLookupError()
+	os.Exit(65)
+	return ""
 }
