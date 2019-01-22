@@ -64,17 +64,21 @@ func (g *Generator) CreateRom() {
 			plotInstruction := g.ir.Ir[i].(*ir.PLOT)
 
 			baseByte := 0xD
-			baseByte = baseByte<<4 | shiftLeft(plotInstruction.X)
+			baseByte = baseByte<<4 | plotInstruction.X
 
-			secondaryByte := plotInstruction.Y<<4 | shiftLeft(plotInstruction.H)
+			secondaryByte := plotInstruction.Y<<4 | plotInstruction.H
 
 			file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
 
-			// case "JMP":
-			// 	jmpInstruction := g.Ir[i].(ir.JMP)
+		case "JMP":
+			jmpInstruction := g.ir.Ir[i].(ir.JMP)
 
-			// 	baseByte := 0x1
-			// 	baseByte = baseByte << 4 |
+			baseByte := 0x1
+			baseByte = baseByte<<4 | shiftLeft(jmpInstruction.To)
+
+			secondaryByte := jmpInstruction.To & 0x0FF
+
+			file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
 		}
 	}
 	return

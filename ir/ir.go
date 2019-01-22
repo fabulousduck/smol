@@ -44,7 +44,7 @@ func (m MOV) usesVariableSpace() bool {
 JMP FROM TO
 */
 type JMP struct {
-	from, to int
+	From, To int
 }
 
 func (j JMP) GetInstructionName() string {
@@ -168,6 +168,8 @@ func (g *Generator) Generate(AST []ast.Node) {
 		}
 	}
 
+	g.wrapCodeInLoop()
+
 	spew.Dump(g)
 }
 
@@ -217,20 +219,13 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	g.regTable[g.IRegisterIndex] = IRegister
 
 	/*
-		check if the nodes in the plot statement has variables that need to be resolved
-		and if so, resolve statement
-
-		Check x variable node
+		if the node uses variables, we will need to resolve those
+		otherwise, we simply use the integer value of the plot statement
 	*/
-
-	//MASSIVE TODO
-	//THE X AND Y IN DXYN ARE REGISTER INDEXES
-	//WE NEED TO MOVE VALUES INTO THE REGISTERS FIRST AND THEN ENCODE THE REGISTER INDEX INTO THE OPCODE
-
 	if ast.NodeIsVariable(plotStatement.X) {
 		variableName := plotStatement.X.(*ast.StatVar).Value
 		variableTableEntry := g.memTable.LookupVariable(variableName, true)
-		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotXRegister, variableTableEntry.Addr, false))
+		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotXRegister, variableTableEntry.Value, false))
 	} else {
 		variableValue := plotStatement.X.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
@@ -244,7 +239,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	if ast.NodeIsVariable(plotStatement.Y) {
 		variableName := plotStatement.Y.(*ast.StatVar).Value
 		variableTableEntry := g.memTable.LookupVariable(variableName, true)
-		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotYRegister, variableTableEntry.Addr, false))
+		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotYRegister, variableTableEntry.Value, false))
 	} else {
 		variableValue := plotStatement.Y.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
