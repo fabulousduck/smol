@@ -3,7 +3,6 @@ package ir
 import (
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/ast"
 )
 
@@ -28,7 +27,7 @@ func (p PLOT) usesVariableSpace() bool {
 	return false
 }
 
-func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLOT {
+func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT {
 	/*
 		chip-8's pixel placement system works on a 8x8 sprite.
 		It draws whatever the byte represents in binary.
@@ -41,7 +40,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 
 		first we check if this pixel representor has been set
 	*/
-	plotInstr := new(PLOT)
+	plotInstr := PLOT{}
 	topLeftPixel := 0x80
 	topLeftPixelMemoryName := "PIXEL_BUFFER_REP"
 
@@ -51,7 +50,6 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	plotInstr.H = 1
 
 	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
-		spew.Dump("lookup failed")
 		g.Ir = append(g.Ir, g.newSetInstructionFromLoose(topLeftPixelMemoryName, topLeftPixel))
 	}
 	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)

@@ -1,6 +1,7 @@
 package bytecode
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/fabulousduck/smol/file"
@@ -66,9 +67,10 @@ func (g *Generator) CreateRom() {
 */
 func (g *Generator) embedJMP(instruction ir.JMP, romFile *os.File) {
 	baseByte := 0x1
-	baseByte = baseByte<<4 | shiftRight(jmpInstruction.To)
+	baseByte = baseByte<<4 | shiftRight(instruction.To)
 
-	secondaryByte := jmpInstruction.To & 0x0FF
+	secondaryByte := instruction.To & 0x0FF
+	fmt.Printf("JMP %02x%02x\n", baseByte, secondaryByte)
 
 	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
 }
