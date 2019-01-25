@@ -4,7 +4,7 @@ package ir
 JMP FROM TO
 */
 type JMP struct {
-	From, To int
+	To int
 }
 
 func (j JMP) GetInstructionName() string {
@@ -19,6 +19,6 @@ func (j JMP) usesVariableSpace() bool {
 	return false
 }
 
-func (g *Generator) newJumpInstructionFromLoose(from int, to int) JMP {
-	return JMP{from, to}
+func (g *Generator) newJumpInstructionFromLoose(to int) JMP {
+	return JMP{to}
 }

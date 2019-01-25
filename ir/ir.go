@@ -23,6 +23,7 @@ type Generator struct {
 	nodesConsumed                                int
 	memorySize                                   int
 	IRegisterIndex, plotXRegister, plotYRegister int
+	BNEXRegister                                 int
 	Ir                                           []instruction
 	memTable                                     memtable.MemTable
 	regTable                                     registertable.RegisterTable
@@ -39,6 +40,7 @@ func NewGenerator(filename string) *Generator {
 	g.IRegisterIndex = 0xF
 	g.plotXRegister = 0xE
 	g.plotYRegister = 0xD
+	g.BNEXRegister = 0xC
 	g.regTable.Init()
 
 	return g
@@ -64,7 +66,11 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "statement":
 
 		case "anb":
-
+			instruction := AST[i].(*ast.Anb)
+			anbInstructionStart := 0x200 + (len(g.Ir) * 2) // we need to multiply by 2 because each instruction is 2 bytes long
+			g.Generate(instruction.Body)
+			g.Ir = append(g.Ir, g.newBNEInstruction(instruction))
+			g.Ir = append(g.Ir, g.newJumpInstructionFromLoose())
 		case "function":
 
 		case "functionCall":
@@ -133,7 +139,7 @@ func (g *Generator) compressMemoryLayout() {
 */
 func (g *Generator) wrapCodeInLoop() {
 	opcodeSpaceEnd := len(g.Ir) * 4 //each instruction is 4 bytes
-	resetInstruction := g.newJumpInstructionFromLoose(opcodeSpaceEnd, 0x200)
+	resetInstruction := g.newJumpInstructionFromLoose(0x200)
 
 	g.Ir = append(g.Ir, resetInstruction)
 
