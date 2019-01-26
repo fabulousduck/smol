@@ -33,13 +33,23 @@ func (b BNE) usesVariableSpace() bool {
 
 /*
 	0x200 | DDE1 #some arbitrary shit like a plot opcode
-	0x202 | 4C0F #call to BNE
-	0x204 | 1208 #jump to outside of the loop
-	0x206 | 1200 # jump back to the beginning of the loop
-	0x200 | code after loop
+	0x202 | 7C01 #increment the C register with one
+	0x204 | 4C0F #call to BNE
+	0x206 | 1208 #jump to outside of the loop
+	0x208 | 1200 # jump back to the beginning of the loop
+	0x20A | code after loop
+
+	should the bne care what is in 0xC ?
+	i dont think it does
+	it just needs to check if whatever is in 0xC equals the RHS
+
+	INC 0xC, 1
+	BNE 0xC, 20
+	JMP 0x208
+	JMP 0x200
 */
 
-func (g *Generator) newBNEInstruction(instruction ast.Anb) BNE {
+func (g *Generator) newBNEInstruction(instruction *ast.Anb) BNE {
 	instr := BNE{}
 	/*
 		check if the lhs is a variable

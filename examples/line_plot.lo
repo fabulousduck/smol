@@ -1,0 +1,9 @@
+MEM A 20;
+
+ANB[A,30]:
+    PLT A 20;
+    INC A;
+END
+
+
+

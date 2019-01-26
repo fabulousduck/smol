@@ -1,7 +1,10 @@
 package ast
 
 import (
+	"fmt"
 	"os"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/proto/src/types"
 	"github.com/fabulousduck/smol/errors"
@@ -212,7 +215,10 @@ func (p *Parser) Parse() ([]Node, int) {
 			p.advance()
 			nodes = append(nodes, p.createFunction())
 		case "left_not_right":
+			spew.Dump(p.currentToken())
 			p.advance()
+			spew.Dump(p.currentToken())
+
 			nodes = append(nodes, p.createLNR())
 		case "print_integer":
 			p.advance()
@@ -519,7 +525,10 @@ func createLit(token lexer.Token) Node {
 func (p *Parser) createLNR() *Anb {
 	anb := new(Anb)
 
+	spew.Dump(p.currentToken())
 	p.expectCurrent([]string{"left_bracket"})
+	spew.Dump(p.currentToken())
+	fmt.Println("fui")
 	p.advance()
 
 	p.expectCurrent([]string{"character", "integer", "string"})
@@ -613,8 +622,9 @@ func (p *Parser) createVariable() *Variable {
 
 func (p *Parser) expectCurrent(expectedValues []string) {
 	currentToken := p.currentToken()
-	if !types.Contains(currentToken.Type, expectedValues) {
 
+	if !types.Contains(currentToken.Type, expectedValues) {
+		spew.Dump(currentToken)
 		lexer.ThrowSemanticError(&currentToken, expectedValues, p.Filename)
 		os.Exit(65)
 	}

@@ -1,11 +1,13 @@
 package ir
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/ir/memtable"
 	"github.com/fabulousduck/smol/ir/registertable"
 )
@@ -64,13 +66,27 @@ func (g *Generator) Generate(AST []ast.Node) {
 				g.Ir = append(g.Ir, g.newSetInstruction(variable, variableValue, false))
 			}
 		case "statement":
-
+			statement := AST[i].(*ast.Statement)
+			g.Ir = append(g.Ir, g.handleStatement(statement))
 		case "anb":
 			instruction := AST[i].(*ast.Anb)
+			if ast.NodeIsVariable(instruction.LHS) {
+				variable := instruction.LHS.(*ast.StatVar)
+				bnexreg := registertable.Register{g.memTable.LookupVariable(variable.Value, true).Value, variable.Value}
+				g.regTable[g.BNEXRegister] = bnexreg
+			} else {
+				lhsValue, _ := strconv.Atoi(instruction.LHS.(*ast.NumLit).Value)
+				bnexreg := registertable.Register{lhsValue, ""}
+				g.regTable[g.BNEXRegister] = bnexreg
+
+			}
+
 			anbInstructionStart := 0x200 + (len(g.Ir) * 2) // we need to multiply by 2 because each instruction is 2 bytes long
+			fmt.Printf("NIGGERS")
+			spew.Dump(anbInstructionStart)
 			g.Generate(instruction.Body)
 			g.Ir = append(g.Ir, g.newBNEInstruction(instruction))
-			g.Ir = append(g.Ir, g.newJumpInstructionFromLoose())
+			g.Ir = append(g.Ir, g.newJumpInstructionFromLoose(anbInstructionStart))
 		case "function":
 
 		case "functionCall":
@@ -89,46 +105,23 @@ func (g *Generator) Generate(AST []ast.Node) {
 		}
 	}
 
-	g.wrapCodeInLoop()
-
-	spew.Dump(g)
 }
 
-/*
-compressMemoryLayout relocates all variables next to the opcodes to reduce the size of the rom
-*/
-func (g *Generator) compressMemoryLayout() {
-	variablesReplaced := 0
-
-	//make sure the game does not start reading variable space
-	g.wrapCodeInLoop()
-
-	//get the end position of the opcodes
-	endOpcodeSpace := len(g.Ir) * 2
-
-	//move all variables closer
-	for i := 0; i < len(g.Ir); i++ {
-		if g.Ir[i].usesVariableSpace() {
-			switch g.Ir[i].GetInstructionName() {
-			case "SET":
-				newPostion := endOpcodeSpace + variablesReplaced
-				cast := g.Ir[i].(SET)
-				cast.Addr = newPostion
-				memTableVariable := g.memTable.FindByAddr(cast.Addr)
-				g.memTable.Move(memTableVariable, newPostion, true)
-				variablesReplaced++
-				break
-			case "MOV":
-				newPostion := endOpcodeSpace + variablesReplaced
-				cast := g.Ir[i].(MOV)
-				cast.R2 = newPostion
-				memTableVariable := g.memTable.FindByAddr(cast.R2)
-				g.memTable.Move(memTableVariable, newPostion, true)
-				variablesReplaced++
-				break
+func (g *Generator) handleStatement(statement *ast.Statement) instruction {
+	var newInstr instruction
+	switch statement.LHS {
+	case "INC":
+		if ast.NodeIsVariable(statement.RHS) {
+			registerIndex := g.regTable.Find(statement.RHS.(*ast.StatVar).Value)
+			if registerIndex == -1 {
+				errors.ROMModError()
 			}
+			newRegState := registertable.Register{g.regTable[registerIndex].Value + 1, g.regTable[registerIndex].Name}
+			g.regTable[registerIndex] = newRegState
+			newInstr = g.newAddInstruction(registerIndex, 1)
 		}
 	}
+	return newInstr
 }
 
 /*
@@ -137,10 +130,7 @@ func (g *Generator) compressMemoryLayout() {
 
    this is done using a MOV call to set PC back to 0x200 which is the start of the opcode space
 */
-func (g *Generator) wrapCodeInLoop() {
-	opcodeSpaceEnd := len(g.Ir) * 4 //each instruction is 4 bytes
+func (g *Generator) WrapCodeInLoop() {
 	resetInstruction := g.newJumpInstructionFromLoose(0x200)
-
 	g.Ir = append(g.Ir, resetInstruction)
-
 }
