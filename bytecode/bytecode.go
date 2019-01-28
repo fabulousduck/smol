@@ -1,6 +1,7 @@
 package bytecode
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/fabulousduck/smol/file"
@@ -52,8 +53,9 @@ func (g *Generator) CreateRom() {
 			plotInstruction := g.ir.Ir[i].(ir.PLOT)
 			g.embedPLOT(plotInstruction, romFile)
 		case "JMP":
-			jmpInstruction := g.ir.Ir[i].(ir.JMP)
+			jmpInstruction := g.ir.Ir[i].(ir.Jump)
 			g.embedJMP(jmpInstruction, romFile)
+
 		}
 	}
 	return
@@ -64,12 +66,12 @@ func (g *Generator) CreateRom() {
 	1: identifier
 	NNN: address to jump to
 */
-func (g *Generator) embedJMP(instruction ir.JMP, romFile *os.File) {
+func (g *Generator) embedJMP(instruction ir.Jump, romFile *os.File) {
 	baseByte := 0x1
-	baseByte = baseByte<<4 | shiftRight(jmpInstruction.To)
+	baseByte = baseByte<<4 | shiftRight(instruction.To)
 
-	secondaryByte := jmpInstruction.To & 0x0FF
-
+	secondaryByte := instruction.To & 0x0FF
+	fmt.Printf("fucking nigger: %04X\n")
 	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
 }
 

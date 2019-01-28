@@ -79,6 +79,18 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 	*/
 	if ast.NodeIsVariable(plotStatement.X) {
 		variableName := plotStatement.X.(*ast.StatVar).Value
+
+		//first we check if the variable is loaded into a register somewhere
+		registerLoadedValue := g.regTable.Find(variableName)
+		if registerLoadedValue == -1 {
+			//if the variable is not register loaded
+			registerLoadedValue = g.memTable.LookupVariable(variableName, false).Value
+		} else {
+			//if it is variable loaded
+			registerValue := g.regTable[registerLoadedValue].Value
+			g.Ir = append(g.Ir, g.newRegCpy(g.plotXRegister, registerValue))
+		}
+
 		variableTableEntry := g.memTable.LookupVariable(variableName, true)
 		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotXRegister, variableTableEntry.Value, false))
 	} else {

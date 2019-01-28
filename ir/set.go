@@ -1,5 +1,9 @@
 package ir
 
+/*
+	note: this thing is internal as fuck. there is no opcode for this. this is something we just do. not the emulator or a system for that matter
+*/
+
 import (
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
