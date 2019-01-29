@@ -13,6 +13,9 @@ type RegisterTable map[int]Register
 
 /*
 Register simulates a basic CPU register
+
+Value: the actual value in the register
+Name: the name of the current variable in it
 */
 type Register struct {
 	Value int
@@ -75,3 +78,13 @@ func (table RegisterTable) PutRegisterValue(register int, value int, name string
 func isValidRegisterIndex(registerIndex int) bool {
 	return registerIndex < 0xF
 }
+
+/*
+	somewhere we need to keep track of the variable in the ANB statement
+	we need to do this because we need to increment it every loop successively
+
+	the loops can be infinite, so there is a possibility that the variable in the BNE X register never gets adressed
+
+
+	we need something like a "is currently in register" field on a variable, that if it is, we up the register value
+*/

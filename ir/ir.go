@@ -24,6 +24,7 @@ type Generator struct {
 	nodesConsumed                                int
 	memorySize                                   int
 	IRegisterIndex, plotXRegister, plotYRegister int
+	BNEXRegister                                 int
 	Ir                                           []instruction
 	memTable                                     memtable.MemTable
 	regTable                                     registertable.RegisterTable
@@ -40,6 +41,7 @@ func NewGenerator(filename string) *Generator {
 	g.IRegisterIndex = 0xF
 	g.plotXRegister = 0xE
 	g.plotYRegister = 0xD
+	g.BNEXRegister = 0xC
 	g.regTable.Init()
 
 	return g
@@ -70,9 +72,27 @@ func (g *Generator) Generate(AST []ast.Node) {
 				g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
 			}
 		case "statement":
-
+			// statement := AST[i].(*ast.Statement)
+			// g.Ir = append(g.Ir, g.handleStatement(statement))
 		case "anb":
+			// instruction := AST[i].(*ast.Anb)
+			// if ast.NodeIsVariable(instruction.LHS) {
+			// 	variable := instruction.LHS.(*ast.StatVar)
+			// 	bnexreg := registertable.Register{g.memTable.LookupVariable(variable.Value, true).Value, variable.Value}
+			// 	g.regTable[g.BNEXRegister] = bnexreg
+			// } else {
+			// 	lhsValue, _ := strconv.Atoi(instruction.LHS.(*ast.NumLit).Value)
+			// 	bnexreg := registertable.Register{lhsValue, ""}
+			// 	g.regTable[g.BNEXRegister] = bnexreg
 
+			// }
+
+			// anbInstructionStart := 0x200 + (len(g.Ir) * 2) // we need to multiply by 2 because each instruction is 2 bytes long
+			// fmt.Printf("NIGGERS")
+			// spew.Dump(anbInstructionStart)
+			// g.Generate(instruction.Body)
+			// g.Ir = append(g.Ir, g.newBNEInstruction(instruction))
+			// g.Ir = append(g.Ir, g.newJumpInstructionFromLoose(anbInstructionStart))
 		case "function":
 
 		case "functionCall":
@@ -139,10 +159,7 @@ compressMemoryLayout relocates all variables next to the opcodes to reduce the s
 
    this is done using a MOV call to set PC back to 0x200 which is the start of the opcode space
 */
-func (g *Generator) wrapCodeInLoop() {
-	opcodeSpaceEnd := len(g.Ir) * 4 //each instruction is 4 bytes
-	resetInstruction := g.newJumpInstructionFromLoose(opcodeSpaceEnd, 0x200)
-
-	g.Ir = append(g.Ir, resetInstruction)
-
+func (g *Generator) WrapCodeInLoop() {
+	// resetInstruction := g.newJumpInstructionFromLoose(0x200)
+	// g.Ir = append(g.Ir, resetInstruction)
 }

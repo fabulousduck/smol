@@ -6,6 +6,4 @@ MEM Y 10;
 #from the top left of the screen
 
 PLT X Y;
-#PLT 50 50;
-#PLT X 200;
-#PLT 200 X;
+

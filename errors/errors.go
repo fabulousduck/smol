@@ -66,6 +66,12 @@ func IncorrectFunctionParamCountError(name string, given int, expected int) {
 	fmt.Printf("function \"%s\" requires %d arguments. Got %d\n", name, expected, given)
 }
 
+//ROMModError can be thrown when a variable modification is called on a variable that is not loaded into a register.
+//the user is most likely attempting to change rom here
+func ROMModError() {
+	fmt.Printf("Trying to modify variable that is not loaded into memory")
+}
+
 //MathInvalidReceiverError can be thrown when the script wants to do a mathematical statement but does not have a receiver for the outcome as LHS
 func MathInvalidReceiverError() {
 	fmt.Printf("left hand side of mathematical operation must be variable")
