@@ -1,7 +1,10 @@
 package bytecode
 
 import (
+	"fmt"
 	"os"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/smol/file"
 	"github.com/fabulousduck/smol/ir"
@@ -35,15 +38,20 @@ func (g *Generator) CreateRom() {
 
 	for i := 0; i < len(g.ir.Ir); i++ {
 		instructionType := g.ir.Ir[i].GetInstructionName()
+		spew.Dump(instructionType)
+		fmt.Printf("\n")
 		switch instructionType {
 		case "SETREG":
 			setRegInstruction := g.ir.Ir[i].(ir.SETREG)
 			g.embedSetRegister(setRegInstruction, romFile)
 		case "SETMEM":
-
 			setMemInstruction := g.ir.Ir[i].(ir.SETMEM)
+			//write a single byte into memory
 			file.WriteBytes(romFile, []byte{byte(uint8(setMemInstruction.Val))}, true, int64(setMemInstruction.Addr))
 			break
+		case "RegCpy":
+			regCpyInstruction := g.ir.Ir[i].(ir.RegCpy)
+			g.embedRegCpy(regCpyInstruction, romFile)
 		case "MOV":
 			movInstruction := g.ir.Ir[i].(ir.MOV)
 			if movInstruction.ANNN {
@@ -65,13 +73,30 @@ func (g *Generator) CreateRom() {
 }
 
 /*
+	opcode: 8XY0
+	X: register where the original value is stored
+	Y: register where the value is to be copied to
+*/
+func (g *Generator) embedRegCpy(instruction ir.RegCpy, romFile *os.File) {
+	baseByte := 0x8
+	baseByte = baseByte<<4 | instruction.From
+	secondaryByte := instruction.To<<4 | 0
+
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
+}
+
+/*
 	opcode: 6XNN
+	X: index of the register that the value will be placed in
+	NN: the value to be placed in the register
 */
 func (g *Generator) embedSetRegister(instruction ir.SETREG, romFile *os.File) {
 	baseByte := 0x6
 	baseByte = baseByte<<4 | instruction.Index
 	secondaryByte := instruction.Val
-	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
 }
 
 /*

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/ir/memtable"
 	"github.com/fabulousduck/smol/ir/registertable"
@@ -113,7 +111,6 @@ func (g *Generator) Generate(AST []ast.Node) {
 
 	// g.wrapCodeInLoop()
 
-	spew.Dump(g)
 }
 
 /*

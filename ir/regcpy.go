@@ -1,7 +1,7 @@
 package ir
 
 type RegCpy struct {
-	from, to int
+	From, To int
 }
 
 func (j RegCpy) GetInstructionName() string {
