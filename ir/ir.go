@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/ir/memtable"
@@ -71,7 +70,6 @@ func (g *Generator) Generate(AST []ast.Node) {
 			} else {
 				variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
 				g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
-				spew.Dump(g.regTable)
 			}
 		case "statement":
 			statement := AST[i].(*ast.Statement)
