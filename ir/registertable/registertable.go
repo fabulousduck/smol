@@ -1,6 +1,10 @@
 package registertable
 
-import "github.com/fabulousduck/smol/errors"
+import (
+	"os"
+
+	"github.com/fabulousduck/smol/errors"
+)
 
 /*
 RegisterTable is a simple collection of registers so they can be indexed
@@ -42,15 +46,30 @@ func (table RegisterTable) Init() {
 	}
 }
 
+func (table RegisterTable) FindEmptyRegister() int {
+	for k, v := range table {
+		if v.Value == 0 && v.Name == "" && isNonReservedRegister(k) {
+			return k
+		}
+	}
+	errors.OutOfRegistersError()
+	os.Exit(65)
+	return 0
+}
+
+func isNonReservedRegister(registerIndex int) bool {
+	return registerIndex != 0xF && registerIndex != 0xE && registerIndex != 0xD && registerIndex != 0xC
+}
+
 /*
 PutRegisterValue set the value of register to value
 */
-func (table RegisterTable) PutRegisterValue(register int, value int) {
+func (table RegisterTable) PutRegisterValue(register int, value int, name string) {
 	if !isValidRegisterIndex(register) {
 		errors.IlligalRegisterAccess(register)
 	}
 
-	table[register] = Register{value, table[register].Name}
+	table[register] = Register{value, name}
 }
 
 func isValidRegisterIndex(registerIndex int) bool {

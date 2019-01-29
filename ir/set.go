@@ -9,35 +9,58 @@ import (
 	"github.com/fabulousduck/smol/errors"
 )
 
-/*
-SET Val ADDR
-
-set a value at a given memory address
-*/
-type SET struct {
+type SETMEM struct {
 	Val, Addr int
 }
 
-func (s SET) GetInstructionName() string {
-	return "SET"
+func (s SETMEM) GetInstructionName() string {
+	return "SETMEM"
 }
 
-func (s SET) Opcodeable() bool {
+func (s SETMEM) Opcodeable() bool {
 	return false
 }
 
-func (s SET) usesVariableSpace() bool {
+func (s SETMEM) usesVariableSpace() bool {
 	return true
 }
 
 /*
-This is used for MEM operations.
-This means that it is used for setting variables into memory before any opcode is executed
-Once a variable is needed for an operation. for instance INC or ANB or any other. It will
-be retreived by MOV and put into a free register
+SET Val ADDR
+
+set a value in a given register address
 */
-func (g *Generator) newSetInstruction(v *ast.Variable, varValue int, resolve bool) SET {
-	isntr := SET{}
+type SETREG struct {
+	Val, Index int
+}
+
+func (s SETREG) GetInstructionName() string {
+	return "SETREG"
+}
+
+func (s SETREG) Opcodeable() bool {
+	return true
+}
+
+func (s SETREG) usesVariableSpace() bool {
+	return true
+}
+
+func (g *Generator) newSetMemoryLocationFromLoose(name string, value int) SETMEM {
+	instr := SETMEM{}
+	region := g.memTable.Put(name, value)
+	instr.Addr = region.Addr
+	instr.Val = value
+	return instr
+}
+
+/*
+This is used for MEM operations.
+Sets the declared variable in a free register
+Will error out if it cant find a free register
+*/
+func (g *Generator) newSetRegisterInstruction(v *ast.Variable, varValue int, resolve bool) SETREG {
+	instr := SETREG{}
 
 	if resolve {
 		resolutionName := v.Value.(*ast.StatVar).Value
@@ -48,16 +71,19 @@ func (g *Generator) newSetInstruction(v *ast.Variable, varValue int, resolve boo
 		}
 	}
 
-	region := g.memTable.Put(v.Name, varValue)
-	isntr.Addr = region.Addr
-	isntr.Val = varValue
-	return isntr
+	emptyRegisterAddress := g.regTable.FindEmptyRegister()
+	g.regTable.PutRegisterValue(emptyRegisterAddress, varValue, v.Name)
+	instr.Index = emptyRegisterAddress
+	instr.Val = varValue
+	return instr
 }
 
-func (g *Generator) newSetInstructionFromLoose(name string, varValue int) SET {
-	instr := SET{}
-	region := g.memTable.Put(name, varValue)
-	instr.Addr = region.Addr
+func (g *Generator) newSetRegisterInstructionFromLoose(registerName string, varValue int) SETREG {
+	instr := SETREG{}
+
+	emptyRegisterAddress := g.regTable.FindEmptyRegister()
+	g.regTable.PutRegisterValue(emptyRegisterAddress, varValue, registerName)
+	instr.Index = emptyRegisterAddress
 	instr.Val = varValue
 	return instr
 }

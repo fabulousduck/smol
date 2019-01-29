@@ -1,7 +1,6 @@
 package bytecode
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/fabulousduck/smol/file"
@@ -37,9 +36,13 @@ func (g *Generator) CreateRom() {
 	for i := 0; i < len(g.ir.Ir); i++ {
 		instructionType := g.ir.Ir[i].GetInstructionName()
 		switch instructionType {
-		case "SET":
-			setInstruction := g.ir.Ir[i].(ir.SET)
-			file.WriteBytes(romFile, []byte{byte(uint8(setInstruction.Val))}, true, int64(setInstruction.Addr))
+		case "SETREG":
+			setRegInstruction := g.ir.Ir[i].(ir.SETREG)
+			g.embedSetRegister(setRegInstruction, romFile)
+		case "SETMEM":
+
+			setMemInstruction := g.ir.Ir[i].(ir.SETMEM)
+			file.WriteBytes(romFile, []byte{byte(uint8(setMemInstruction.Val))}, true, int64(setMemInstruction.Addr))
 			break
 		case "MOV":
 			movInstruction := g.ir.Ir[i].(ir.MOV)
@@ -62,6 +65,16 @@ func (g *Generator) CreateRom() {
 }
 
 /*
+	opcode: 6XNN
+*/
+func (g *Generator) embedSetRegister(instruction ir.SETREG, romFile *os.File) {
+	baseByte := 0x6
+	baseByte = baseByte<<4 | instruction.Index
+	secondaryByte := instruction.Val
+	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
+}
+
+/*
 	opcode: 1NNN
 	1: identifier
 	NNN: address to jump to
@@ -71,7 +84,6 @@ func (g *Generator) embedJMP(instruction ir.Jump, romFile *os.File) {
 	baseByte = baseByte<<4 | shiftRight(instruction.To)
 
 	secondaryByte := instruction.To & 0x0FF
-	fmt.Printf("fucking nigger: %04X\n")
 	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
 }
 

@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/davecgh/go-spew/spew"
@@ -56,10 +57,17 @@ func (g *Generator) Generate(AST []ast.Node) {
 
 			//check if its a reference
 			if ast.NodeIsVariable(variable.Value) {
-				g.Ir = append(g.Ir, g.newSetInstruction(variable, 0, true))
+				//if it is a reference, we get the original value,
+				//and copy it over into a new register with the name of the new variable
+				variableValue := variable.Value.(*ast.StatVar)
+				emptyRegister := g.regTable.FindEmptyRegister()
+				originalRegister := g.regTable.Find(variableValue.Value)
+				fmt.Printf("making register dupe with new name: %s", variable.Name)
+				g.regTable[emptyRegister] = registertable.Register{g.regTable[originalRegister].Value, variable.Name}
+				g.Ir = append(g.Ir, g.newRegCpy(originalRegister, emptyRegister))
 			} else {
 				variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
-				g.Ir = append(g.Ir, g.newSetInstruction(variable, variableValue, false))
+				g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
 			}
 		case "statement":
 
@@ -78,12 +86,12 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "switchStatement":
 
 		case "plotStatement":
-			plotStatement := AST[i].(*ast.PlotStatement)
-			g.Ir = append(g.Ir, g.newPlotInstructionSet(plotStatement))
+			// plotStatement := AST[i].(*ast.PlotStatement)
+			// g.Ir = append(g.Ir, g.newPlotInstructionSet(plotStatement))
 		}
 	}
 
-	g.wrapCodeInLoop()
+	// g.wrapCodeInLoop()
 
 	spew.Dump(g)
 }
@@ -91,39 +99,39 @@ func (g *Generator) Generate(AST []ast.Node) {
 /*
 compressMemoryLayout relocates all variables next to the opcodes to reduce the size of the rom
 */
-func (g *Generator) compressMemoryLayout() {
-	variablesReplaced := 0
+// func (g *Generator) compressMemoryLayout() {
+// 	variablesReplaced := 0
 
-	//make sure the game does not start reading variable space
-	g.wrapCodeInLoop()
+// 	//make sure the game does not start reading variable space
+// 	g.wrapCodeInLoop()
 
-	//get the end position of the opcodes
-	endOpcodeSpace := len(g.Ir) * 2
+// 	//get the end position of the opcodes
+// 	endOpcodeSpace := len(g.Ir) * 2
 
-	//move all variables closer
-	for i := 0; i < len(g.Ir); i++ {
-		if g.Ir[i].usesVariableSpace() {
-			switch g.Ir[i].GetInstructionName() {
-			case "SET":
-				newPostion := endOpcodeSpace + variablesReplaced
-				cast := g.Ir[i].(SET)
-				cast.Addr = newPostion
-				memTableVariable := g.memTable.FindByAddr(cast.Addr)
-				g.memTable.Move(memTableVariable, newPostion, true)
-				variablesReplaced++
-				break
-			case "MOV":
-				newPostion := endOpcodeSpace + variablesReplaced
-				cast := g.Ir[i].(MOV)
-				cast.R2 = newPostion
-				memTableVariable := g.memTable.FindByAddr(cast.R2)
-				g.memTable.Move(memTableVariable, newPostion, true)
-				variablesReplaced++
-				break
-			}
-		}
-	}
-}
+// 	//move all variables closer
+// 	for i := 0; i < len(g.Ir); i++ {
+// 		if g.Ir[i].usesVariableSpace() {
+// 			switch g.Ir[i].GetInstructionName() {
+// 			case "SET":
+// 				newPostion := endOpcodeSpace + variablesReplaced
+// 				cast := g.Ir[i].(SET)
+// 				cast.Addr = newPostion
+// 				memTableVariable := g.memTable.FindByAddr(cast.Addr)
+// 				g.memTable.Move(memTableVariable, newPostion, true)
+// 				variablesReplaced++
+// 				break
+// 			case "MOV":
+// 				newPostion := endOpcodeSpace + variablesReplaced
+// 				cast := g.Ir[i].(MOV)
+// 				cast.R2 = newPostion
+// 				memTableVariable := g.memTable.FindByAddr(cast.R2)
+// 				g.memTable.Move(memTableVariable, newPostion, true)
+// 				variablesReplaced++
+// 				break
+// 			}
+// 		}
+// 	}
+// }
 
 /*
    to make sure the machine does not start reading into variable space which is located after the opcodes

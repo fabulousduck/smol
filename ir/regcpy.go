@@ -16,6 +16,9 @@ func (j RegCpy) usesVariableSpace() bool {
 	return false
 }
 
+/*
+newRegCpy: from R1 into R2
+*/
 func (g *Generator) newRegCpy(R1 int, R2 int) RegCpy {
 	return RegCpy{R1, R2}
 }

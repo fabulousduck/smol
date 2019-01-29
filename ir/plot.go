@@ -42,7 +42,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 		first we check if this pixel representor has been set
 	*/
 	plotInstr := new(PLOT)
-	topLeftPixel := 0x80
+	// topLeftPixel := 0x80
 	topLeftPixelMemoryName := "PIXEL_BUFFER_REP"
 
 	/*
@@ -52,7 +52,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 
 	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
 		spew.Dump("lookup failed")
-		g.Ir = append(g.Ir, g.newSetInstructionFromLoose(topLeftPixelMemoryName, topLeftPixel))
+		// g.Ir = append(g.Ir, g.newSetInstructionFromLoose(topLeftPixelMemoryName, topLeftPixel))
 	}
 	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)
 
@@ -84,7 +84,16 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) *PLO
 		registerLoadedValue := g.regTable.Find(variableName)
 		if registerLoadedValue == -1 {
 			//if the variable is not register loaded
-			registerLoadedValue = g.memTable.LookupVariable(variableName, false).Value
+			//look it up in memory
+			// memVar := g.memTable.LookupVariable(variableName, false).Value
+
+			//find a register to put store it in
+			emptyRegisterIndex := g.regTable.FindEmptyRegister()
+			//create the instruction to load it into the register
+
+			// g.regTable.PutRegisterValue(emptyRegisterIndex, memVar)
+
+			g.Ir = append(g.Ir, g.newRegCpy(emptyRegisterIndex, g.plotXRegister))
 		} else {
 			//if it is variable loaded
 			registerValue := g.regTable[registerLoadedValue].Value
