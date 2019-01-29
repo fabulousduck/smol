@@ -7,6 +7,7 @@ package ir
 import (
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
+	"github.com/fabulousduck/smol/ir/registertable"
 )
 
 type SETMEM struct {
@@ -50,6 +51,14 @@ func (g *Generator) newSetMemoryLocationFromLoose(name string, value int) SETMEM
 	instr := SETMEM{}
 	region := g.memTable.Put(name, value)
 	instr.Addr = region.Addr
+	instr.Val = value
+	return instr
+}
+
+func (g *Generator) newSpecificRegisterSet(registerIndex int, value int, name string) SETREG {
+	instr := SETREG{}
+	g.regTable[registerIndex] = registertable.Register{value, name}
+	instr.Index = registerIndex
 	instr.Val = value
 	return instr
 }

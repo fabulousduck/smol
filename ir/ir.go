@@ -86,7 +86,6 @@ func (g *Generator) Generate(AST []ast.Node) {
 			// }
 
 			// anbInstructionStart := 0x200 + (len(g.Ir) * 2) // we need to multiply by 2 because each instruction is 2 bytes long
-			// fmt.Printf("NIGGERS")
 			// spew.Dump(anbInstructionStart)
 			// g.Generate(instruction.Body)
 			// g.Ir = append(g.Ir, g.newBNEInstruction(instruction))
@@ -104,8 +103,8 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "switchStatement":
 
 		case "plotStatement":
-			// plotStatement := AST[i].(*ast.PlotStatement)
-			// g.Ir = append(g.Ir, g.newPlotInstructionSet(plotStatement))
+			plotStatement := AST[i].(*ast.PlotStatement)
+			g.Ir = append(g.Ir, g.newPlotInstructionSet(plotStatement))
 		}
 	}
 

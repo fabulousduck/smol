@@ -1,10 +1,11 @@
 package ir
 
 import (
+	"os"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
 )
 
 /*
@@ -42,7 +43,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT
 		first we check if this pixel representor has been set
 	*/
 	plotInstr := PLOT{}
-	// topLeftPixel := 0x80
+	topLeftPixel := 0x80
 	topLeftPixelMemoryName := "PIXEL_BUFFER_REP"
 
 	/*
@@ -50,9 +51,11 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT
 	*/
 	plotInstr.H = 1
 
+	/*
+		check if the single pixel has been set or not
+	*/
 	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
-		spew.Dump("lookup failed")
-		// g.Ir = append(g.Ir, g.newSetInstructionFromLoose(topLeftPixelMemoryName, topLeftPixel))
+		g.Ir = append(g.Ir, g.newSetMemoryLocationFromLoose(topLeftPixelMemoryName, topLeftPixel))
 	}
 	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)
 
@@ -83,43 +86,36 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT
 		//first we check if the variable is loaded into a register somewhere
 		registerLoadedValue := g.regTable.Find(variableName)
 		if registerLoadedValue == -1 {
-			//if the variable is not register loaded
-			//look it up in memory
-			// memVar := g.memTable.LookupVariable(variableName, false).Value
-
-			//find a register to put store it in
-			emptyRegisterIndex := g.regTable.FindEmptyRegister()
-			//create the instruction to load it into the register
-
-			// g.regTable.PutRegisterValue(emptyRegisterIndex, memVar)
-
-			g.Ir = append(g.Ir, g.newRegCpy(emptyRegisterIndex, g.plotXRegister))
+			//if it is not in any register. the variable does not exist and we error out
+			errors.UndefinedVariableError(variableName)
+			os.Exit(65)
 		} else {
 			//if it is variable loaded
-			registerValue := g.regTable[registerLoadedValue].Value
-			g.Ir = append(g.Ir, g.newRegCpy(g.plotXRegister, registerValue))
+			g.Ir = append(g.Ir, g.newRegCpy(g.plotXRegister, registerLoadedValue))
 		}
-
-		variableTableEntry := g.memTable.LookupVariable(variableName, true)
-		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotXRegister, variableTableEntry.Value, false))
 	} else {
 		variableValue := plotStatement.X.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
-		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotXRegister, intValue, false))
-
+		g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.plotXRegister, intValue, "plotXRegister"))
 	}
 
-	/*
-		Check y variable node
-	*/
 	if ast.NodeIsVariable(plotStatement.Y) {
 		variableName := plotStatement.Y.(*ast.StatVar).Value
-		variableTableEntry := g.memTable.LookupVariable(variableName, true)
-		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotYRegister, variableTableEntry.Value, false))
+
+		//first we check if the variable is loaded into a register somewhere
+		registerLoadedValue := g.regTable.Find(variableName)
+		if registerLoadedValue == -1 {
+			//if it is not in any register. the variable does not exist and we error out
+			errors.UndefinedVariableError(variableName)
+			os.Exit(65)
+		} else {
+			//if it is variable loaded
+			g.Ir = append(g.Ir, g.newRegCpy(g.plotYRegister, registerLoadedValue))
+		}
 	} else {
 		variableValue := plotStatement.Y.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
-		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.plotYRegister, intValue, false))
+		g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.plotYRegister, intValue, "plotYRegister"))
 	}
 
 	plotInstr.X = g.plotXRegister
