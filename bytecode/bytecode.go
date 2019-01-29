@@ -59,7 +59,12 @@ func (g *Generator) CreateRom() {
 				break
 			}
 			g.embedMOV(movInstruction, romFile)
-
+		case "BNE":
+			bneInstruction := g.ir.Ir[i].(ir.BNE)
+			g.embedBNE(bneInstruction, romFile)
+		case "BNERR":
+			bnerrInstruction := g.ir.Ir[i].(ir.BNERR)
+			g.embedBNERR(bnerrInstruction, romFile)
 		case "PLOT":
 			plotInstruction := g.ir.Ir[i].(ir.PLOT)
 			g.embedPLOT(plotInstruction, romFile)
@@ -70,6 +75,22 @@ func (g *Generator) CreateRom() {
 		}
 	}
 	return
+}
+
+func (g *Generator) embedBNE(instruction ir.BNE, romFile *os.File) {
+	baseByte := 0x3
+	baseByte = baseByte<<4 | instruction.Lhs
+	secondaryByte := instruction.Rhs
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
+}
+
+func (g *Generator) embedBNERR(instruction ir.BNERR, romFile *os.File) {
+	baseByte := 0x5
+	baseByte = baseByte<<4 | instruction.Lhs
+	secondaryByte := instruction.Rhs<<4 | 0
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
 }
 
 /*

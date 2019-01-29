@@ -82,7 +82,6 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT
 	*/
 	if ast.NodeIsVariable(plotStatement.X) {
 		variableName := plotStatement.X.(*ast.StatVar).Value
-
 		//first we check if the variable is loaded into a register somewhere
 		registerLoadedValue := g.regTable.Find(variableName)
 		if registerLoadedValue == -1 {
@@ -91,7 +90,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT
 			os.Exit(65)
 		} else {
 			//if it is variable loaded
-			g.Ir = append(g.Ir, g.newRegCpy(g.plotXRegister, registerLoadedValue))
+			g.Ir = append(g.Ir, g.newRegCpy(registerLoadedValue, g.plotXRegister))
 		}
 	} else {
 		variableValue := plotStatement.X.(*ast.NumLit).Value
@@ -120,6 +119,5 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT
 
 	plotInstr.X = g.plotXRegister
 	plotInstr.Y = g.plotYRegister
-
 	return plotInstr
 }

@@ -2,9 +2,12 @@ package ir
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/ir/memtable"
 	"github.com/fabulousduck/smol/ir/registertable"
 )
@@ -68,28 +71,39 @@ func (g *Generator) Generate(AST []ast.Node) {
 			} else {
 				variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
 				g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
+				spew.Dump(g.regTable)
 			}
 		case "statement":
-			// statement := AST[i].(*ast.Statement)
-			// g.Ir = append(g.Ir, g.handleStatement(statement))
+			statement := AST[i].(*ast.Statement)
+			g.Ir = append(g.Ir, g.handleStatement(statement))
 		case "anb":
-			// instruction := AST[i].(*ast.Anb)
-			// if ast.NodeIsVariable(instruction.LHS) {
-			// 	variable := instruction.LHS.(*ast.StatVar)
-			// 	bnexreg := registertable.Register{g.memTable.LookupVariable(variable.Value, true).Value, variable.Value}
-			// 	g.regTable[g.BNEXRegister] = bnexreg
-			// } else {
-			// 	lhsValue, _ := strconv.Atoi(instruction.LHS.(*ast.NumLit).Value)
-			// 	bnexreg := registertable.Register{lhsValue, ""}
-			// 	g.regTable[g.BNEXRegister] = bnexreg
+			instruction := AST[i].(*ast.Anb)
+			// we need to multiply by 2 because each instruction is 2 bytes long
+			//doing this here is a little trick to get the value to keep getting updated from its origin register
+			anbInstructionStart := 0x200 + (len(g.Ir) * 2)
+			g.Generate(instruction.Body)
 
-			// }
+			if ast.NodeIsVariable(instruction.LHS) {
+				variable := instruction.LHS.(*ast.StatVar)
+				lhsVariableRegister := g.regTable.Find(variable.Value)
+				g.regTable[g.BNEXRegister] = registertable.Register{g.regTable[lhsVariableRegister].Value, "BNEX"}
+				g.Ir = append(g.Ir, g.newRegCpy(lhsVariableRegister, g.BNEXRegister))
+			} else {
+				lhsValue, _ := strconv.Atoi(instruction.LHS.(*ast.NumLit).Value)
+				bnexreg := registertable.Register{lhsValue, "BNEX"}
+				g.regTable[g.BNEXRegister] = bnexreg
+				g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.BNEXRegister, lhsValue, "BNEX"))
+			}
 
-			// anbInstructionStart := 0x200 + (len(g.Ir) * 2) // we need to multiply by 2 because each instruction is 2 bytes long
-			// spew.Dump(anbInstructionStart)
-			// g.Generate(instruction.Body)
-			// g.Ir = append(g.Ir, g.newBNEInstruction(instruction))
-			// g.Ir = append(g.Ir, g.newJumpInstructionFromLoose(anbInstructionStart))
+			if ast.NodeIsVariable(instruction.RHS) {
+				variable := instruction.RHS.(*ast.StatVar)
+				rhsVariableRegister := g.regTable.Find(variable.Value)
+				g.Ir = append(g.Ir, g.newBNERRInstructionFromLoose(g.BNEXRegister, rhsVariableRegister))
+			} else {
+				rhsValue, _ := strconv.Atoi(instruction.RHS.(*ast.NumLit).Value)
+				g.Ir = append(g.Ir, g.newBNEInstructionFromLoose(g.BNEXRegister, rhsValue))
+			}
+			g.Ir = append(g.Ir, g.newJumpInstructionFromLoose(anbInstructionStart))
 		case "function":
 
 		case "functionCall":
@@ -108,8 +122,23 @@ func (g *Generator) Generate(AST []ast.Node) {
 		}
 	}
 
-	// g.wrapCodeInLoop()
+}
 
+func (g *Generator) handleStatement(s *ast.Statement) instruction {
+	var instr instruction
+	switch s.LHS {
+	case "INC":
+
+		if !ast.NodeIsVariable(s.RHS) {
+			errors.LitIncrementError()
+			os.Exit(65)
+		}
+		rhsVariable := s.RHS.(*ast.StatVar)
+		variableRegisterTableIndex := g.regTable.Find(rhsVariable.Value)
+		instr = g.newAddInstruction(variableRegisterTableIndex, 1)
+
+	}
+	return instr
 }
 
 /*
@@ -156,6 +185,6 @@ compressMemoryLayout relocates all variables next to the opcodes to reduce the s
    this is done using a MOV call to set PC back to 0x200 which is the start of the opcode space
 */
 func (g *Generator) WrapCodeInLoop() {
-	// resetInstruction := g.newJumpInstructionFromLoose(0x200)
-	// g.Ir = append(g.Ir, resetInstruction)
+	resetInstruction := g.newJumpInstructionFromLoose(0x200)
+	g.Ir = append(g.Ir, resetInstruction)
 }

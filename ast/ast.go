@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
@@ -215,9 +214,7 @@ func (p *Parser) Parse() ([]Node, int) {
 			p.advance()
 			nodes = append(nodes, p.createFunction())
 		case "left_not_right":
-			spew.Dump(p.currentToken())
 			p.advance()
-			spew.Dump(p.currentToken())
 
 			nodes = append(nodes, p.createLNR())
 		case "print_integer":
@@ -525,10 +522,7 @@ func createLit(token lexer.Token) Node {
 func (p *Parser) createLNR() *Anb {
 	anb := new(Anb)
 
-	spew.Dump(p.currentToken())
 	p.expectCurrent([]string{"left_bracket"})
-	spew.Dump(p.currentToken())
-	fmt.Println("fui")
 	p.advance()
 
 	p.expectCurrent([]string{"character", "integer", "string"})
