@@ -1,6 +1,5 @@
 MEM A 0;
-MEM B 10;
 
-ANB[A,B]:
+ANB[A,30]:
     INC A;
 END

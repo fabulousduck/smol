@@ -1,7 +1,6 @@
 package bytecode
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
@@ -39,7 +38,6 @@ func (g *Generator) CreateRom() {
 	for i := 0; i < len(g.ir.Ir); i++ {
 		instructionType := g.ir.Ir[i].GetInstructionName()
 		spew.Dump(instructionType)
-		fmt.Printf("\n")
 		switch instructionType {
 		case "SETREG":
 			setRegInstruction := g.ir.Ir[i].(ir.SETREG)
@@ -59,6 +57,10 @@ func (g *Generator) CreateRom() {
 				break
 			}
 			g.embedMOV(movInstruction, romFile)
+
+		case "ADD":
+			addInstruction := g.ir.Ir[i].(ir.ADD)
+			g.embedAdd(addInstruction, romFile)
 		case "BNE":
 			bneInstruction := g.ir.Ir[i].(ir.BNE)
 			g.embedBNE(bneInstruction, romFile)
@@ -68,13 +70,27 @@ func (g *Generator) CreateRom() {
 		case "PLOT":
 			plotInstruction := g.ir.Ir[i].(ir.PLOT)
 			g.embedPLOT(plotInstruction, romFile)
-		case "JMP":
+		case "Jump":
 			jmpInstruction := g.ir.Ir[i].(ir.Jump)
 			g.embedJMP(jmpInstruction, romFile)
 
 		}
 	}
 	return
+}
+
+/*
+V[x] += V[y]
+	opcode: 7XNN
+	X: register to add value onto
+	NN: value to add onto registerX
+*/
+func (g *Generator) embedAdd(instruction ir.ADD, romFile *os.File) {
+	baseByte := 0x7<<4 | instruction.Register
+	secondaryByte := instruction.Value
+
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
 }
 
 func (g *Generator) embedBNE(instruction ir.BNE, romFile *os.File) {
@@ -100,8 +116,8 @@ func (g *Generator) embedBNERR(instruction ir.BNERR, romFile *os.File) {
 */
 func (g *Generator) embedRegCpy(instruction ir.RegCpy, romFile *os.File) {
 	baseByte := 0x8
-	baseByte = baseByte<<4 | instruction.From
-	secondaryByte := instruction.To<<4 | 0
+	baseByte = baseByte<<4 | instruction.To
+	secondaryByte := instruction.From<<4 | 0
 
 	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
 	file.WriteBytes(romFile, opcode, false, 0)

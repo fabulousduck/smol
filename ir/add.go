@@ -8,7 +8,7 @@ X: register to add onto
 NN: value to add onto value in register
 */
 type ADD struct {
-	register, value int
+	Register, Value int
 }
 
 func (a ADD) GetInstructionName() string {

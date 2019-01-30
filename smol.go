@@ -48,7 +48,6 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	if compile {
 		g := ir.NewGenerator(filename)
 		g.Generate(p.Ast)
-		g.WrapCodeInLoop()
 		spew.Dump(g)
 		bg := bytecode.Init(g, filename)
 		bg.CreateRom()
