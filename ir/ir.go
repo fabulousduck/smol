@@ -107,7 +107,17 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "functionCall":
 
 		case "setStatement":
+			instruction := AST[i].(*ast.SetStatement)
+			castVariable := instruction.MHS.(*ast.StatVar)
+			variableRegister := g.regTable.Find(castVariable.Value)
+			if ast.NodeIsVariable(instruction.RHS) {
+				referenceVariableRegister := g.regTable.Find(instruction.RHS.(*ast.StatVar).Value)
+				g.Ir = append(g.Ir, g.newRegCpy(referenceVariableRegister, variableRegister))
+			} else {
+				castVal, _ := strconv.Atoi(instruction.RHS.(*ast.NumLit).Value)
+				g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(castVariable.Value, castVal))
 
+			}
 		case "mathStatement":
 
 		case "comparison":
@@ -134,7 +144,6 @@ func (g *Generator) handleStatement(s *ast.Statement) instruction {
 		rhsVariable := s.RHS.(*ast.StatVar)
 		variableRegisterTableIndex := g.regTable.Find(rhsVariable.Value)
 		instr = g.newAddInstruction(variableRegisterTableIndex, 1)
-
 	}
 	return instr
 }

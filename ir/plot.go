@@ -109,7 +109,7 @@ func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT
 			os.Exit(65)
 		} else {
 			//if it is variable loaded
-			g.Ir = append(g.Ir, g.newRegCpy(g.plotYRegister, registerLoadedValue))
+			g.Ir = append(g.Ir, g.newRegCpy(registerLoadedValue, g.plotYRegister))
 		}
 	} else {
 		variableValue := plotStatement.Y.(*ast.NumLit).Value

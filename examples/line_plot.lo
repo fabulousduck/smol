@@ -1,7 +1,8 @@
-MEM A 20;
-
-ANB[A,30]:
-    PLT A 10;
+MEM A 0;
+MEM B 0;
+ANB[A,10]:
+    PLT A B;
+    INC B;
     INC A;
 END
 
