@@ -7,6 +7,7 @@ import (
 
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
+	"github.com/fabulousduck/smol/ir/functionaddrtable"
 	"github.com/fabulousduck/smol/ir/memtable"
 	"github.com/fabulousduck/smol/ir/registertable"
 )
@@ -21,6 +22,7 @@ type instruction interface {
 //to transform an AST into a chip-8 ROM
 type Generator struct {
 	filename                                     string
+	functionAddrTable                            []functionaddrtable.FunctionAddr
 	nodesConsumed                                int
 	memorySize                                   int
 	IRegisterIndex, plotXRegister, plotYRegister int
@@ -103,7 +105,16 @@ func (g *Generator) Generate(AST []ast.Node) {
 			}
 			g.Ir = append(g.Ir, g.newJumpInstructionFromLoose(anbInstructionStart))
 		case "function":
+			instruction := AST[i].(*ast.Function)
 
+			//find the location where the function will be placed
+			functionAddr := 0x200 + (len(g.Ir) * 2)
+
+			//put a new function on the function table so we know where can jump to to call it
+			g.functionAddrTable = append(g.functionAddrTable, functionaddrtable.NewFunctionAddr(functionAddr, instruction.Name))
+
+			//put the current register contents in memory so we dont lose it
+			g.Ir = append(g.Ir, g.NewRGDInstruction())
 		case "functionCall":
 
 		case "setStatement":

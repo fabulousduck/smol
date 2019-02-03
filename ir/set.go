@@ -49,7 +49,7 @@ func (s SETREG) usesVariableSpace() bool {
 
 func (g *Generator) newSetMemoryLocationFromLoose(name string, value int) SETMEM {
 	instr := SETMEM{}
-	region := g.memTable.Put(name, value)
+	region := g.memTable.Put(name, value, 1)
 	instr.Addr = region.Addr
 	instr.Val = value
 	return instr

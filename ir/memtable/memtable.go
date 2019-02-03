@@ -26,7 +26,7 @@ notes
 chip-8's blocks are 8 bit, so 1 byte.
 with a total of 4096 bytes
 */
-func (table MemTable) Put(name string, value int) *MemRegion {
+func (table MemTable) Put(name string, value int, size int) *MemRegion {
 	region := new(MemRegion)
 	//check if there is any memory left for our variable
 	currentMemSize := table.getSize()
@@ -34,7 +34,7 @@ func (table MemTable) Put(name string, value int) *MemRegion {
 		errors.OutOfMemoryError()
 	}
 
-	region.Addr = table.findNextEmptyAddr()
+	region.Addr = table.FindNextEmptyAddr()
 	region.Size = 1
 	region.Value = value
 	table[name] = region
@@ -65,7 +65,7 @@ func (table *MemTable) LookupVariable(name string, internalLookup bool) *MemRegi
 	return nil
 }
 
-func (table MemTable) findNextEmptyAddr() int {
+func (table MemTable) FindNextEmptyAddr() int {
 
 	varAddrSpaceStart := 0xEA0 - 0x200
 	varAddrSpaceEnd := 0xEFF - 0x200
