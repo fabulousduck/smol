@@ -1,5 +1,7 @@
 package ir
 
+import "github.com/fabulousduck/smol/ast"
+
 /*
 FNJMP is a special jump for the chip-8
 that is meant for function calls
@@ -26,4 +28,12 @@ func (f FNJMP) usesVariableSpace() bool {
 
 func (g *Generator) newFNJMPInstruction(jmpAddr int) FNJMP {
 	return FNJMP{jmpAddr}
+}
+
+func (g *Generator) createFunctionCallInstructions(instruction *ast.FunctionCall) {
+
+	//lookup the function on the function table
+	fnTableEntry := g.functionAddrTable.Find(instruction.Name)
+
+	g.Ir = append(g.Ir, g.newFNJMPInstruction(fnTableEntry.Addr))
 }

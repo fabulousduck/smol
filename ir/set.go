@@ -5,6 +5,8 @@ package ir
 */
 
 import (
+	"strconv"
+
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/ir/registertable"
@@ -95,4 +97,39 @@ func (g *Generator) newSetRegisterInstructionFromLoose(registerName string, varV
 	instr.Index = emptyRegisterAddress
 	instr.Val = varValue
 	return instr
+}
+
+func (g *Generator) createVariableOperationInstructions(variable *ast.Variable) {
+	//check if its a reference
+	if ast.NodeIsVariable(variable.Value) {
+		//if it is a reference, we get the original value,
+		//and copy it over into a new register with the name of the new variable
+		variableValue := variable.Value.(*ast.StatVar)
+		emptyRegister := g.regTable.FindEmptyRegister()
+		originalRegister := g.regTable.Find(variableValue.Value)
+		g.regTable[emptyRegister] = registertable.Register{g.regTable[originalRegister].Value, variable.Name}
+		g.Ir = append(g.Ir, g.newRegCpy(originalRegister, emptyRegister))
+	} else {
+		variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
+		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
+	}
+}
+
+func (g *Generator) createSetStatement(instruction *ast.SetStatement) {
+	castVariable := instruction.MHS.(*ast.StatVar)
+
+	//find the register in which the variable is currently stored
+	variableRegister := g.regTable.Find(castVariable.Value)
+
+	//if the rhs of the set statement is a variable too, we need to get its value first
+	//and then embed a register copy instruction
+	if ast.NodeIsVariable(instruction.RHS) {
+		referenceVariableRegister := g.regTable.Find(instruction.RHS.(*ast.StatVar).Value)
+		g.Ir = append(g.Ir, g.newRegCpy(referenceVariableRegister, variableRegister))
+	} else {
+		//otherwise, we need to set the value of the register to the right hand side value
+		castVal, _ := strconv.Atoi(instruction.RHS.(*ast.NumLit).Value)
+		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(castVariable.Value, castVal))
+
+	}
 }
