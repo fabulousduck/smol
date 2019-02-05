@@ -22,7 +22,7 @@ type instruction interface {
 //to transform an AST into a chip-8 ROM
 type Generator struct {
 	filename                                     string
-	functionAddrTable                            []functionaddrtable.FunctionAddr
+	functionAddrTable                            functionaddrtable.FunctionAddrTable
 	nodesConsumed                                int
 	memorySize                                   int
 	IRegisterIndex, plotXRegister, plotYRegister int
@@ -113,10 +113,19 @@ func (g *Generator) Generate(AST []ast.Node) {
 			//put a new function on the function table so we know where can jump to to call it
 			g.functionAddrTable = append(g.functionAddrTable, functionaddrtable.NewFunctionAddr(functionAddr, instruction.Name))
 
-			//put the current register contents in memory so we dont lose it
-			g.Ir = append(g.Ir, g.NewRGDInstruction())
-		case "functionCall":
+			//generate the function code
+			g.Generate(instruction.Body)
 
+			//put in a return statement
+			g.Ir = append(g.Ir, g.newRetInstruction())
+
+		case "functionCall":
+			instruction := AST[i].(*ast.FunctionCall)
+
+			//lookup the function on the function table
+			fnTableEntry := g.functionAddrTable.Find(instruction.Name)
+
+			g.Ir = append(g.Ir, g.newFNJMPInstruction(fnTableEntry.Addr))
 		case "setStatement":
 			instruction := AST[i].(*ast.SetStatement)
 			castVariable := instruction.MHS.(*ast.StatVar)

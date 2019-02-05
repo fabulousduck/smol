@@ -20,6 +20,11 @@ func ConcatVariables(vars []string, sep string) string {
 	return currentString.String()
 }
 
+//UnknownFunctionName is an error when a lookup on a function is done but none could be found
+func UnknownFunctionName(name string) {
+	fmt.Printf("tried to call unknown function: %s\n", name)
+}
+
 //IlligalRegisterAccess is thrown by the register table when it detects the compilers accesses a non existant register
 func IlligalRegisterAccess(register int) {
 	fmt.Printf("illigal access of register: %d", register)

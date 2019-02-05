@@ -58,6 +58,9 @@ func (g *Generator) CreateRom() {
 			}
 			g.embedMOV(movInstruction, romFile)
 
+		case "RET":
+			g.embedRet(romFile)
+
 		case "ADD":
 			addInstruction := g.ir.Ir[i].(ir.ADD)
 			g.embedAdd(addInstruction, romFile)
@@ -77,6 +80,16 @@ func (g *Generator) CreateRom() {
 		}
 	}
 	return
+}
+
+/*
+00EE
+opcode: 00EE
+
+literally just a return opcode. no data is encoded in this thing
+*/
+func (g *Generator) embedRet(romFile *os.File) {
+
 }
 
 /*
