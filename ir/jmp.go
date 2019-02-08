@@ -2,9 +2,13 @@ package ir
 
 /*
 JMP FROM TO
+
+has an ID field because sometimes we need to reference to it
+for stuff like function hops where we need manipulate the call later
+to set the jump to address
 */
 type Jump struct {
-	To int
+	To, ID int
 }
 
 func (j Jump) GetInstructionName() string {
@@ -20,5 +24,5 @@ func (j Jump) usesVariableSpace() bool {
 }
 
 func (g *Generator) newJumpInstructionFromLoose(to int) Jump {
-	return Jump{to}
+	return Jump{to, 0}
 }

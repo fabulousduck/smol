@@ -8,6 +8,7 @@ import (
 	"github.com/fabulousduck/smol/ir/functionaddrtable"
 	"github.com/fabulousduck/smol/ir/memtable"
 	"github.com/fabulousduck/smol/ir/registertable"
+	"github.com/fabulousduck/smol/rnd"
 )
 
 type instruction interface {
@@ -50,6 +51,27 @@ func NewGenerator(filename string) *Generator {
 }
 
 /*
+FindInstructionIndex looks up an instruction with given ID.
+returns the first one it finds
+
+returns -1 if nothing with that ID was found
+
+currently only used for JMP instructions as those are the
+only instructions that have ID's
+*/
+func (g *Generator) FindInstructionIndex(ID int) int {
+	for i := 0; i < len(g.Ir); i++ {
+		if g.Ir[i].GetInstructionName() == "Jump" {
+			jumpInstrCast := g.Ir[i].(*Jump)
+			if jumpInstrCast.ID == ID {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+/*
 Generate interprets the AST and makes an IR from it
 */
 func (g *Generator) Generate(AST []ast.Node) {
@@ -89,18 +111,28 @@ func (g *Generator) Generate(AST []ast.Node) {
 
 func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 
-	currentInstructionCount := len(g.Ir)
+	beforeGenerationInstructionCount := len(g.Ir)
 	//find the location where the function will be placed
-	functionAddr := 0x200 + (currentInstructionCount * 2)
+
+	//create the jump instruction so it knows to jump over the function
+	//when not called
+	passJumpInstruction := g.newJumpInstructionFromLoose(0)
+	passJumpInstructionID := rnd.RandInt(0, 1000)
+	passJumpInstruction.ID = passJumpInstructionID
+
+	//save the byte addr before generating function code
+	functionStartAddr := 0x200 + (beforeGenerationInstructionCount * 2)
 
 	//put a new function on the function table so we know where can jump to to call it
-	g.functionAddrTable = append(g.functionAddrTable, functionaddrtable.NewFunctionAddr(functionAddr, instruction.Name))
+	g.functionAddrTable = append(g.functionAddrTable, functionaddrtable.NewFunctionAddr(functionStartAddr, instruction.Name))
 
 	//generate the function code
 	g.Generate(instruction.Body)
 
-	//insert a jump over function. before the
-
+	//find the jump back
+	passJumpInstrIndex := g.FindInstructionIndex(passJumpInstructionID)
+	//replace it with the new one that contains the proper address
+	g.Ir[passJumpInstrIndex] = Jump{To: 0x200 + (len(g.Ir) * 2), ID: passJumpInstructionID}
 	//put in a return statement
 	g.Ir = append(g.Ir, g.newRetInstruction())
 }
