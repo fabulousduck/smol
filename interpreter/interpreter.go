@@ -64,8 +64,23 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 			i.execComparison(node.(*ast.Comparison))
 		case "switchStatement":
 			i.execSwitchStatement(node.(*ast.SwitchStatement))
+		case "releaseStatement":
+			i.execReleaseStatement(node.(*ast.ReleaseStatement))
 		}
 	}
+}
+
+func (i *Interpreter) execReleaseStatement(r *ast.ReleaseStatement) {
+	if !ast.NodeIsVariable(r.Variable) {
+		errors.LitteralRelease()
+		os.Exit(65)
+	}
+
+	//find the variable
+	scopeLevel, stackIndex := i.Stacks.find(r.Variable.(*ast.StatVar).Value)
+
+	//remove the variable
+	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel][:stackIndex], i.Stacks[scopeLevel][stackIndex+1:]...)
 }
 
 func (i *Interpreter) execSwitchStatement(ss *ast.SwitchStatement) {

@@ -1,12 +1,32 @@
 package ast
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/fabulousduck/proto/src/types"
+	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
+
+//PlotStatement is a statement that contains all info needed to draw a pixel to the screen
+type PlotStatement struct {
+	X, Y Node
+}
+
+func (p PlotStatement) GetNodeName() string {
+	return "plotStatement"
+}
+
+//ReleaseStatement is an instruction that frees a variable from the stack
+type ReleaseStatement struct {
+	Variable Node
+}
+
+func (r ReleaseStatement) GetNodeName() string {
+	return "releaseStatement"
+}
 
 //Node is a wrapper interface that AST nodes can implement
 type Node interface {
@@ -123,6 +143,14 @@ type MathStatement struct {
 	RHS Node
 }
 
+type UseStatement struct {
+	name string
+}
+
+func (us UseStatement) GetNodeName() string {
+	return "useStatement"
+}
+
 func (ms MathStatement) GetNodeName() string {
 	return "mathStatement"
 }
@@ -173,6 +201,12 @@ func (p *Parser) Parse() ([]Node, int) {
 	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
 		switch p.currentToken().Type {
+		case "plot":
+			p.advance()
+			nodes = append(nodes, p.createPlot())
+		case "use":
+			p.advance()
+			nodes = append(nodes, p.createUse())
 		case "variable_assignment":
 			p.advance()
 			nodes = append(nodes, p.createVariable())
@@ -181,6 +215,7 @@ func (p *Parser) Parse() ([]Node, int) {
 			nodes = append(nodes, p.createFunction())
 		case "left_not_right":
 			p.advance()
+
 			nodes = append(nodes, p.createLNR())
 		case "print_integer":
 			p.advance()
@@ -222,6 +257,9 @@ func (p *Parser) Parse() ([]Node, int) {
 			fallthrough
 		case "greater_than":
 			nodes = append(nodes, p.createComparison())
+		case "release":
+			p.advance()
+			nodes = append(nodes, p.createReleaseStatement())
 		case "switch":
 			p.advance()
 			nodes = append(nodes, p.createSwitchStatement())
@@ -235,12 +273,55 @@ func (p *Parser) Parse() ([]Node, int) {
 			return nodes, p.TokensConsumed
 		default:
 			//TODO: make an error for this
-			fmt.Println("Unknown token type found.")
+			errors.UnknownTypeError()
 		}
 
 	}
 
 	return nodes, p.TokensConsumed
+}
+
+func (p *Parser) createPlot() *PlotStatement {
+	ps := new(PlotStatement)
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ps.X = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ps.Y = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return ps
+}
+
+func (p *Parser) createUse() *UseStatement {
+	us := new(UseStatement)
+
+	p.expectCurrent([]string{"string"})
+	us.name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return us
+}
+
+func (p *Parser) createReleaseStatement() *ReleaseStatement {
+	r := new(ReleaseStatement)
+
+	p.expectCurrent([]string{"string", "character"})
+	r.Variable = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return r
 }
 
 func (p *Parser) createEOSStatement() *Eos {
@@ -535,8 +616,9 @@ func (p *Parser) createVariable() *Variable {
 
 func (p *Parser) expectCurrent(expectedValues []string) {
 	currentToken := p.currentToken()
-	if !types.Contains(currentToken.Type, expectedValues) {
 
+	if !types.Contains(currentToken.Type, expectedValues) {
+		spew.Dump(currentToken)
 		lexer.ThrowSemanticError(&currentToken, expectedValues, p.Filename)
 		os.Exit(65)
 	}

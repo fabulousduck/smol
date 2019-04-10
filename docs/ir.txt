@@ -1,0 +1,12 @@
+The ir is the part of the compiler that translates the AST into an instruction
+set which can then be converted into actual opcodes. This ir resembles actual assembly instructions.
+
+
+The way it is currently setup is that we loop over every node in the ast and generate some ir for it. Some ast nodes have bodies and will need to have their bodies parsed
+
+
+currently, i am doing loops. These loops are quite difficult to make since we only have rom. this means i need to keep the iterator value in a register at all times.
+
+
+this register luckely has a name in the ir so i can match other variables to it.So for instance, when i am in a loop, the left hand side of the loop will be stored in 0xC and have the name of the variable. Once the variable has been set, and i come across it again in the loop. i increment that register.
+

@@ -1,0 +1,10 @@
+MEM A 0;
+MEM B 0;
+ANB[A,10]:
+    PLT A B;
+    INC B;
+    INC A;
+END
+
+
+

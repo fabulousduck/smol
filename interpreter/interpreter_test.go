@@ -28,7 +28,7 @@ func TestStacksSet(T *testing.T) {
 		},
 	}
 
-	testStack.set(0, 0, newTestValue)
+	testStack.set(testVariableName, newTestValue)
 
 	if testStack[0][0].value != newTestValue {
 		T.Logf("\nTestStacksFind | failed to set value on stack")

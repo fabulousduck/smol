@@ -4,8 +4,12 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/fabulousduck/smol/bytecode"
+
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/interpreter"
+	"github.com/fabulousduck/smol/ir"
 	"github.com/fabulousduck/smol/lexer"
 )
 
@@ -21,19 +25,19 @@ func NewSmol() *Smol {
 }
 
 //RunFile : Interprets a given file
-func (smol *Smol) RunFile(filename string) {
+func (smol *Smol) RunFile(filename string, compile bool) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	smol.Run(string(file), filename)
+	smol.Run(string(file), filename, compile)
 	if smol.HadError {
 		os.Exit(65)
 	}
 }
 
 //Run exectues a given script
-func (smol *Smol) Run(sourceCode string, filename string) {
+func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	l := lexer.NewLexer(filename, sourceCode)
 	l.Lex()
 	p := ast.NewParser(filename, l.Tokens)
@@ -41,6 +45,14 @@ func (smol *Smol) Run(sourceCode string, filename string) {
 	//We do not need this here
 	p.Ast, _ = p.Parse()
 
+	if compile {
+		g := ir.NewGenerator(filename)
+		g.Generate(p.Ast)
+		spew.Dump(g)
+		bg := bytecode.Init(g, filename)
+		bg.CreateRom()
+		return
+	}
 	i := interpreter.NewInterpreter()
 	i.Interpret(p.Ast)
 }

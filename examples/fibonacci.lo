@@ -1,3 +1,9 @@
+USE STL
+
+IMPL GFX
+
+PLOT[X,Y]
+
 DEF FIB<RANGE>:
     MEM COUNTER 0; 
     MEM NEXT 0;
@@ -9,7 +15,7 @@ DEF FIB<RANGE>:
         LT[COUNTER, 1]:
             SET NEXT COUNTER;
         END
-
+ 
         EQ[COUNTER, 1]:
              SET NEXT COUNTER;
         END
@@ -32,3 +38,6 @@ END
 
 MEM RANGE 20;
 FIB[RANGE];
+
+MEM A 10;
+MEM B A;
