@@ -1,9 +1,3 @@
-USE STL
-
-IMPL GFX
-
-PLOT[X,Y]
-
 DEF FIB<RANGE>:
     MEM COUNTER 0; 
     MEM NEXT 0;

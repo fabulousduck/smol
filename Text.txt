@@ -1,0 +1,2965 @@
+package rnd
+
+import "math/rand"
+
+//RandInt generates a new random number with a new seed between min and max
+func RandInt(min int, max int) int {
+	rand.Seed(42)
+	return rand.Intn(max-min) + min
+}
+package repl
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+
+	"github.com/fabulousduck/smol/interpreter"
+
+	"github.com/fabulousduck/smol"
+)
+
+//Repl : Activates a new interactive REPL reading from STDIN
+func Repl(s *smol.Smol) {
+	fmt.Printf("Smol repl v1.0\nUse ^C to exit\n\n")
+	interpreter := interpreter.NewInterpreter()
+
+	for true {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("> ")
+		text, err := reader.ReadString('\n')
+		if err != nil {
+			panic(err)
+		}
+
+		s.RunRepl(text, "repl", interpreter)
+		s.HadError = false
+	}
+}
+package ast
+package ast
+
+import (
+	"os"
+
+	"github.com/davecgh/go-spew/spew"
+
+	"github.com/fabulousduck/proto/src/types"
+	"github.com/fabulousduck/smol/errors"
+	"github.com/fabulousduck/smol/lexer"
+)
+
+//PlotStatement is a statement that contains all info needed to draw a pixel to the screen
+type PlotStatement struct {
+	X, Y Node
+}
+
+func (p PlotStatement) GetNodeName() string {
+	return "plotStatement"
+}
+
+//ReleaseStatement is an instruction that frees a variable from the stack
+type ReleaseStatement struct {
+	Variable Node
+}
+
+func (r ReleaseStatement) GetNodeName() string {
+	return "releaseStatement"
+}
+
+//Node is a wrapper interface that AST nodes can implement
+type Node interface {
+	GetNodeName() string //GetNodeName Gets the identifier of a AST node describing what it is
+
+}
+
+//NumLit represents a numeric litteral.
+type NumLit struct {
+	Value string
+}
+
+func (nm NumLit) GetNodeName() string {
+	return "numLit"
+}
+
+//Eos is a special node in a switch statement that is called if defined when no cases match the given value
+type Eos struct {
+	Body []Node
+}
+
+func (eos Eos) GetNodeName() string {
+	return "end_of_switch"
+}
+
+//SwitchCase is a block definiton that is run when the MatchValue is matched
+type SwitchCase struct {
+	MatchValue Node
+	Body       []Node
+}
+
+func (sc SwitchCase) GetNodeName() string {
+	return "switchCase"
+}
+
+//SwitchStatement matches the Matchcase against all cases defined in Cases of the switchcase
+//if one matches, the body of that case will be executed.
+//if a EOS is defined within the body, the EOS body will be run if no case matches the matchvalue
+type SwitchStatement struct {
+	MatchValue Node
+	Cases      []Node
+}
+
+func (st SwitchStatement) GetNodeName() string {
+	return "switchStatement"
+}
+
+//StatVar contains the value of a static variable.
+//These statVars are used when a variable is being referenced
+//where the Value is the name of the variable referenced
+type StatVar struct {
+	Value string
+}
+
+func (sv StatVar) GetNodeName() string {
+	return "statVar"
+}
+
+//Function is a standard function definition containing the name, parameters and body of the function
+type Function struct {
+	Name   string
+	Params []string
+	Body   []Node
+}
+
+func (f Function) GetNodeName() string {
+	return "function"
+}
+
+//Variable is a construct used to create a new variable.
+//This is the struct that will be pushed to the stack
+type Variable struct {
+	Name  string
+	Value Node
+}
+
+//Anb is the while loop of smol. It will keep executing its body until LHS equals RHS
+type Anb struct {
+	LHS  Node
+	RHS  Node
+	Body []Node
+}
+
+func (anb Anb) GetNodeName() string {
+	return "anb"
+}
+
+//Comparison is an expression type that is used when an operation like GT, LT, EQ or NEQ is called
+type Comparison struct {
+	Operator string
+	LHS      Node
+	RHS      Node
+	Body     []Node
+}
+
+func (c Comparison) GetNodeName() string {
+	return "comparison"
+}
+
+//SetStatement is used when a value needs to be set to a variable. Instructions that could make use of this are SET
+type SetStatement struct {
+	MHS Node
+	RHS Node
+}
+
+func (ss SetStatement) GetNodeName() string {
+	return "setStatement"
+}
+
+//MathStatement contains info needed to execute a mathematical statement like ADD, SUB, MUL and DIV
+type MathStatement struct {
+	LHS string
+	MHS Node
+	RHS Node
+}
+
+type UseStatement struct {
+	name string
+}
+
+func (us UseStatement) GetNodeName() string {
+	return "useStatement"
+}
+
+func (ms MathStatement) GetNodeName() string {
+	return "mathStatement"
+}
+
+//Statement is a general statement container for all other statements that do not fall under math and logic for example MEM
+type Statement struct {
+	LHS string
+	RHS Node
+}
+
+func (s Statement) GetNodeName() string {
+	return "statement"
+}
+
+func (v Variable) GetNodeName() string {
+	return "variable"
+}
+
+//FunctionCall specifies a function call and the arguments given
+type FunctionCall struct {
+	Name string
+	Args []Node
+}
+
+func (fc FunctionCall) GetNodeName() string {
+	return "functionCall"
+}
+
+//Parser contains the final AST and forms a base for all ast generating functions
+type Parser struct {
+	Tokens         []lexer.Token
+	Ast            []Node
+	Filename       string
+	TokensConsumed int
+}
+
+//NewParser returns a new Parser instance with the given file
+func NewParser(filename string, tokens []lexer.Token) *Parser {
+	p := new(Parser)
+	p.Filename = filename
+	p.TokensConsumed = 0
+	p.Tokens = tokens
+	return p
+}
+
+//Parse takes a set of tokens and generates an AST from them
+func (p *Parser) Parse() ([]Node, int) {
+	nodes := []Node{}
+	for p.TokensConsumed < len(p.Tokens) {
+		switch p.currentToken().Type {
+		case "plot":
+			p.advance()
+			nodes = append(nodes, p.createPlot())
+		case "use":
+			p.advance()
+			nodes = append(nodes, p.createUse())
+		case "variable_assignment":
+			p.advance()
+			nodes = append(nodes, p.createVariable())
+		case "function_definition":
+			p.advance()
+			nodes = append(nodes, p.createFunction())
+		case "left_not_right":
+			p.advance()
+
+			nodes = append(nodes, p.createLNR())
+		case "print_integer":
+			p.advance()
+			nodes = append(nodes, p.createStatement("PRI"))
+		case "print_break":
+			p.advance()
+			nodes = append(nodes, p.createSingleWordStatement("BRK"))
+		case "print_ascii":
+			p.advance()
+			nodes = append(nodes, p.createStatement("PRU"))
+		case "increment_value":
+			p.advance()
+			nodes = append(nodes, p.createStatement("INC"))
+		case "set_variable":
+			p.advance()
+			nodes = append(nodes, p.createSetStatement())
+		case "addition":
+			fallthrough
+		case "subtraction":
+			fallthrough
+		case "power_of":
+			fallthrough
+		case "multiplication":
+			fallthrough
+		case "division":
+			nodes = append(nodes, p.createMathStatement())
+		case "close_block":
+			p.advance()
+			return nodes, p.TokensConsumed
+		case "string": //we are allowed to assume a character or string means a function call since every thing else gets tagged as either a variable or statement
+			fallthrough
+		case "character":
+			nodes = append(nodes, p.createFunctionCall())
+		case "equals":
+			fallthrough
+		case "not_equals":
+			fallthrough
+		case "less_than":
+			fallthrough
+		case "greater_than":
+			nodes = append(nodes, p.createComparison())
+		case "release":
+			p.advance()
+			nodes = append(nodes, p.createReleaseStatement())
+		case "switch":
+			p.advance()
+			nodes = append(nodes, p.createSwitchStatement())
+		case "case":
+			p.advance()
+			nodes = append(nodes, p.createSwitchCase())
+		case "end_of_switch":
+			p.advance()
+			nodes = append(nodes, p.createEOSStatement())
+		case "end_of_file":
+			return nodes, p.TokensConsumed
+		default:
+			//TODO: make an error for this
+			errors.UnknownTypeError()
+		}
+
+	}
+
+	return nodes, p.TokensConsumed
+}
+
+func (p *Parser) createPlot() *PlotStatement {
+	ps := new(PlotStatement)
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ps.X = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ps.Y = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return ps
+}
+
+func (p *Parser) createUse() *UseStatement {
+	us := new(UseStatement)
+
+	p.expectCurrent([]string{"string"})
+	us.name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return us
+}
+
+func (p *Parser) createReleaseStatement() *ReleaseStatement {
+	r := new(ReleaseStatement)
+
+	p.expectCurrent([]string{"string", "character"})
+	r.Variable = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return r
+}
+
+func (p *Parser) createEOSStatement() *Eos {
+	eos := new(Eos)
+
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	eosParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+	body, consumed := eosParser.Parse()
+	eos.Body = body
+
+	p.advanceN(consumed)
+
+	return eos
+}
+
+func (p *Parser) createSwitchCase() *SwitchCase {
+	sc := new(SwitchCase)
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	sc.MatchValue = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	switchParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+	body, consumed := switchParser.Parse()
+	sc.Body = body
+
+	p.advanceN(consumed)
+
+	return sc
+}
+
+func (p *Parser) createSwitchStatement() *SwitchStatement {
+	st := new(SwitchStatement)
+
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	st.MatchValue = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"right_bracket"})
+	p.advance()
+
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	switchParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := switchParser.Parse()
+	st.Cases = body
+	p.advanceN(consumed)
+
+	return st
+}
+
+func (p *Parser) createComparison() *Comparison {
+	ch := new(Comparison)
+
+	ch.Operator = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ch.LHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"comma"})
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ch.RHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"right_bracket"})
+	p.advance()
+
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	comparisonParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := comparisonParser.Parse()
+	ch.Body = body
+	p.advanceN(consumed)
+
+	return ch
+}
+
+func (p *Parser) createMathStatement() *MathStatement {
+	ms := new(MathStatement)
+
+	ms.LHS = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string"})
+	ms.MHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	ms.RHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return ms
+}
+
+func (p *Parser) createSingleWordStatement(lhs string) *Statement {
+	s := new(Statement)
+
+	s.LHS = lhs
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return s
+}
+
+func (p *Parser) createFunctionCall() *FunctionCall {
+	fc := new(FunctionCall)
+
+	p.expectCurrent([]string{"string", "character"})
+	fc.Name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
+
+	for currentToken := p.currentToken(); currentToken.Type != "right_bracket"; currentToken = p.currentToken() {
+		if currentToken.Type == "comma" {
+			p.expectNext([]string{"character", "string", "integer"})
+			p.advance()
+			continue
+		}
+
+		fc.Args = append(fc.Args, createLit(currentToken))
+		p.advance()
+	}
+
+	//Todo: figure out why this advance needs to be here
+	p.advance()
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+	return fc
+}
+
+func (p *Parser) createSetStatement() *SetStatement {
+	ss := new(SetStatement)
+
+	p.expectCurrent([]string{"character", "string"})
+	ss.MHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"integer", "character", "string"})
+	ss.RHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return ss
+}
+
+func (p *Parser) createStatement(lhs string) *Statement {
+	s := new(Statement)
+
+	s.LHS = lhs
+
+	p.expectCurrent([]string{"string", "character", "integer"})
+	s.RHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+
+	return s
+}
+
+func createLit(token lexer.Token) Node {
+	if token.Type == "integer" {
+		nm := new(NumLit)
+		nm.Value = token.Value
+		return nm
+	}
+	sv := new(StatVar)
+	sv.Value = token.Value
+	return sv
+}
+
+func (p *Parser) createLNR() *Anb {
+	anb := new(Anb)
+
+	p.expectCurrent([]string{"left_bracket"})
+	p.advance()
+
+	p.expectCurrent([]string{"character", "integer", "string"})
+
+	anb.LHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"comma"})
+	p.advance()
+
+	p.expectCurrent([]string{"character", "integer", "string"})
+	anb.RHS = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"right_bracket"})
+	p.advance()
+
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	anbParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := anbParser.Parse()
+	anb.Body = body
+	p.advanceN(consumed)
+
+	return anb
+}
+
+func (p *Parser) createFunction() *Function {
+	f := new(Function)
+
+	p.expectCurrent([]string{"string", "character"})
+	f.Name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"left_arrow", "double_dot"})
+	if p.currentToken().Type == "double_dot" {
+		p.advance()
+		return f
+	}
+	p.advance()
+
+	for currentToken := p.currentToken(); currentToken.Type != "right_arrow"; currentToken = p.currentToken() {
+		p.expectCurrent([]string{"string", "character", "comma"})
+
+		//we expect there to be another parameter when we see a comma
+		if currentToken.Type == "comma" {
+			p.expectNext([]string{"character", "string"})
+			p.advance()
+			continue
+		}
+
+		if currentToken.Type == "string" || currentToken.Type == "character" {
+
+		}
+
+		f.Params = append(f.Params, currentToken.Value)
+		p.advance()
+
+	}
+
+	p.advance()
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	functionParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+
+	body, consumed := functionParser.Parse()
+	f.Body = body
+	p.advanceN(consumed)
+
+	return f
+}
+
+func (p *Parser) createVariable() *Variable {
+	variable := new(Variable)
+
+	p.expectCurrent([]string{"character", "string"})
+	variable.Name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"integer", "character", "string"})
+	variable.Value = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"semicolon"})
+	p.advance()
+	return variable
+}
+
+func (p *Parser) expectCurrent(expectedValues []string) {
+	currentToken := p.currentToken()
+
+	if !types.Contains(currentToken.Type, expectedValues) {
+		spew.Dump(currentToken)
+		lexer.ThrowSemanticError(&currentToken, expectedValues, p.Filename)
+		os.Exit(65)
+	}
+}
+
+func (p *Parser) expectNext(expectedValues []string) {
+	nextToken := p.nextToken()
+	if !types.Contains(nextToken.Type, expectedValues) {
+		lexer.ThrowSemanticError(&nextToken, expectedValues, p.Filename)
+		os.Exit(65)
+	}
+}
+
+func (p *Parser) currentToken() lexer.Token {
+	return p.Tokens[p.TokensConsumed]
+}
+
+func (p *Parser) nextToken() lexer.Token {
+	return p.Tokens[p.TokensConsumed+1]
+}
+
+func (p *Parser) advance() {
+	p.TokensConsumed++
+}
+
+func (p *Parser) advanceN(n int) {
+	p.TokensConsumed += n
+}
+
+//NodeIsVariable allows for nice statements like if NodeIsVariable(node) {}
+func NodeIsVariable(node Node) bool {
+	return node.GetNodeName() == "statVar"
+}
+package functionaddrtable
+
+import (
+	"os"
+
+	"github.com/fabulousduck/smol/errors"
+)
+
+//FunctionAddrTable is a simple type so we can do function mounting on it
+type FunctionAddrTable []FunctionAddr
+
+/*
+FunctionAddr stores basic information about a function
+and where it is stored in memory
+*/
+type FunctionAddr struct {
+	Addr int
+	Name string
+}
+
+/*
+NewFunctionAddr returns a new filled FunctionAddr struct
+*/
+func NewFunctionAddr(addr int, name string) FunctionAddr {
+	return FunctionAddr{addr, name}
+}
+
+/*
+Find checks if a given function with name name exists in the function table
+*/
+func (table FunctionAddrTable) Find(name string) FunctionAddr {
+	for i := 0; i < len(table); i++ {
+		if table[i].Name == name {
+			return table[i]
+		}
+	}
+	errors.UnknownFunctionName(name)
+	os.Exit(65)
+	return FunctionAddr{}
+}
+package registertable
+
+import (
+	"os"
+
+	"github.com/fabulousduck/smol/errors"
+)
+
+/*
+RegisterTable is a simple collection of registers so they can be indexed
+*/
+type RegisterTable map[int]Register
+
+/*
+Register simulates a basic CPU register
+
+Value: the actual value in the register
+Name: the name of the current variable in it
+*/
+type Register struct {
+	Value int
+	Name  string
+}
+
+/*
+Find finds a variable on the memory table
+Returns the index at which it is found
+Returns -1 if the value cannot be found
+*/
+func (table RegisterTable) Find(name string) int {
+	for i := 0; i < len(table); i++ {
+		region := table[i]
+		if region.Name == name {
+			return i
+		}
+	}
+	return -1
+}
+
+/*
+Init fills a new table with empty registers
+*/
+func (table RegisterTable) Init() {
+	for i := 0; i < 0x10; i++ {
+		table[i] = Register{
+			Value: 0,
+			Name:  "",
+		}
+	}
+}
+
+func (table RegisterTable) FindEmptyRegister() int {
+	for k, v := range table {
+		if v.Value == 0 && v.Name == "" && isNonReservedRegister(k) {
+			return k
+		}
+	}
+	errors.OutOfRegistersError()
+	os.Exit(65)
+	return 0
+}
+
+func isNonReservedRegister(registerIndex int) bool {
+	return registerIndex != 0xF && registerIndex != 0xE && registerIndex != 0xD && registerIndex != 0xC
+}
+
+/*
+PutRegisterValue set the value of register to value
+*/
+func (table RegisterTable) PutRegisterValue(register int, value int, name string) {
+	if !isValidRegisterIndex(register) {
+		errors.IlligalRegisterAccess(register)
+	}
+
+	table[register] = Register{value, name}
+}
+
+func isValidRegisterIndex(registerIndex int) bool {
+	return registerIndex < 0xF
+}
+
+/*
+	somewhere we need to keep track of the variable in the ANB statement
+	we need to do this because we need to increment it every loop successively
+
+	the loops can be infinite, so there is a possibility that the variable in the BNE X register never gets adressed
+
+
+	we need something like a "is currently in register" field on a variable, that if it is, we up the register value
+*/
+package ir
+
+import (
+	"os"
+	"strconv"
+
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
+)
+
+/*
+PLOT X Y
+
+this is the IR instruction for the draw opcode itself
+*/
+type PLOT struct {
+	X, Y, H int
+}
+
+func (p PLOT) GetInstructionName() string {
+	return "PLOT"
+}
+
+func (p PLOT) Opcodeable() bool {
+	return true
+}
+
+func (p PLOT) usesVariableSpace() bool {
+	return false
+}
+
+func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT {
+	/*
+		chip-8's pixel placement system works on a 8x8 sprite.
+		It draws whatever the byte represents in binary.
+		so 10000000 (I.E 0x80) only displays one pixel in the top left corner
+		and 00000000 displays an empty row.
+
+		chip-8 allows for sprite overlap. Although it might be more
+		effificient to add to the sprite already existing when we
+		want to draw a new pixel in its 8x8 vacinity
+
+		first we check if this pixel representor has been set
+	*/
+	plotInstr := PLOT{}
+	topLeftPixel := 0x80
+	topLeftPixelMemoryName := "PIXEL_BUFFER_REP"
+
+	/*
+		Since we only draw a single pixel, the height of the sprite can always be one
+	*/
+	plotInstr.H = 1
+
+	/*
+		check if the single pixel has been set or not
+	*/
+	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
+		g.Ir = append(g.Ir, g.newSetMemoryLocationFromLoose(topLeftPixelMemoryName, topLeftPixel))
+	}
+	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)
+
+	/*
+		fill the I register with the memory address of the single pixel value
+		the emulator will read the sprite data from
+
+		only do this if the I register is not there already
+	*/
+	if g.regTable[g.IRegisterIndex].Value != pixelBufferVariable.Addr {
+		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(g.IRegisterIndex, pixelBufferVariable.Addr, true))
+	}
+
+	/*
+		actually set the I register
+	*/
+	IRegister := g.regTable[g.IRegisterIndex]
+	IRegister.Value = pixelBufferVariable.Addr
+	g.regTable[g.IRegisterIndex] = IRegister
+
+	/*
+		if the node uses variables, we will need to resolve those
+		otherwise, we simply use the integer value of the plot statement
+	*/
+	if ast.NodeIsVariable(plotStatement.X) {
+		variableName := plotStatement.X.(*ast.StatVar).Value
+		//first we check if the variable is loaded into a register somewhere
+		registerLoadedValue := g.regTable.Find(variableName)
+		if registerLoadedValue == -1 {
+			//if it is not in any register. the variable does not exist and we error out
+			errors.UndefinedVariableError(variableName)
+			os.Exit(65)
+		} else {
+			//if it is variable loaded
+			g.Ir = append(g.Ir, g.newRegCpy(registerLoadedValue, g.plotXRegister))
+		}
+	} else {
+		variableValue := plotStatement.X.(*ast.NumLit).Value
+		intValue, _ := strconv.Atoi(variableValue)
+		g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.plotXRegister, intValue, "plotXRegister"))
+	}
+
+	if ast.NodeIsVariable(plotStatement.Y) {
+		variableName := plotStatement.Y.(*ast.StatVar).Value
+
+		//first we check if the variable is loaded into a register somewhere
+		registerLoadedValue := g.regTable.Find(variableName)
+		if registerLoadedValue == -1 {
+			//if it is not in any register. the variable does not exist and we error out
+			errors.UndefinedVariableError(variableName)
+			os.Exit(65)
+		} else {
+			//if it is variable loaded
+			g.Ir = append(g.Ir, g.newRegCpy(registerLoadedValue, g.plotYRegister))
+		}
+	} else {
+		variableValue := plotStatement.Y.(*ast.NumLit).Value
+		intValue, _ := strconv.Atoi(variableValue)
+		g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.plotYRegister, intValue, "plotYRegister"))
+	}
+
+	plotInstr.X = g.plotXRegister
+	plotInstr.Y = g.plotYRegister
+	return plotInstr
+}
+package ir
+
+import "github.com/fabulousduck/smol/ast"
+
+/*
+FNJMP is a special jump for the chip-8
+that is meant for function calls
+
+2NNN
+
+NNN: address of the function on memory
+*/
+type FNJMP struct {
+	addr int
+}
+
+func (f FNJMP) GetInstructionName() string {
+	return "FNJMP"
+}
+
+func (f FNJMP) Opcodeable() bool {
+	return true
+}
+
+func (f FNJMP) usesVariableSpace() bool {
+	return false
+}
+
+func (g *Generator) newFNJMPInstruction(jmpAddr int) FNJMP {
+	return FNJMP{jmpAddr}
+}
+
+func (g *Generator) createFunctionCallInstructions(instruction *ast.FunctionCall) {
+
+	//lookup the function on the function table
+	fnTableEntry := g.functionAddrTable.Find(instruction.Name)
+
+	g.Ir = append(g.Ir, g.newFNJMPInstruction(fnTableEntry.Addr))
+}
+package memtable
+
+import (
+	"os"
+
+	"github.com/fabulousduck/smol/errors"
+)
+
+/*
+MemTable is a simple collection of memory regions in use
+*/
+type MemTable map[string]*MemRegion
+
+/*
+MemRegion represents a region of memory in the IR
+*/
+type MemRegion struct {
+	Addr, Size, Value int
+}
+
+/*
+Put places a variable on a memoryTable
+
+notes
+
+chip-8's blocks are 8 bit, so 1 byte.
+with a total of 4096 bytes
+*/
+func (table MemTable) Put(name string, value int, size int) *MemRegion {
+	region := new(MemRegion)
+	//check if there is any memory left for our variable
+	currentMemSize := table.getSize()
+	if currentMemSize >= 95 {
+		errors.OutOfMemoryError()
+	}
+
+	region.Addr = table.FindNextEmptyAddr()
+	region.Size = 1
+	region.Value = value
+	table[name] = region
+
+	return region
+}
+
+/*
+IsValidMemRegion allows the caller to check if an address given
+is a memory region or not
+*/
+func IsValidMemRegion(regionAddr int) bool {
+	return regionAddr > 0xEA0-0x200 && regionAddr < 0xEFF-0x200
+}
+
+/*
+LookupVariable looks up if a variable has been defined on the memory table
+internal lookups are silent since sometimes we need to do a lookup if an
+internal variable that is not user defined has been set
+*/
+func (table *MemTable) LookupVariable(name string, internalLookup bool) *MemRegion {
+	if val, ok := (*table)[name]; ok {
+		return val
+	}
+	if !internalLookup {
+		errors.UndefinedVariableError(name)
+	}
+	return nil
+}
+
+func (table MemTable) FindNextEmptyAddr() int {
+
+	varAddrSpaceStart := 0xEA0 - 0x200
+	varAddrSpaceEnd := 0xEFF - 0x200
+
+	currentSpaceUsed := 0
+
+	for i := 0; i < len(table); i++ {
+		currentSpaceUsed++
+	}
+	if varAddrSpaceStart+currentSpaceUsed+0x2 > varAddrSpaceEnd {
+		errors.OutOfMemoryError()
+	}
+
+	return varAddrSpaceStart + currentSpaceUsed
+}
+
+func (table MemTable) getSize() int {
+	return len(table)
+}
+
+/*
+Move moves a variable on the memory table.
+Mostly used for compression of variable space
+*/
+func (table *MemTable) Move(name string, to int, internal bool) {
+	if val, ok := (*table)[name]; ok {
+		val.Addr = to
+		return
+	}
+
+	if !internal {
+		errors.UndefinedVariableError(name)
+	}
+}
+
+/*
+FindByAddr finds a given memory region by its addres instead of name
+*/
+func (table *MemTable) FindByAddr(addr int) string {
+	for k, v := range *table {
+		if v.Addr == addr {
+			return k
+		}
+	}
+
+	errors.UnAssignedMemoryLookupError()
+	os.Exit(65)
+	return ""
+}
+package ir
+
+/*
+ADD instruction
+
+opcode: 7XNN
+X: register to add onto
+NN: value to add onto value in register
+*/
+type ADD struct {
+	Register, Value int
+}
+
+func (a ADD) GetInstructionName() string {
+	return "ADD"
+}
+
+func (a ADD) Opcodeable() bool {
+	return true
+}
+
+func (b ADD) usesVariableSpace() bool {
+	return false
+}
+
+func (g *Generator) newAddInstruction(R1 int, value int) ADD {
+	return ADD{R1, value}
+}
+package ir
+
+type RegCpy struct {
+	From, To int
+}
+
+func (j RegCpy) GetInstructionName() string {
+	return "RegCpy"
+}
+
+func (j RegCpy) Opcodeable() bool {
+	return true
+}
+
+func (j RegCpy) usesVariableSpace() bool {
+	return false
+}
+
+/*
+newRegCpy: from R1 into R2
+*/
+func (g *Generator) newRegCpy(R1 int, R2 int) RegCpy {
+	return RegCpy{R1, R2}
+}
+package ir
+
+import (
+	"strconv"
+
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/ir/registertable"
+)
+
+/*
+BNE is a simple structure that will skips the next instruction
+if lhs does not equal rhs
+
+opcode: 4XNN
+4: identifier
+X: lhs
+NN: rhs
+*/
+type BNE struct {
+	Lhs, Rhs int
+}
+
+func (b BNE) GetInstructionName() string {
+	return "BNE"
+}
+
+func (b BNE) Opcodeable() bool {
+	return true
+}
+
+func (b BNE) usesVariableSpace() bool {
+	return false
+}
+
+/*
+	BNERR is the same as BNE but the RHS is also a register
+
+	opcode: 5XY0
+	5: indentifier
+	X: lhs register
+	Y: rhs register
+*/
+type BNERR struct {
+	Lhs, Rhs int
+}
+
+func (b BNERR) GetInstructionName() string {
+	return "BNERR"
+}
+
+func (b BNERR) Opcodeable() bool {
+	return true
+}
+
+func (b BNERR) usesVariableSpace() bool {
+	return false
+}
+
+func (g *Generator) newBNEInstructionFromLoose(R1 int, rhs int) BNE {
+	instr := BNE{R1, rhs}
+
+	return instr
+}
+
+func (g *Generator) newBNERRInstructionFromLoose(R1 int, R2 int) BNERR {
+	return BNERR{R1, R2}
+}
+
+func (g *Generator) createAnbInstructions(instruction *ast.Anb) {
+	// we need to multiply by 2 because each instruction is 2 bytes long
+	//doing this here is a little trick to get the value to keep getting updated from its origin register
+	anbInstructionStart := 0x200 + (len(g.Ir) * 2)
+	g.Generate(instruction.Body)
+
+	if ast.NodeIsVariable(instruction.LHS) {
+		variable := instruction.LHS.(*ast.StatVar)
+		lhsVariableRegister := g.regTable.Find(variable.Value)
+		g.regTable[g.BNEXRegister] = registertable.Register{g.regTable[lhsVariableRegister].Value, "BNEX"}
+		g.Ir = append(g.Ir, g.newRegCpy(lhsVariableRegister, g.BNEXRegister))
+	} else {
+		lhsValue, _ := strconv.Atoi(instruction.LHS.(*ast.NumLit).Value)
+		bnexreg := registertable.Register{lhsValue, "BNEX"}
+		g.regTable[g.BNEXRegister] = bnexreg
+		g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.BNEXRegister, lhsValue, "BNEX"))
+	}
+
+	if ast.NodeIsVariable(instruction.RHS) {
+		variable := instruction.RHS.(*ast.StatVar)
+		rhsVariableRegister := g.regTable.Find(variable.Value)
+		g.Ir = append(g.Ir, g.newBNERRInstructionFromLoose(g.BNEXRegister, rhsVariableRegister))
+	} else {
+		rhsValue, _ := strconv.Atoi(instruction.RHS.(*ast.NumLit).Value)
+		g.Ir = append(g.Ir, g.newBNEInstructionFromLoose(g.BNEXRegister, rhsValue))
+	}
+	g.Ir = append(g.Ir, g.newJumpInstructionFromLoose(anbInstructionStart))
+}
+package ir
+
+import (
+	"os"
+
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
+	"github.com/fabulousduck/smol/ir/functionaddrtable"
+	"github.com/fabulousduck/smol/ir/memtable"
+	"github.com/fabulousduck/smol/ir/registertable"
+	"github.com/fabulousduck/smol/rnd"
+)
+
+type instruction interface {
+	GetInstructionName() string
+	Opcodeable() bool
+	usesVariableSpace() bool
+}
+
+//Generator contains all the basic information needed
+//to transform an AST into a chip-8 ROM
+type Generator struct {
+	filename                                     string
+	functionAddrTable                            functionaddrtable.FunctionAddrTable
+	nodesConsumed                                int
+	memorySize                                   int
+	functionSpaceStart                           int
+	IRegisterIndex, plotXRegister, plotYRegister int
+	BNEXRegister                                 int
+	Ir                                           []instruction
+	memTable                                     memtable.MemTable
+	regTable                                     registertable.RegisterTable
+}
+
+//NewGenerator inits the generator
+func NewGenerator(filename string) *Generator {
+	g := new(Generator)
+	g.memTable = make(memtable.MemTable)
+	g.regTable = make(registertable.RegisterTable)
+	g.filename = filename
+	g.nodesConsumed = 0
+	g.functionSpaceStart = 0xA00
+	g.memorySize = 4096 - 0x200 //0x200 is reserved space that we cannot use
+	g.IRegisterIndex = 0xF
+	g.plotXRegister = 0xE
+	g.plotYRegister = 0xD
+	g.BNEXRegister = 0xC
+	g.regTable.Init()
+
+	return g
+}
+
+/*
+FindInstructionIndex looks up an instruction with given ID.
+returns the first one it finds
+
+returns -1 if nothing with that ID was found
+
+currently only used for JMP instructions as those are the
+only instructions that have ID's
+*/
+func (g *Generator) FindInstructionIndex(ID int) int {
+	for i := 0; i < len(g.Ir); i++ {
+		if g.Ir[i].GetInstructionName() == "Jump" {
+			jumpInstrCast := g.Ir[i].(*Jump)
+			if jumpInstrCast.ID == ID {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+/*
+Generate interprets the AST and makes an IR from it
+*/
+func (g *Generator) Generate(AST []ast.Node) {
+	for i := 0; i < len(AST); i++ {
+		nodeType := AST[i].GetNodeName()
+		switch nodeType {
+		case "variable":
+			variable := AST[i].(*ast.Variable)
+			g.createVariableOperationInstructions(variable)
+		case "statement":
+			statement := AST[i].(*ast.Statement)
+			g.Ir = append(g.Ir, g.handleStatement(statement))
+		case "anb":
+			instruction := AST[i].(*ast.Anb)
+			g.createAnbInstructions(instruction)
+		case "function":
+			instruction := AST[i].(*ast.Function)
+			g.createFunctionInstructions(instruction)
+		case "functionCall":
+			instruction := AST[i].(*ast.FunctionCall)
+			g.createFunctionCallInstructions(instruction)
+		case "setStatement":
+			instruction := AST[i].(*ast.SetStatement)
+			g.createSetStatement(instruction)
+		case "mathStatement":
+
+		case "comparison":
+
+		case "switchStatement":
+
+		case "plotStatement":
+			plotStatement := AST[i].(*ast.PlotStatement)
+			g.Ir = append(g.Ir, g.newPlotInstructionSet(plotStatement))
+		}
+	}
+}
+
+func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
+
+	beforeGenerationInstructionCount := len(g.Ir)
+	//find the location where the function will be placed
+
+	//create the jump instruction so it knows to jump over the function
+	//when not called
+	passJumpInstruction := g.newJumpInstructionFromLoose(0)
+	//this is fine lmao
+	//ID collision every 1000 function jumps is fine
+	passJumpInstructionID := rnd.RandInt(0, 1000)
+	passJumpInstruction.ID = passJumpInstructionID
+
+	//save the byte addr before generating function code
+	functionStartAddr := 0x200 + (beforeGenerationInstructionCount * 2)
+
+	//put a new function on the function table so we know where can jump to to call it
+	g.functionAddrTable = append(g.functionAddrTable, functionaddrtable.NewFunctionAddr(functionStartAddr, instruction.Name))
+
+	//generate the function code
+	g.Generate(instruction.Body)
+
+	//find the jump back
+	passJumpInstrIndex := g.FindInstructionIndex(passJumpInstructionID)
+
+	//replace it with the new one that contains the proper address
+	g.Ir[passJumpInstrIndex] = Jump{To: 0x200 + (len(g.Ir) * 2), ID: passJumpInstructionID}
+
+	//put in a return statement
+	g.Ir = append(g.Ir, g.newRetInstruction())
+}
+
+func (g *Generator) handleStatement(s *ast.Statement) instruction {
+	var instr instruction
+	switch s.LHS {
+	case "INC":
+
+		if !ast.NodeIsVariable(s.RHS) {
+			errors.LitIncrementError()
+			os.Exit(65)
+		}
+		rhsVariable := s.RHS.(*ast.StatVar)
+		variableRegisterTableIndex := g.regTable.Find(rhsVariable.Value)
+		instr = g.newAddInstruction(variableRegisterTableIndex, 1)
+	}
+	return instr
+}
+package ir
+
+/*
+RGD 0 X
+
+This instruction is used when we need to dump 0 through X
+registers into the rom.
+
+This is used when we need to do a temporary scope change for
+functions
+*/
+type RGD struct {
+	startLocation, count int
+}
+
+func (r RGD) GetInstructionName() string {
+	return "RGD"
+}
+
+func (r RGD) Opcodeable() bool {
+	return false
+}
+
+func (r RGD) usesVariableSpace() bool {
+	return false
+}
+
+/*
+NewRGDInstruction creates a new RGD instruction
+
+uses the I register
+*/
+func (g *Generator) NewRGDInstruction(endRegister int) RGD {
+	instr := RGD{}
+	instr.count = endRegister
+
+	//find a region for the dump to go into
+	emptyRegionStart := g.memTable.FindNextEmptyAddr()
+	instr.startLocation = emptyRegionStart
+
+	//set I register to the start of the dump region
+	g.regTable.PutRegisterValue(g.IRegisterIndex, emptyRegionStart, "I_REGISTER")
+	g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.IRegisterIndex, emptyRegionStart, "I_REGISTER"))
+
+	//put all register values into a slice
+	for i := 0; i < endRegister; i++ {
+		g.memTable.Put(g.regTable[i].Name, g.regTable[i].Value, 1)
+	}
+
+	return instr
+}
+package ir
+
+/*
+RET is used when exiting a function
+
+has no contents. only used to signal to the bytecode generator
+that it needs to put one in
+
+opcode: 00EE
+*/
+type RET struct {
+}
+
+func (r RET) GetInstructionName() string {
+	return "RET"
+}
+
+func (r RET) Opcodeable() bool {
+	return false
+}
+
+func (r RET) usesVariableSpace() bool {
+	return false
+}
+
+func (g *Generator) newRetInstruction() RET {
+	return RET{}
+}
+package ir
+
+/*
+JMP FROM TO
+
+has an ID field because sometimes we need to reference to it
+for stuff like function hops where we need manipulate the call later
+to set the jump to address
+*/
+type Jump struct {
+	To, ID int
+}
+
+func (j Jump) GetInstructionName() string {
+	return "Jump"
+}
+
+func (j Jump) Opcodeable() bool {
+	return true
+}
+
+func (j Jump) usesVariableSpace() bool {
+	return false
+}
+
+func (g *Generator) newJumpInstructionFromLoose(to int) Jump {
+	return Jump{to, 0}
+}
+package ir
+
+import (
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
+	"github.com/fabulousduck/smol/ir/memtable"
+)
+
+/*
+Mov R1 into R2
+
+Chip-8 knows MOV in the form of 6XNN
+where X is the register and NN is the memory address
+*/
+type MOV struct {
+	R1, R2 int
+	ANNN   bool
+}
+
+func (m MOV) GetInstructionName() string {
+	return "MOV"
+}
+
+func (m MOV) Opcodeable() bool {
+	return true
+}
+
+func (m MOV) usesVariableSpace() bool {
+	return true
+}
+
+/*
+
+	newMovInstructionFromLoose takes a loose set of values and turns them into
+	a MOV instruction
+
+	R1 must be a register
+	R2 can either be a register or a memory address
+	if R2 is a memory address the field "R2IsAddr" will be set to true
+*/
+func (g *Generator) newMovInstructionFromLoose(R1 int, R2 int, ANNN bool) MOV {
+	instr := MOV{R1, R2, false}
+	if memtable.IsValidMemRegion(R1) {
+		errors.RegisterAdressModeFailure(R1)
+	}
+
+	instr.ANNN = ANNN
+	return instr
+}
+
+/*
+	same as newMovInstructionFromLoose.
+	It does the extraction of variable values for you
+*/
+func (g *Generator) newMovInstruction(v *ast.Variable) MOV {
+	instr := MOV{}
+	return instr
+}
+package ir
+
+/*
+compressMemoryLayout relocates all variables next to the opcodes to reduce the size of the rom
+*/
+// func (g *Generator) compressMemoryLayout() {
+// 	variablesReplaced := 0
+
+// 	//make sure the game does not start reading variable space
+// 	g.WrapCodeInLoop()
+
+// 	//get the end position of the opcodes
+// 	endOpcodeSpace := len(g.Ir) * 2
+
+// 	//move all variables closer
+// 	for i := 0; i < len(g.Ir); i++ {
+// 		if g.Ir[i].usesVariableSpace() {
+// 			switch g.Ir[i].GetInstructionName() {
+// 			case "SET":
+// 				newPostion := endOpcodeSpace + variablesReplaced
+// 				cast := g.Ir[i].(SET)
+// 				cast.Addr = newPostion
+// 				memTableVariable := g.memTable.FindByAddr(cast.Addr)
+// 				g.memTable.Move(memTableVariable, newPostion, true)
+// 				variablesReplaced++
+// 				break
+// 			case "MOV":
+// 				newPostion := endOpcodeSpace + variablesReplaced
+// 				cast := g.Ir[i].(MOV)
+// 				cast.R2 = newPostion
+// 				memTableVariable := g.memTable.FindByAddr(cast.R2)
+// 				g.memTable.Move(memTableVariable, newPostion, true)
+// 				variablesReplaced++
+// 				break
+// 			}
+// 		}
+// 	}
+// }
+package ir
+
+/*
+	note: this thing is internal as fuck. there is no opcode for this. this is something we just do. not the emulator or a system for that matter
+*/
+
+import (
+	"strconv"
+
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
+	"github.com/fabulousduck/smol/ir/registertable"
+)
+
+type SETMEM struct {
+	Val, Addr int
+}
+
+func (s SETMEM) GetInstructionName() string {
+	return "SETMEM"
+}
+
+func (s SETMEM) Opcodeable() bool {
+	return false
+}
+
+func (s SETMEM) usesVariableSpace() bool {
+	return true
+}
+
+/*
+SET Val ADDR
+
+set a value in a given register address
+*/
+type SETREG struct {
+	Val, Index int
+}
+
+func (s SETREG) GetInstructionName() string {
+	return "SETREG"
+}
+
+func (s SETREG) Opcodeable() bool {
+	return true
+}
+
+func (s SETREG) usesVariableSpace() bool {
+	return true
+}
+
+func (g *Generator) newSetMemoryLocationFromLoose(name string, value int) SETMEM {
+	instr := SETMEM{}
+	region := g.memTable.Put(name, value, 1)
+	instr.Addr = region.Addr
+	instr.Val = value
+	return instr
+}
+
+func (g *Generator) newSpecificRegisterSet(registerIndex int, value int, name string) SETREG {
+	instr := SETREG{}
+	g.regTable[registerIndex] = registertable.Register{value, name}
+	instr.Index = registerIndex
+	instr.Val = value
+	return instr
+}
+
+/*
+This is used for MEM operations.
+Sets the declared variable in a free register
+Will error out if it cant find a free register
+*/
+func (g *Generator) newSetRegisterInstruction(v *ast.Variable, varValue int, resolve bool) SETREG {
+	instr := SETREG{}
+
+	if resolve {
+		resolutionName := v.Value.(*ast.StatVar).Value
+		if val, ok := g.memTable[resolutionName]; ok {
+			varValue = val.Value
+		} else {
+			errors.UndefinedVariableError(resolutionName)
+		}
+	}
+
+	emptyRegisterAddress := g.regTable.FindEmptyRegister()
+	g.regTable.PutRegisterValue(emptyRegisterAddress, varValue, v.Name)
+	instr.Index = emptyRegisterAddress
+	instr.Val = varValue
+	return instr
+}
+
+func (g *Generator) newSetRegisterInstructionFromLoose(registerName string, varValue int) SETREG {
+	instr := SETREG{}
+
+	emptyRegisterAddress := g.regTable.FindEmptyRegister()
+	g.regTable.PutRegisterValue(emptyRegisterAddress, varValue, registerName)
+	instr.Index = emptyRegisterAddress
+	instr.Val = varValue
+	return instr
+}
+
+func (g *Generator) createVariableOperationInstructions(variable *ast.Variable) {
+	//check if its a reference
+	if ast.NodeIsVariable(variable.Value) {
+		//if it is a reference, we get the original value,
+		//and copy it over into a new register with the name of the new variable
+		variableValue := variable.Value.(*ast.StatVar)
+		emptyRegister := g.regTable.FindEmptyRegister()
+		originalRegister := g.regTable.Find(variableValue.Value)
+		g.regTable[emptyRegister] = registertable.Register{g.regTable[originalRegister].Value, variable.Name}
+		g.Ir = append(g.Ir, g.newRegCpy(originalRegister, emptyRegister))
+	} else {
+		variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
+		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
+	}
+}
+
+func (g *Generator) createSetStatement(instruction *ast.SetStatement) {
+	castVariable := instruction.MHS.(*ast.StatVar)
+
+	//find the register in which the variable is currently stored
+	variableRegister := g.regTable.Find(castVariable.Value)
+
+	//if the rhs of the set statement is a variable too, we need to get its value first
+	//and then embed a register copy instruction
+	if ast.NodeIsVariable(instruction.RHS) {
+		referenceVariableRegister := g.regTable.Find(instruction.RHS.(*ast.StatVar).Value)
+		g.Ir = append(g.Ir, g.newRegCpy(referenceVariableRegister, variableRegister))
+	} else {
+		//otherwise, we need to set the value of the register to the right hand side value
+		castVal, _ := strconv.Atoi(instruction.RHS.(*ast.NumLit).Value)
+		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(castVariable.Value, castVal))
+
+	}
+}
+package lexer
+
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
+
+const (
+	testVariable = "MEM A 10;"
+)
+
+func TestVariable(T *testing.T) {
+	testProgram := "MEM A 10;"
+	l := NewLexer("TESTING")
+	expectedResults := []Token{
+		{
+			Value: "MEM",
+			Type:  "variable_assignment",
+			Line:  0,
+			Col:   0,
+		},
+		{
+			Value: "A",
+			Type:  "CHAR",
+			Line:  0,
+			Col:   4,
+		},
+		{
+			Value: "10",
+			Type:  "NUMB",
+			Line:  0,
+			Col:   6,
+		},
+		{
+			Value: ";",
+			Type:  "SEMICOLON",
+			Line:  0,
+			Col:   8,
+		},
+	}
+
+	l.Lex(testProgram)
+
+	for i := 0; i < len(expectedResults); i++ {
+		if !cmp.Equal(expectedResults[i], l.Tokens[i]) {
+			//TODO: give a bit more info on this
+			T.Logf("\nTestVariableLex | failed to generate correct tokens for variable assignment")
+			T.Fail()
+		}
+	}
+}
+
+func TestStringTypeDetermination(T *testing.T) {
+	testNumber := "15"
+	testChar := "boop"
+
+	if DetermineStringType(testNumber) != "NUMB" {
+		T.Logf("\nTestStringTypeDetermination | determined that %s is of type %s which is actually NUMB", testNumber, DetermineStringType(testNumber))
+		T.Fail()
+	}
+
+	if DetermineStringType(testChar) != "CHAR" {
+		T.Logf("\nTestStringTypeDetermination | determined that %s is of type %s which is actually CHAR", testNumber, DetermineStringType(testNumber))
+		T.Fail()
+	}
+}
+
+func TestDetermineType(T *testing.T) {
+	values := []string{
+		"1", "B", "<", ",", ">", ";", "[", "]", ":",
+		"#", "\r", "\n", "\t", " ", "&",
+	}
+	expectedTypes := []string{
+		"NUMB", "CHAR", "LEFT_ARROW", "COMMA", "RIGHT_ARROW", "SEMI_COLON",
+		"LEFT_BRACKET", "RIGHT_BRACKET", "DOUBLE_DOT", "COMMENT", "WIN_NEWLINE",
+		"UNIX_NEWLINE", "TAB", "SPACE", "UDEF",
+	}
+
+	for i := 0; i < len(values); i++ {
+		determinedType := determineType(values[i])
+		if determinedType != expectedTypes[i] {
+			T.Logf("\n TestDetermineType | type of %s wat determined to be %s. should be %s", values[i], determinedType, expectedTypes[i])
+			T.Fail()
+		}
+	}
+}
+package lexer
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+
+	"github.com/fabulousduck/smol/errors"
+)
+
+//Token contains all info about a specific token from syntax
+type Token struct {
+	Value, Type string
+	Line, Col   int
+}
+
+//Lexer contains all the info needed for the lexer to generate a set of usable tokens
+type Lexer struct {
+	Tokens                                []Token
+	currentIndex, currentLine, currentCol int
+	FileName, Program                     string
+}
+
+//NewLexer creates a new instance of a lexer stuct
+func NewLexer(filename string, program string) *Lexer {
+	l := new(Lexer)
+	l.Program = program
+	l.FileName = filename
+	return l
+}
+
+func newToken(line int, col int, value string) *Token {
+	t := new(Token)
+	t.Line = line
+	t.Col = col
+	t.Type = determineType(value)
+	t.Value = value
+	return t
+}
+
+//Lex takes a sourcecode string and transforms it into usable tokens to build an AST with
+func (l *Lexer) Lex() {
+
+	for l.currentIndex < len(l.Program) {
+		currTok := newToken(l.currentLine, l.currentCol, l.currentChar())
+		switch currTok.Type {
+		case "character":
+			currTok.Value = l.peekTypeN("character")
+		case "integer":
+			currTok.Value = l.peekTypeN("integer")
+		case "comment":
+			l.readComment()
+			l.advance()
+			l.currentCol = 0
+			continue
+		case "left_arrow":
+			fallthrough
+		case "right_arrow":
+			fallthrough
+		case "comma":
+			fallthrough
+		case "left_bracket":
+			fallthrough
+		case "right_bracket":
+			fallthrough
+		case "double_dot":
+			fallthrough
+		case "semicolon":
+			l.advance()
+		case "undefined_symbol":
+			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
+			os.Exit(65)
+		case "newline":
+			l.currentCol = 0
+			l.advance()
+			continue
+		case "ignoreable":
+			l.advance()
+			continue
+		}
+
+		l.Tokens = append(l.Tokens, *currTok)
+
+	}
+	l.tagKeywords()
+}
+
+func (l *Lexer) advance() {
+	l.currentCol++
+	l.currentIndex++
+}
+
+func (l *Lexer) readComment() {
+	l.currentIndex++
+	for t := determineType(l.currentChar()); t != "newline"; t = determineType(l.currentChar()) {
+		l.currentIndex++
+	}
+}
+
+func (l *Lexer) peekTypeN(typeName string) string {
+	var currentString bytes.Buffer
+
+	for t := determineType(l.currentChar()); t == typeName; t = determineType(l.currentChar()) {
+		char := l.currentChar()
+
+		//we do this to avoid index out of range errors
+		if l.currentIndex+1 >= len(l.Program) {
+
+			currentString.WriteString(char)
+			l.advance()
+
+			return currentString.String()
+		}
+		currentString.WriteString(char)
+		l.advance()
+	}
+
+	return currentString.String()
+}
+
+func (l *Lexer) currentChar() string {
+	return string(l.Program[l.currentIndex])
+}
+
+func (l *Lexer) tagKeywords() {
+	for i, token := range l.Tokens {
+		if token.Type == "character" {
+			l.Tokens[i].Type = getKeyword(&token)
+		}
+	}
+}
+
+//ThrowSemanticError can be used when an error occurs while generating an AST and not at interpret time
+func ThrowSemanticError(token *Token, expected []string, filename string) {
+	errors.Report(
+		token.Line,
+		filename,
+		fmt.Sprintf("expected one of [%s]. got %s",
+			errors.ConcatVariables(expected, ", "),
+			token.Type),
+	)
+}
+package lexer
+
+import (
+	"strings"
+)
+
+type typename map[string]string
+
+func determineType(character string) string {
+
+	usableChar := strings.ToLower(character)
+	types := map[string][]string{
+		"character":     []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "_"},
+		"integer":       []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+		"left_arrow":    []string{"<"},
+		"comma":         []string{","},
+		"right_arrow":   []string{">"},
+		"semicolon":     []string{";"},
+		"left_bracket":  []string{"["},
+		"right_bracket": []string{"]"},
+		"double_dot":    []string{":"},
+		"comment":       []string{"#"},
+		"newline":       []string{"\r", "\n"},
+		"ignoreable":    []string{"\t", " "},
+	}
+
+	for key, values := range types {
+		if contains(usableChar, values) {
+			return key
+		}
+	}
+	return "undefined_symbol"
+}
+
+func contains(name string, list []string) bool {
+	for i := 0; i < len(list); i++ {
+		if string(list[i]) == name {
+			return true
+		}
+	}
+	return false
+}
+
+func getKeyword(token *Token) string {
+	keywords := map[string]string{
+		"DEF": "function_definition",
+		"ANB": "left_not_right",
+		"MEM": "variable_assignment",
+		"PRI": "print_integer",
+		"PRU": "print_ascii",
+		"INC": "increment_value",
+		"END": "close_block",
+		"BRK": "print_break",
+		"SET": "set_variable",
+		"ADD": "addition",
+		"SUB": "subtraction",
+		"MUL": "multiplication",
+		"DIV": "division",
+		"POW": "power_of",
+		"EQ":  "equals",
+		"NEQ": "not_equals",
+		"LT":  "less_than",
+		"GT":  "greater_than",
+		"SWT": "switch",
+		"CAS": "case",
+		"EOS": "end_of_switch",
+		"REL": "release",
+		"USE": "use", //TODO: libs
+		"PLT": "plot",
+	}
+
+	if val, ok := keywords[token.Value]; ok {
+		return val
+	}
+
+	if len(token.Value) > 1 {
+		return "string"
+	}
+	return token.Type
+}
+
+//DetermineStringType will determine the type of a given string
+func DetermineStringType(str string) string {
+	return determineType(string([]rune(str)[0]))
+}
+package file
+
+import (
+	"fmt"
+	"log"
+	"os"
+)
+
+/*
+Create is a simple helper function to create a file at path
+Also checks if the file at path already exists
+*/
+func Create(path string) *os.File {
+	// create file if not exists
+	var file, err = os.Create("ROM")
+
+	if isError(err) {
+		os.Exit(65)
+	}
+	return file
+}
+
+func isError(err error) bool {
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	return (err != nil)
+}
+
+/*
+WriteBytes writes bytes to addr in the given file
+*/
+func WriteBytes(file *os.File, bytes []byte, particularOffset bool, addr int64) {
+	fmt.Printf("%04X\n", addr)
+	var jmpFileLoc int64
+	if particularOffset {
+		originalOffset, _ := file.Seek(0, 1)
+		jmpFileLoc = originalOffset
+		file.Seek(addr, 0)
+	}
+	bytesWritten, err := file.Write(bytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Wrote %d bytes.\n", bytesWritten)
+	if particularOffset {
+		file.Seek(jmpFileLoc, 0)
+	}
+}
+package smol
+
+import (
+	"io/ioutil"
+	"os"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/fabulousduck/smol/bytecode"
+
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/interpreter"
+	"github.com/fabulousduck/smol/ir"
+	"github.com/fabulousduck/smol/lexer"
+)
+
+//Smol : Defines the global attributes of the interpreter
+type Smol struct {
+	Tokens   []*lexer.Token
+	HadError bool //TODO: use this
+}
+
+//NewSmol : Creates a new Smol instance
+func NewSmol() *Smol {
+	return new(Smol)
+}
+
+//RunFile : Interprets a given file
+func (smol *Smol) RunFile(filename string, compile bool) {
+	file, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	smol.Run(string(file), filename, compile)
+	if smol.HadError {
+		os.Exit(65)
+	}
+}
+
+//Run exectues a given script
+func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
+	l := lexer.NewLexer(filename, sourceCode)
+	l.Lex()
+	p := ast.NewParser(filename, l.Tokens)
+	//We can ignore the second return value here as it is the amount of tokens consumed.
+	//We do not need this here
+	p.Ast, _ = p.Parse()
+
+	if compile {
+		g := ir.NewGenerator(filename)
+		g.Generate(p.Ast)
+		spew.Dump(g)
+		bg := bytecode.Init(g, filename)
+		bg.CreateRom()
+		return
+	}
+	i := interpreter.NewInterpreter()
+	i.Interpret(p.Ast)
+}
+
+//RunRepl is the same as Run except it allows you to pass our own interpreter so we can keep the state
+//of it after the line has been executed
+func (smol *Smol) RunRepl(sourceCode string, filename string, statefullInterpreter *interpreter.Interpreter) {
+	l := lexer.NewLexer(filename, sourceCode)
+	l.Lex()
+	p := ast.NewParser(filename, l.Tokens)
+
+	//Add an EOF token so semicolon errors dont index out of range
+	p.Tokens = append(l.Tokens, lexer.Token{
+		Value: "end_of_file",
+		Type:  "end_of_file",
+	})
+	//We can ignore the second return value here as it is the amount of tokens consumed.
+	//We do not need this here
+	p.Ast, _ = p.Parse()
+	statefullInterpreter.Interpret(p.Ast)
+}
+package bytecode
+
+import (
+	"os"
+
+	"github.com/davecgh/go-spew/spew"
+
+	"github.com/fabulousduck/smol/file"
+	"github.com/fabulousduck/smol/ir"
+)
+
+/*
+Generator holds the file pointer to the binary ROM
+and other info relevant to generating the opcodes
+*/
+type Generator struct {
+	filename string
+	ir       *ir.Generator
+}
+
+/*
+Init creates and fils a new bytecode generator struct
+*/
+func Init(ir *ir.Generator, filename string) *Generator {
+	g := new(Generator)
+	g.ir = ir
+	g.filename = filename
+
+	return g
+}
+
+/*
+CreateRom generates a rom from an existing IR
+*/
+func (g *Generator) CreateRom() {
+	romFile := file.Create(g.filename)
+
+	for i := 0; i < len(g.ir.Ir); i++ {
+		instructionType := g.ir.Ir[i].GetInstructionName()
+		spew.Dump(instructionType)
+		switch instructionType {
+		case "SETREG":
+			setRegInstruction := g.ir.Ir[i].(ir.SETREG)
+			g.embedSetRegister(setRegInstruction, romFile)
+		case "SETMEM":
+			setMemInstruction := g.ir.Ir[i].(ir.SETMEM)
+			//write a single byte into memory
+			file.WriteBytes(romFile, []byte{byte(uint8(setMemInstruction.Val))}, true, int64(setMemInstruction.Addr))
+			break
+		case "RegCpy":
+			regCpyInstruction := g.ir.Ir[i].(ir.RegCpy)
+			g.embedRegCpy(regCpyInstruction, romFile)
+		case "MOV":
+			movInstruction := g.ir.Ir[i].(ir.MOV)
+			if movInstruction.ANNN {
+				g.embedANNN(movInstruction, romFile)
+				break
+			}
+			g.embedMOV(movInstruction, romFile)
+
+		case "RET":
+			g.embedRet(romFile)
+
+		case "ADD":
+			addInstruction := g.ir.Ir[i].(ir.ADD)
+			g.embedAdd(addInstruction, romFile)
+		case "BNE":
+			bneInstruction := g.ir.Ir[i].(ir.BNE)
+			g.embedBNE(bneInstruction, romFile)
+		case "BNERR":
+			bnerrInstruction := g.ir.Ir[i].(ir.BNERR)
+			g.embedBNERR(bnerrInstruction, romFile)
+		case "PLOT":
+			plotInstruction := g.ir.Ir[i].(ir.PLOT)
+			g.embedPLOT(plotInstruction, romFile)
+		case "Jump":
+			jmpInstruction := g.ir.Ir[i].(ir.Jump)
+			g.embedJMP(jmpInstruction, romFile)
+
+		}
+	}
+	return
+}
+
+/*
+00EE
+opcode: 00EE
+
+literally just a return opcode. no data is encoded in this thing
+*/
+func (g *Generator) embedRet(romFile *os.File) {
+
+}
+
+/*
+V[x] += V[y]
+	opcode: 7XNN
+	X: register to add value onto
+	NN: value to add onto registerX
+*/
+func (g *Generator) embedAdd(instruction ir.ADD, romFile *os.File) {
+	baseByte := 0x7<<4 | instruction.Register
+	secondaryByte := instruction.Value
+
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
+}
+
+func (g *Generator) embedBNE(instruction ir.BNE, romFile *os.File) {
+	baseByte := 0x3
+	baseByte = baseByte<<4 | instruction.Lhs
+	secondaryByte := instruction.Rhs
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
+}
+
+func (g *Generator) embedBNERR(instruction ir.BNERR, romFile *os.File) {
+	baseByte := 0x5
+	baseByte = baseByte<<4 | instruction.Lhs
+	secondaryByte := instruction.Rhs<<4 | 0
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
+}
+
+/*
+	opcode: 8XY0
+	X: register where the original value is stored
+	Y: register where the value is to be copied to
+*/
+func (g *Generator) embedRegCpy(instruction ir.RegCpy, romFile *os.File) {
+	baseByte := 0x8
+	baseByte = baseByte<<4 | instruction.To
+	secondaryByte := instruction.From<<4 | 0
+
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
+}
+
+/*
+	opcode: 6XNN
+	X: index of the register that the value will be placed in
+	NN: the value to be placed in the register
+*/
+func (g *Generator) embedSetRegister(instruction ir.SETREG, romFile *os.File) {
+	baseByte := 0x6
+	baseByte = baseByte<<4 | instruction.Index
+	secondaryByte := instruction.Val
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
+}
+
+/*
+	opcode: 1NNN
+	1: identifier
+	NNN: address to jump to
+*/
+func (g *Generator) embedJMP(instruction ir.Jump, romFile *os.File) {
+	baseByte := 0x1
+	baseByte = baseByte<<4 | shiftRight(instruction.To)
+
+	secondaryByte := instruction.To & 0x0FF
+	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
+}
+
+/*
+	opcode: ANNN
+	A: identifier
+	NNNN: address to move into I
+*/
+func (g *Generator) embedANNN(instruction ir.MOV, romFile *os.File) {
+	instruction.R2 += 0x200 //generate and address that is relative to the machine, not the file
+	baseByte := 0xA
+	secondaryByte := 0x00
+	baseByte = baseByte<<4 | shiftRight(instruction.R2)
+
+	secondaryByte = instruction.R2 & 0x0FF
+
+	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
+}
+
+/*
+opcode: DXYN
+D: identifier
+X: register index containing the X coordinate
+Y: register index containing the Y coordinate
+N: number of columns to draw
+*/
+
+func (g *Generator) embedPLOT(instruction ir.PLOT, romFile *os.File) {
+
+	baseByte := 0xD
+	baseByte = baseByte<<4 | instruction.X
+
+	secondaryByte := instruction.Y<<4 | instruction.H
+
+	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(secondaryByte)}, false, 0)
+}
+
+/*
+	opcode: 6XNN
+	6: identifier
+	X: register index
+	NN: value to be moved into register
+*/
+func (g *Generator) embedMOV(instruction ir.MOV, romFile *os.File) {
+
+	baseByte := 0x6
+
+	baseByte = baseByte<<4 | instruction.R1
+	file.WriteBytes(romFile, []byte{clampUint8(baseByte), clampUint8(instruction.R2)}, false, 0)
+}
+
+/*
+	shifts the left most value in an int to the right
+	this is used when we need to split up a number to append it
+	to the right in a byte
+*/
+func shiftRight(value int) int {
+	if value <= 16 {
+		return value
+	} else if value < 256 {
+		return (value & 0xF0 >> 4)
+	} else if value < 4096 {
+		return (value & 0xF00 >> 8)
+	} else {
+		return (value & 0xF000 >> 16)
+	}
+}
+
+func clampUint8(variable int) byte {
+	return byte(uint8(variable))
+}
+package interpreter
+
+import (
+	"fmt"
+	"math"
+	"os"
+	"strconv"
+
+	"github.com/fabulousduck/smol/ast"
+	"github.com/fabulousduck/smol/errors"
+)
+
+type tuple struct {
+	key   string
+	value string
+}
+
+type stack []*tuple
+
+//Stacks is the global scope that hold sub scopes for varianbles
+type Stacks []stack
+
+//Heap is not really a heap since it does not hold dynamically sized types, but a good excuse to put my function decls into
+type Heap []*ast.Function
+
+//Interpreter contains all data needed to Interpret an AST
+type Interpreter struct {
+	Stacks Stacks
+	Heap   Heap
+}
+
+//NewInterpreter provides a new interpreter with empty base stack and heap
+func NewInterpreter() *Interpreter {
+	i := new(Interpreter)
+	i.Stacks = Stacks{}
+	i.Heap = Heap{}
+	baseStack := stack{}
+	i.Stacks = append(i.Stacks, baseStack)
+	return i
+}
+
+//Interpret will tree walk execute an AST from left to right (topdown)
+func (i Interpreter) Interpret(AST []ast.Node) {
+	for j := 0; j < len(AST); j++ {
+		node := AST[j]
+		nodeType := node.GetNodeName()
+		switch nodeType {
+		case "variable":
+			//we can do this since only ints exist in our language
+			i.stackAlloc(len(i.Stacks)-1, node.(*ast.Variable))
+		case "statement":
+			i.execStatement(node.(*ast.Statement))
+		case "anb":
+			i.execANB(node.(*ast.Anb))
+		case "function":
+			i.execFunctionDecl(node.(*ast.Function))
+		case "functionCall":
+			i.execFunctionCall(node.(*ast.FunctionCall))
+		case "setStatement":
+			i.setVariableValue(node.(*ast.SetStatement))
+		case "mathStatement":
+			i.execMathStatement(node.(*ast.MathStatement))
+		case "comparison":
+			i.execComparison(node.(*ast.Comparison))
+		case "switchStatement":
+			i.execSwitchStatement(node.(*ast.SwitchStatement))
+		case "releaseStatement":
+			i.execReleaseStatement(node.(*ast.ReleaseStatement))
+		}
+	}
+}
+
+func (i *Interpreter) execReleaseStatement(r *ast.ReleaseStatement) {
+	if !ast.NodeIsVariable(r.Variable) {
+		errors.LitteralRelease()
+		os.Exit(65)
+	}
+
+	//find the variable
+	scopeLevel, stackIndex := i.Stacks.find(r.Variable.(*ast.StatVar).Value)
+
+	//remove the variable
+	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel][:stackIndex], i.Stacks[scopeLevel][stackIndex+1:]...)
+}
+
+func (i *Interpreter) execSwitchStatement(ss *ast.SwitchStatement) {
+	var defaultCase []ast.Node
+	var caseMatchValue string
+	var matchValue string
+
+	if ast.NodeIsVariable(ss.MatchValue) {
+		matchValue = i.Stacks.resolveVariable(ss.MatchValue).value
+	} else {
+		matchValue = ss.MatchValue.(*ast.NumLit).Value
+	}
+
+	for _, switchCase := range ss.Cases {
+		if switchCase.GetNodeName() != "switchCase" && switchCase.GetNodeName() != "end_of_switch" {
+			errors.UnknownSwitchNode()
+			os.Exit(65)
+		}
+		if switchCase.GetNodeName() == "end_of_switch" {
+			defaultCase = switchCase.(*ast.Eos).Body
+			continue
+		}
+
+		currentCase := switchCase.(*ast.SwitchCase)
+		caseMatchValue = i.Stacks.resolveValue(currentCase.MatchValue)
+
+		if matchValue == caseMatchValue {
+			i.Interpret(currentCase.Body)
+			return
+		}
+	}
+
+	if defaultCase != nil {
+		i.Interpret(defaultCase)
+	}
+
+	return
+}
+
+func (i *Interpreter) execComparison(cm *ast.Comparison) {
+
+	clhs := 0
+	crhs := 0
+	beforeScopeLevel := len(i.Stacks)
+
+	clhs, _ = strconv.Atoi(i.Stacks.resolveValue(cm.LHS))
+	crhs, _ = strconv.Atoi(i.Stacks.resolveValue(cm.RHS))
+
+	//create a stack for the block inside the comparisons body
+	i.Stacks = append(i.Stacks, stack{})
+
+	// do static analysis on same variable comparisons
+	switch cm.Operator {
+	case "LT":
+		if clhs < crhs {
+			i.Interpret(cm.Body)
+		}
+	case "GT":
+		if clhs > crhs {
+			i.Interpret(cm.Body)
+		}
+	case "EQ":
+		if clhs == crhs {
+			i.Interpret(cm.Body)
+		}
+	case "NEQ":
+		if clhs != crhs {
+			i.Interpret(cm.Body)
+		}
+	}
+
+	i.Stacks = i.Stacks[:beforeScopeLevel]
+	return
+}
+
+func (i *Interpreter) execMathStatement(ms *ast.MathStatement) {
+	operator := ms.LHS
+
+	if ms.MHS.GetNodeName() != "statVar" {
+		errors.MathInvalidReceiverError()
+	}
+
+	receiverVariable := i.Stacks.resolveVariable(ms.MHS)
+	combinatorValue := i.Stacks.resolveValue(ms.RHS)
+
+	i.Stacks.set(receiverVariable.key, evalMathExpression(operator, receiverVariable.value, combinatorValue))
+
+}
+
+func evalMathExpression(expressionType string, LHS string, RHS string) string {
+	clhs, _ := strconv.Atoi(LHS)
+	crhs, _ := strconv.Atoi(RHS)
+	switch expressionType {
+	case "ADD":
+		return strconv.Itoa(clhs + crhs)
+	case "SUB":
+		return strconv.Itoa(clhs - crhs)
+	case "MUL":
+		return strconv.Itoa(clhs * crhs)
+	case "DIV":
+		return strconv.Itoa(clhs / crhs)
+	case "POW":
+		return strconv.Itoa(int(math.Pow(float64(clhs), float64(crhs))))
+	}
+	//not sure what to return here
+	//TODO: figure above out and apply accordingly
+	return RHS
+}
+
+func (i *Interpreter) setVariableValue(ss *ast.SetStatement) {
+	if ss.MHS.GetNodeName() != "statVar" {
+		errors.LitAssignError()
+		os.Exit(65)
+	}
+
+	receiverVariable := i.Stacks.resolveVariable(ss.MHS)
+	rhs := i.Stacks.resolveValue(ss.RHS)
+
+	i.Stacks.set(receiverVariable.key, rhs)
+
+}
+
+func (i *Interpreter) execFunctionCall(fc *ast.FunctionCall) {
+	functionDecl := i.Heap.resolveFunction(fc.Name)
+
+	if len(fc.Args) != len(functionDecl.Params) {
+		errors.IncorrectFunctionParamCountError(functionDecl.Name, len(fc.Args), len(functionDecl.Params))
+		os.Exit(65)
+		return
+	}
+
+	beforeScopeLevel := len(i.Stacks)
+	scopedStack := stack{}
+
+	for paramListIndex, param := range functionDecl.Params {
+
+		if ast.NodeIsVariable(fc.Args[paramListIndex]) {
+			scopedStack = append(scopedStack, i.Stacks.resolveVariable(fc.Args[paramListIndex]))
+		} else {
+			scopedStack = append(scopedStack, &tuple{key: param, value: fc.Args[paramListIndex].(*ast.NumLit).Value})
+		}
+	}
+
+	//left off here refactoring
+
+	i.Stacks = append(i.Stacks, scopedStack)
+	i.Interpret(functionDecl.Body)
+	i.Stacks = i.Stacks[:beforeScopeLevel]
+}
+
+func (i *Interpreter) execFunctionDecl(f *ast.Function) {
+	i.Heap = append(i.Heap, f)
+}
+
+func (i *Interpreter) stackAlloc(scopeLevel int, v *ast.Variable) {
+	stackTuple := new(tuple)
+	stackTuple.key = v.Name
+
+	stackTuple.value = i.Stacks.resolveValue(v.Value)
+
+	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel], stackTuple)
+}
+
+func (i *Interpreter) execANB(anb *ast.Anb) {
+	LHS := i.Stacks.resolvePtrValue(anb.LHS)
+	RHS := i.Stacks.resolvePtrValue(anb.RHS)
+
+	i.Stacks = append(i.Stacks, stack{})
+	scopeLevel := len(i.Stacks)
+	v, _ := strconv.Atoi(*LHS)
+	n, _ := strconv.Atoi(*RHS)
+	for v != n {
+
+		i.Interpret(anb.Body)
+		//check if it works without htis
+		v, _ = strconv.Atoi(*LHS)
+		n, _ = strconv.Atoi(*RHS)
+	}
+	//GC the Stacks that were used in the scoped block. ANB in this case
+	i.Stacks = i.Stacks[scopeLevel:]
+}
+
+func (i *Interpreter) execStatement(s *ast.Statement) {
+	switch s.LHS {
+	case "BRK":
+		fmt.Printf("\n")
+		return
+	case "PRI":
+		fmt.Printf("%s", i.Stacks.resolveValue(s.RHS))
+		return
+	case "PRU":
+		cast, _ := strconv.Atoi(i.Stacks.resolveValue(s.RHS))
+		fmt.Printf("%c", cast)
+		return
+	case "INC":
+		if s.RHS.GetNodeName() != "statVar" {
+			errors.LitIncrementError()
+			os.Exit(65)
+		}
+
+		variableValue := i.Stacks.resolveVariable(s.RHS)
+		cast, _ := strconv.Atoi(variableValue.value)
+		cast++
+		castBack := strconv.Itoa(cast)
+		i.Stacks.set(variableValue.key, castBack)
+		return
+	}
+}
+
+func (s Stacks) set(name string, value string) {
+	scopeLevel, index := s.find(name)
+	s[scopeLevel][index].value = value
+}
+
+func (s Stacks) find(key string) (int, int) {
+	//reverse stack search so we start at local scope and keep working our way up intill we find something
+
+	for i := len(s) - 1; i > -1; i-- {
+		stackIndex := s[i].stackContains(key)
+		if stackIndex != -1 {
+			//scopeLevel, scopedStackIndex
+			return i, stackIndex
+		}
+	}
+
+	errors.UndefinedVariableError(key)
+	os.Exit(65)
+	return -1, -1
+}
+
+func (s stack) stackContains(key string) int {
+	for i := 0; i < len(s); i++ {
+		if s[i].key == key {
+			return i
+		}
+	}
+	return -1
+}
+
+func (h Heap) find(name string) int {
+	for i := 0; i < len(h); i++ {
+		if h[i].Name == name {
+			return i
+		}
+	}
+	errors.UndefinedFunctionReferenceError(name)
+	os.Exit(65)
+	return -1
+}
+
+func (h Heap) resolveFunction(name string) *ast.Function {
+	return h[h.find(name)]
+}
+
+func (s *Stacks) get(scopeLevel int, index int) *tuple {
+	return (*s)[scopeLevel][index]
+}
+
+func (s *Stacks) resolveVariable(node ast.Node) *tuple {
+	return s.get(s.find(node.(*ast.StatVar).Value))
+}
+
+func (s *Stacks) resolvePtrValue(node ast.Node) *string {
+	if ast.NodeIsVariable(node) {
+		return &s.resolveVariable(node).value
+	}
+	return &node.(*ast.NumLit).Value
+}
+
+func (s *Stacks) resolveValue(node ast.Node) string {
+	if ast.NodeIsVariable(node) {
+		return s.resolveVariable(node).value
+	}
+	return node.(*ast.NumLit).Value
+
+}
+package interpreter
+
+import "testing"
+
+func TestStacksFind(T *testing.T) {
+	var testVariableName = "someVariable"
+	var testValue = "10"
+	var testStack = Stacks{
+		stack{
+			{testVariableName, testValue},
+		},
+	}
+
+	scopeLevel, index := testStack.find(testVariableName)
+	if scopeLevel != 0 || index != 0 {
+		T.Logf("\nTestStacksFind | failed to lookup variable on stack")
+		T.Fail()
+	}
+}
+
+func TestStacksSet(T *testing.T) {
+	var testVariableName = "someVariable"
+	var testValue = "10"
+	var newTestValue = "11"
+	var testStack = Stacks{
+		stack{
+			{testVariableName, testValue},
+		},
+	}
+
+	testStack.set(testVariableName, newTestValue)
+
+	if testStack[0][0].value != newTestValue {
+		T.Logf("\nTestStacksFind | failed to set value on stack")
+		T.Fail()
+	}
+}
+
+func TestStackContains(T *testing.T) {
+
+}
+
+func TestHeapFind(T *testing.T) {
+
+}
+package main
+
+import (
+	"flag"
+
+	"github.com/fabulousduck/smol"
+	"github.com/fabulousduck/smol/repl"
+)
+
+func main() {
+	s := smol.NewSmol()
+	flagPtr := flag.Bool("c", false, "compile to a chip-8 rom")
+	filenamePtr := flag.String("file", "", "input file for the interpreter")
+
+	flag.Parse()
+
+	if *filenamePtr != "" {
+		s.RunFile(*filenamePtr, *flagPtr)
+	} else {
+		//TODO add on the fly rom compilation to repls
+		repl.Repl(s)
+	}
+
+}
+package errors
+
+import (
+	"bytes"
+	"fmt"
+)
+
+//Report can be used for appending info to the error message such as line number and file
+func Report(line int, where string, message string) {
+	//TODO: make this nicer
+	fmt.Printf("\n[%s|%d] %s\n\n", where, line, message)
+}
+
+//ConcatVariables is a simple formatter to create a variable error string
+func ConcatVariables(vars []string, sep string) string {
+	var currentString bytes.Buffer
+	for i := 0; i < len(vars); i++ {
+		currentString.WriteString(string(fmt.Sprintf("%s%s", vars[i], sep)))
+	}
+	return currentString.String()
+}
+
+//UnknownFunctionName is an error when a lookup on a function is done but none could be found
+func UnknownFunctionName(name string) {
+	fmt.Printf("tried to call unknown function: %s\n", name)
+}
+
+//IlligalRegisterAccess is thrown by the register table when it detects the compilers accesses a non existant register
+func IlligalRegisterAccess(register int) {
+	fmt.Printf("illigal access of register: %d", register)
+}
+
+//UnAssignedMemoryLookupError is an error for the IR to throw when it wants to find a variable by addr in the memtable that does not exist
+func UnAssignedMemoryLookupError() {
+	fmt.Printf("tried to look up register that is empty while expecting it to be full")
+}
+
+//UnknownTypeError is an error for the AST generator for when it encounters a token that it does not have a name for
+func UnknownTypeError() {
+	fmt.Printf("Unknown token type found.")
+}
+
+//LitteralRelease error can be thrown when the programmer wants to release a number litteral
+func LitteralRelease() {
+	fmt.Printf("Cannot release a number litteral\n")
+}
+
+//UndefinedVariableError can be thrown at interpret time when a variable is not found on the local scope or higher level scopes
+func UndefinedVariableError(variableName string) {
+	//TODO: make this somewhat more informative
+	fmt.Printf("Undefined varaible %s\n", variableName)
+}
+
+//LitAssignError can be used when the script tries to assign a new value to a litteral value
+func LitAssignError() {
+	fmt.Printf("Cannot assign new value to litteral value")
+}
+
+//LitIncrementError can be thrown when the script wants to call INC on a litteral. We do not support this as litterals are not expressions and we dont support returns yet
+func LitIncrementError() {
+	fmt.Printf("Cannot increment a num literal\n")
+}
+
+//UndefinedFunctionReferenceError can be thrown when the script tries to reference an error that is not defined
+func UndefinedFunctionReferenceError(name string) {
+	fmt.Printf("Cannot find function with name: %s\n", name)
+}
+
+//IncorrectFunctionParamCountError can be throw when more or less arguments are provided to a function than it asks for. We dont support argument defaulting so this is usefull
+func IncorrectFunctionParamCountError(name string, given int, expected int) {
+	fmt.Printf("function \"%s\" requires %d arguments. Got %d\n", name, expected, given)
+}
+
+//ROMModError can be thrown when a variable modification is called on a variable that is not loaded into a register.
+//the user is most likely attempting to change rom here
+func ROMModError() {
+	fmt.Printf("Trying to modify variable that is not loaded into memory")
+}
+
+//MathInvalidReceiverError can be thrown when the script wants to do a mathematical statement but does not have a receiver for the outcome as LHS
+func MathInvalidReceiverError() {
+	fmt.Printf("left hand side of mathematical operation must be variable")
+}
+
+//UnknownSwitchNode is thrown when something else than EOS or CAS is found as a top level definition in a switch
+func UnknownSwitchNode() {
+	fmt.Printf("unknown definition found in switch")
+}
+
+//EOFError allows us to throw an error when either the lexer or the AST generator runs out of tokens / characters to parse
+//while it still expects there to be a token or character.
+func EOFError() {
+	fmt.Printf("EOF found in program execution.")
+}
+
+//OutOfRegistersError is and error that indicates someone tried to assign more values than is allowed by the bytecode generator
+func OutOfRegistersError() {
+	fmt.Printf("Tried to store more variables than available registers (15) ")
+}
+
+//OutOfMemoryError can be thrown when the compiler has no more space to place a variable
+func OutOfMemoryError() {
+	fmt.Printf("Out of memory error")
+}
+
+/*
+MemAddrAdressModeFailure is an internal error where a MOV statement tried to use
+a memory address as arg one
+
+TODO: rename this to something more appropriate
+TODO: maybe even make a separate errors package for internal errors
+*/
+func RegisterAdressModeFailure(attemptedRegisterIndex int) {
+	fmt.Printf("Invalid MOV to register [%d]. 0xF boundary exceeded", attemptedRegisterIndex)
+}
+
+/*
+s
+*/
