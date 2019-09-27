@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/fabulousduck/smol/bytecode"
+	ch8bytecode "github.com/fabulousduck/smol/bytecode/ch8"
 
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/interpreter"
-	"github.com/fabulousduck/smol/ir"
+	ch8ir "github.com/fabulousduck/smol/ir/ch8"
 	"github.com/fabulousduck/smol/lexer"
 )
 
@@ -46,10 +46,12 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	p.Ast, _ = p.Parse()
 
 	if compile {
-		g := ir.NewGenerator(filename)
+		//ir
+		g := ch8ir.NewGenerator(filename)
 		g.Generate(p.Ast)
 		spew.Dump(g)
-		bg := bytecode.Init(g, filename)
+		//bytecode
+		bg := ch8bytecode.Init(g, filename)
 		bg.CreateRom()
 		return
 	}

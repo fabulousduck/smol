@@ -1,4 +1,4 @@
-package bytecode
+package ch8
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/smol/file"
-	"github.com/fabulousduck/smol/ir"
+	ir "github.com/fabulousduck/smol/ir/ch8"
 )
 
 /*
