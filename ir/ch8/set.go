@@ -9,7 +9,7 @@ import (
 
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
-	"github.com/fabulousduck/smol/ir/registertable"
+	"github.com/fabulousduck/smol/ir/ch8/registertable"
 )
 
 type SETMEM struct {

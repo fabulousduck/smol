@@ -5,9 +5,9 @@ import (
 
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
-	"github.com/fabulousduck/smol/ir/functionaddrtable"
-	"github.com/fabulousduck/smol/ir/memtable"
-	"github.com/fabulousduck/smol/ir/registertable"
+	"github.com/fabulousduck/smol/ir/ch8/functionaddrtable"
+	"github.com/fabulousduck/smol/ir/ch8/memtable"
+	"github.com/fabulousduck/smol/ir/ch8/registertable"
 	"github.com/fabulousduck/smol/rnd"
 )
 

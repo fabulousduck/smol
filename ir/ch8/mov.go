@@ -3,7 +3,7 @@ package ir
 import (
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
-	"github.com/fabulousduck/smol/ir/memtable"
+	"github.com/fabulousduck/smol/ir/ch8/memtable"
 )
 
 /*
