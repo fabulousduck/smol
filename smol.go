@@ -4,12 +4,13 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
-	ch8bytecode "github.com/fabulousduck/smol/bytecode/ch8"
-
 	"github.com/fabulousduck/smol/ast"
+	ch8bytecode "github.com/fabulousduck/smol/bytecode/ch8"
+	gbbytecode "github.com/fabulousduck/smol/bytecode/gameboy"
 	"github.com/fabulousduck/smol/interpreter"
 	ch8ir "github.com/fabulousduck/smol/ir/ch8"
+	gbir "github.com/fabulousduck/smol/ir/gameboy"
+
 	"github.com/fabulousduck/smol/lexer"
 )
 
@@ -25,19 +26,19 @@ func NewSmol() *Smol {
 }
 
 //RunFile : Interprets a given file
-func (smol *Smol) RunFile(filename string, compile bool) {
+func (smol *Smol) RunFile(filename string, compileCh8 bool, compileGameboy bool) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	smol.Run(string(file), filename, compile)
+	smol.Run(string(file), filename, compileCh8, compileGameboy)
 	if smol.HadError {
 		os.Exit(65)
 	}
 }
 
 //Run exectues a given script
-func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
+func (smol *Smol) Run(sourceCode string, filename string, compileCh8 bool, compileGameboy bool) {
 	l := lexer.NewLexer(filename, sourceCode)
 	l.Lex()
 	p := ast.NewParser(filename, l.Tokens)
@@ -45,15 +46,21 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	//We do not need this here
 	p.Ast, _ = p.Parse()
 
-	if compile {
+	if compileCh8 {
 		//ir
 		g := ch8ir.NewGenerator(filename)
 		g.Generate(p.Ast)
-		spew.Dump(g)
 		//bytecode
 		bg := ch8bytecode.Init(g, filename)
 		bg.CreateRom()
 		return
+	} else if compileGameboy {
+		//ir
+		g := gbir.Init()
+		g.Generate(p.Ast)
+		//bytecode
+		bg := gbbytecode.Init(g, filename)
+		bg.Generate()
 	}
 	i := interpreter.NewInterpreter()
 	i.Interpret(p.Ast)
