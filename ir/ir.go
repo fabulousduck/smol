@@ -117,6 +117,8 @@ func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 	//create the jump instruction so it knows to jump over the function
 	//when not called
 	passJumpInstruction := g.newJumpInstructionFromLoose(0)
+
+	//TODO use hashes here to prevent collisions instead of just a random int
 	passJumpInstructionID := rnd.RandInt(0, 1000)
 	passJumpInstruction.ID = passJumpInstructionID
 
@@ -131,8 +133,10 @@ func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 
 	//find the jump back
 	passJumpInstrIndex := g.FindInstructionIndex(passJumpInstructionID)
+
 	//replace it with the new one that contains the proper address
 	g.Ir[passJumpInstrIndex] = Jump{To: 0x200 + (len(g.Ir) * 2), ID: passJumpInstructionID}
+
 	//put in a return statement
 	g.Ir = append(g.Ir, g.newRetInstruction())
 }
