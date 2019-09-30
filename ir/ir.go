@@ -8,7 +8,8 @@ import (
 	"github.com/fabulousduck/smol/ir/functionaddrtable"
 	"github.com/fabulousduck/smol/ir/memtable"
 	"github.com/fabulousduck/smol/ir/registertable"
-	"github.com/fabulousduck/smol/rnd"
+
+	"github.com/google/uuid"
 )
 
 type instruction interface {
@@ -59,7 +60,7 @@ returns -1 if nothing with that ID was found
 currently only used for JMP instructions as those are the
 only instructions that have ID's
 */
-func (g *Generator) FindInstructionIndex(ID int) int {
+func (g *Generator) FindInstructionIndex(ID string) int {
 	for i := 0; i < len(g.Ir); i++ {
 		if g.Ir[i].GetInstructionName() == "Jump" {
 			jumpInstrCast := g.Ir[i].(*Jump)
@@ -119,7 +120,8 @@ func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 	passJumpInstruction := g.newJumpInstructionFromLoose(0)
 
 	//TODO use hashes here to prevent collisions instead of just a random int
-	passJumpInstructionID := rnd.RandInt(0, 1000)
+	uid := uuid.New()
+	passJumpInstructionID := uid.String()
 	passJumpInstruction.ID = passJumpInstructionID
 
 	//save the byte addr before generating function code
