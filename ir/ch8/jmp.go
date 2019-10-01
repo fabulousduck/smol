@@ -8,7 +8,8 @@ for stuff like function hops where we need manipulate the call later
 to set the jump to address
 */
 type Jump struct {
-	To, ID int
+	To int
+	ID string
 }
 
 func (j Jump) GetInstructionName() string {
@@ -24,5 +25,5 @@ func (j Jump) usesVariableSpace() bool {
 }
 
 func (g *Generator) newJumpInstructionFromLoose(to int) Jump {
-	return Jump{to, 0}
+	return Jump{to, "0"}
 }
