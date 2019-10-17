@@ -6,7 +6,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/proto/src/types"
-	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
 
@@ -26,6 +25,15 @@ type ReleaseStatement struct {
 
 func (r ReleaseStatement) GetNodeName() string {
 	return "releaseStatement"
+}
+
+type DirectOperation struct {
+	Variable  Node
+	Operation string
+}
+
+func (do DirectOperation) GetNodeName() string {
+	return "directOperation"
 }
 
 //Node is a wrapper interface that AST nodes can implement
@@ -103,15 +111,15 @@ type Variable struct {
 	Value Node
 }
 
-//Anb is the while loop of smol. It will keep executing its body until LHS equals RHS
-type Anb struct {
+//WhileNot is the while loop of smol. It will keep executing its body until LHS equals RHS
+type WhileNot struct {
 	LHS  Node
 	RHS  Node
 	Body []Node
 }
 
-func (anb Anb) GetNodeName() string {
-	return "anb"
+func (whileNot WhileNot) GetNodeName() string {
+	return "whileNot"
 }
 
 //Comparison is an expression type that is used when an operation like GT, LT, EQ or NEQ is called
@@ -136,23 +144,12 @@ func (ss SetStatement) GetNodeName() string {
 	return "setStatement"
 }
 
-//MathStatement contains info needed to execute a mathematical statement like ADD, SUB, MUL and DIV
-type MathStatement struct {
-	LHS string
-	MHS Node
-	RHS Node
-}
-
 type UseStatement struct {
 	name string
 }
 
 func (us UseStatement) GetNodeName() string {
 	return "useStatement"
-}
-
-func (ms MathStatement) GetNodeName() string {
-	return "mathStatement"
 }
 
 //Statement is a general statement container for all other statements that do not fall under math and logic for example MEM
@@ -167,6 +164,15 @@ func (s Statement) GetNodeName() string {
 
 func (v Variable) GetNodeName() string {
 	return "variable"
+}
+
+//PrintCall specifies a call to the inbuilt print function
+type PrintCall struct {
+	Printable string
+}
+
+func (pc PrintCall) GetNodeName() string {
+	return "printCall"
 }
 
 //FunctionCall specifies a function call and the arguments given
@@ -200,6 +206,7 @@ func NewParser(filename string, tokens []lexer.Token) *Parser {
 func (p *Parser) Parse() ([]Node, int) {
 	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
+		spew.Dump(p.currentToken())
 		switch p.currentToken().Type {
 		case "plot":
 			p.advance()
@@ -212,43 +219,42 @@ func (p *Parser) Parse() ([]Node, int) {
 			nodes = append(nodes, p.createVariable())
 		case "function_definition":
 			p.advance()
-			nodes = append(nodes, p.createFunction())
-		case "left_not_right":
+			gnodes := p.createFunction()
+			spew.Dump(gnodes)
+			os.Exit(65)
+			nodes = append(nodes, gnodes)
+		case "while_not":
 			p.advance()
-
-			nodes = append(nodes, p.createLNR())
-		case "print_integer":
-			p.advance()
-			nodes = append(nodes, p.createStatement("PRI"))
+			nodes = append(nodes, p.createWhileNot())
 		case "print_break":
 			p.advance()
 			nodes = append(nodes, p.createSingleWordStatement("BRK"))
-		case "print_ascii":
+		case "print":
 			p.advance()
-			nodes = append(nodes, p.createStatement("PRU"))
+			nodes = append(nodes, p.createPrintCall())
 		case "increment_value":
 			p.advance()
 			nodes = append(nodes, p.createStatement("INC"))
 		case "set_variable":
 			p.advance()
 			nodes = append(nodes, p.createSetStatement())
-		case "addition":
-			fallthrough
-		case "subtraction":
-			fallthrough
-		case "power_of":
-			fallthrough
-		case "multiplication":
-			fallthrough
-		case "division":
-			nodes = append(nodes, p.createMathStatement())
 		case "close_block":
 			p.advance()
 			return nodes, p.TokensConsumed
-		case "string": //we are allowed to assume a character or string means a function call since every thing else gets tagged as either a variable or statement
+		//string and character loose can be either a function call or a direct operation on the variable such as a++s
+		case "string":
 			fallthrough
 		case "character":
-			nodes = append(nodes, p.createFunctionCall())
+			//its either a function
+			if p.nextToken().Type == "left_parenthesis" {
+				spew.Dump("generating function call")
+				nodes = append(nodes, p.createFunctionCall())
+
+				//or a direct operation
+			} else {
+				spew.Dump(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+				nodes = append(nodes, p.createDirectOperation())
+			}
 		case "equals":
 			fallthrough
 		case "not_equals":
@@ -273,12 +279,46 @@ func (p *Parser) Parse() ([]Node, int) {
 			return nodes, p.TokensConsumed
 		default:
 			//TODO: make an error for this
-			errors.UnknownTypeError()
+			spew.Dump(p.currentToken())
+			os.Exit(65)
+			//errors.UnknownTypeError()
 		}
 
 	}
 
+	spew.Dump(nodes)
 	return nodes, p.TokensConsumed
+}
+
+func (p *Parser) createDirectOperation() *DirectOperation {
+	do := new(DirectOperation)
+
+	do.Variable = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"direct_variable_operation"})
+	do.Operation = p.currentToken().Value
+	p.advance()
+
+	spew.Dump(do)
+
+	return do
+}
+
+func (p *Parser) createPrintCall() *PrintCall {
+	pc := new(PrintCall)
+
+	p.expectCurrent([]string{"left_parenthesis"})
+	p.advance()
+
+	p.expectCurrent([]string{"character", "string", "integer"})
+	pc.Printable = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"right_parenthesis"})
+	p.advance()
+
+	return pc
 }
 
 func (p *Parser) createPlot() *PlotStatement {
@@ -418,26 +458,6 @@ func (p *Parser) createComparison() *Comparison {
 	return ch
 }
 
-func (p *Parser) createMathStatement() *MathStatement {
-	ms := new(MathStatement)
-
-	ms.LHS = p.currentToken().Value
-	p.advance()
-
-	p.expectCurrent([]string{"character", "string"})
-	ms.MHS = createLit(p.currentToken())
-	p.advance()
-
-	p.expectCurrent([]string{"character", "string", "integer"})
-	ms.RHS = createLit(p.currentToken())
-	p.advance()
-
-	p.expectCurrent([]string{"semicolon"})
-	p.advance()
-
-	return ms
-}
-
 func (p *Parser) createSingleWordStatement(lhs string) *Statement {
 	s := new(Statement)
 
@@ -455,23 +475,19 @@ func (p *Parser) createFunctionCall() *FunctionCall {
 	fc.Name = p.currentToken().Value
 	p.advance()
 
-	p.expectCurrent([]string{"left_bracket"})
+	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
-	for currentToken := p.currentToken(); currentToken.Type != "right_bracket"; currentToken = p.currentToken() {
+	for currentToken := p.currentToken(); currentToken.Type != "right_parenthesis"; currentToken = p.currentToken() {
 		if currentToken.Type == "comma" {
 			p.expectNext([]string{"character", "string", "integer"})
 			p.advance()
 			continue
 		}
-
 		fc.Args = append(fc.Args, createLit(currentToken))
 		p.advance()
 	}
 
-	//Todo: figure out why this advance needs to be here
-	p.advance()
-	p.expectCurrent([]string{"semicolon"})
 	p.advance()
 	return fc
 }
@@ -519,37 +535,37 @@ func createLit(token lexer.Token) Node {
 	return sv
 }
 
-func (p *Parser) createLNR() *Anb {
-	anb := new(Anb)
+func (p *Parser) createWhileNot() *WhileNot {
+	whileNot := new(WhileNot)
 
-	p.expectCurrent([]string{"left_bracket"})
+	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
 	p.expectCurrent([]string{"character", "integer", "string"})
 
-	anb.LHS = createLit(p.currentToken())
+	whileNot.LHS = createLit(p.currentToken())
 	p.advance()
 
 	p.expectCurrent([]string{"comma"})
 	p.advance()
 
 	p.expectCurrent([]string{"character", "integer", "string"})
-	anb.RHS = createLit(p.currentToken())
+	whileNot.RHS = createLit(p.currentToken())
 	p.advance()
 
-	p.expectCurrent([]string{"right_bracket"})
+	p.expectCurrent([]string{"right_parenthesis"})
 	p.advance()
 
 	p.expectCurrent([]string{"double_dot"})
 	p.advance()
 
-	anbParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+	whileNotParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
 
-	body, consumed := anbParser.Parse()
-	anb.Body = body
+	body, consumed := whileNotParser.Parse()
+	whileNot.Body = body
 	p.advanceN(consumed)
 
-	return anb
+	return whileNot
 }
 
 func (p *Parser) createFunction() *Function {
@@ -559,14 +575,10 @@ func (p *Parser) createFunction() *Function {
 	f.Name = p.currentToken().Value
 	p.advance()
 
-	p.expectCurrent([]string{"left_arrow", "double_dot"})
-	if p.currentToken().Type == "double_dot" {
-		p.advance()
-		return f
-	}
+	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
-	for currentToken := p.currentToken(); currentToken.Type != "right_arrow"; currentToken = p.currentToken() {
+	for currentToken := p.currentToken(); currentToken.Type != "right_parenthesis"; currentToken = p.currentToken() {
 		p.expectCurrent([]string{"string", "character", "comma"})
 
 		//we expect there to be another parameter when we see a comma
@@ -574,10 +586,6 @@ func (p *Parser) createFunction() *Function {
 			p.expectNext([]string{"character", "string"})
 			p.advance()
 			continue
-		}
-
-		if currentToken.Type == "string" || currentToken.Type == "character" {
-
 		}
 
 		f.Params = append(f.Params, currentToken.Value)

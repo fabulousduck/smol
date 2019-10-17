@@ -26,6 +26,7 @@ func NewLexer(filename string, program string) *Lexer {
 	l := new(Lexer)
 	l.Program = program
 	l.FileName = filename
+	l.currentLine = 1
 	return l
 }
 
@@ -53,6 +54,20 @@ func (l *Lexer) Lex() {
 			l.advance()
 			l.currentCol = 0
 			continue
+		case "plus":
+			if l.peek() == "+" {
+				currTok.Value = "++"
+				currTok.Type = "direct_variable_operation"
+				l.advance()
+			}
+			l.advance()
+		case "dash":
+			if l.peek() == "-" {
+				currTok.Value = "--"
+				currTok.Type = "direct_variable_operation"
+				l.advance()
+			}
+			l.advance()
 		case "left_arrow":
 			fallthrough
 		case "right_arrow":
@@ -63,6 +78,10 @@ func (l *Lexer) Lex() {
 			fallthrough
 		case "right_bracket":
 			fallthrough
+		case "left_parenthesis":
+			fallthrough
+		case "right_parenthesis":
+			fallthrough
 		case "double_dot":
 			fallthrough
 		case "semicolon":
@@ -72,6 +91,7 @@ func (l *Lexer) Lex() {
 			os.Exit(65)
 		case "newline":
 			l.currentCol = 0
+			l.currentLine++
 			l.advance()
 			continue
 		case "ignoreable":
@@ -95,6 +115,13 @@ func (l *Lexer) readComment() {
 	for t := determineType(l.currentChar()); t != "newline"; t = determineType(l.currentChar()) {
 		l.currentIndex++
 	}
+}
+
+func (l *Lexer) peek() string {
+	if l.currentIndex+1 <= len(l.Program) {
+		return string(l.Program[l.currentIndex+1])
+	}
+	return ""
 }
 
 func (l *Lexer) peekTypeN(typeName string) string {

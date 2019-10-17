@@ -2,7 +2,6 @@ package interpreter
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 
@@ -50,16 +49,14 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 			i.stackAlloc(len(i.Stacks)-1, node.(*ast.Variable))
 		case "statement":
 			i.execStatement(node.(*ast.Statement))
-		case "anb":
-			i.execANB(node.(*ast.Anb))
+		case "whileNot":
+			i.execWhileNot(node.(*ast.WhileNot))
 		case "function":
 			i.execFunctionDecl(node.(*ast.Function))
 		case "functionCall":
 			i.execFunctionCall(node.(*ast.FunctionCall))
 		case "setStatement":
 			i.setVariableValue(node.(*ast.SetStatement))
-		case "mathStatement":
-			i.execMathStatement(node.(*ast.MathStatement))
 		case "comparison":
 			i.execComparison(node.(*ast.Comparison))
 		case "switchStatement":
@@ -156,40 +153,6 @@ func (i *Interpreter) execComparison(cm *ast.Comparison) {
 	return
 }
 
-func (i *Interpreter) execMathStatement(ms *ast.MathStatement) {
-	operator := ms.LHS
-
-	if ms.MHS.GetNodeName() != "statVar" {
-		errors.MathInvalidReceiverError()
-	}
-
-	receiverVariable := i.Stacks.resolveVariable(ms.MHS)
-	combinatorValue := i.Stacks.resolveValue(ms.RHS)
-
-	i.Stacks.set(receiverVariable.key, evalMathExpression(operator, receiverVariable.value, combinatorValue))
-
-}
-
-func evalMathExpression(expressionType string, LHS string, RHS string) string {
-	clhs, _ := strconv.Atoi(LHS)
-	crhs, _ := strconv.Atoi(RHS)
-	switch expressionType {
-	case "ADD":
-		return strconv.Itoa(clhs + crhs)
-	case "SUB":
-		return strconv.Itoa(clhs - crhs)
-	case "MUL":
-		return strconv.Itoa(clhs * crhs)
-	case "DIV":
-		return strconv.Itoa(clhs / crhs)
-	case "POW":
-		return strconv.Itoa(int(math.Pow(float64(clhs), float64(crhs))))
-	}
-	//not sure what to return here
-	//TODO: figure above out and apply accordingly
-	return RHS
-}
-
 func (i *Interpreter) setVariableValue(ss *ast.SetStatement) {
 	if ss.MHS.GetNodeName() != "statVar" {
 		errors.LitAssignError()
@@ -244,7 +207,7 @@ func (i *Interpreter) stackAlloc(scopeLevel int, v *ast.Variable) {
 	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel], stackTuple)
 }
 
-func (i *Interpreter) execANB(anb *ast.Anb) {
+func (i *Interpreter) execWhileNot(anb *ast.WhileNot) {
 	LHS := i.Stacks.resolvePtrValue(anb.LHS)
 	RHS := i.Stacks.resolvePtrValue(anb.RHS)
 
