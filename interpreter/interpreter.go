@@ -53,6 +53,8 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 			i.execWhileNot(node.(*ast.WhileNot))
 		case "function":
 			i.execFunctionDecl(node.(*ast.Function))
+		case "printCall":
+			i.execPrintCall(node.(*ast.PrintCall))
 		case "functionCall":
 			i.execFunctionCall(node.(*ast.FunctionCall))
 		case "setStatement":
@@ -65,6 +67,11 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 			i.execReleaseStatement(node.(*ast.ReleaseStatement))
 		}
 	}
+}
+
+func (i *Interpreter) execPrintCall(pc *ast.PrintCall) {
+	printable := i.Stacks.resolveValue(pc.Printable)
+	fmt.Printf(printable)
 }
 
 func (i *Interpreter) execReleaseStatement(r *ast.ReleaseStatement) {
@@ -230,13 +237,6 @@ func (i *Interpreter) execStatement(s *ast.Statement) {
 	switch s.LHS {
 	case "BRK":
 		fmt.Printf("\n")
-		return
-	case "PRI":
-		fmt.Printf("%s", i.Stacks.resolveValue(s.RHS))
-		return
-	case "PRU":
-		cast, _ := strconv.Atoi(i.Stacks.resolveValue(s.RHS))
-		fmt.Printf("%c", cast)
 		return
 	case "INC":
 		if s.RHS.GetNodeName() != "statVar" {
