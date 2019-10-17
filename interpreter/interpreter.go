@@ -65,8 +65,23 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 			i.execSwitchStatement(node.(*ast.SwitchStatement))
 		case "releaseStatement":
 			i.execReleaseStatement(node.(*ast.ReleaseStatement))
+		case "directOperation":
+			i.execDirectOperation(node.(*ast.DirectOperation))
 		}
 	}
+}
+
+func (i *Interpreter) execDirectOperation(do *ast.DirectOperation) {
+
+	variableValue := i.Stacks.resolveVariable(do.Variable)
+	cast, _ := strconv.Atoi(variableValue.value)
+	if do.Operation == "++" {
+		cast++
+	} else {
+		cast--
+	}
+	castBack := strconv.Itoa(cast)
+	i.Stacks.set(variableValue.key, castBack)
 }
 
 func (i *Interpreter) execPrintCall(pc *ast.PrintCall) {
@@ -237,18 +252,6 @@ func (i *Interpreter) execStatement(s *ast.Statement) {
 	switch s.LHS {
 	case "BRK":
 		fmt.Printf("\n")
-		return
-	case "INC":
-		if s.RHS.GetNodeName() != "statVar" {
-			errors.LitIncrementError()
-			os.Exit(65)
-		}
-
-		variableValue := i.Stacks.resolveVariable(s.RHS)
-		cast, _ := strconv.Atoi(variableValue.value)
-		cast++
-		castBack := strconv.Itoa(cast)
-		i.Stacks.set(variableValue.key, castBack)
 		return
 	}
 }
