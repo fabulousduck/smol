@@ -206,6 +206,7 @@ func NewParser(filename string, tokens []lexer.Token) *Parser {
 func (p *Parser) Parse() ([]Node, int) {
 	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
+		spew.Dump(p.currentToken())
 		switch p.currentToken().Type {
 		case "plot":
 			p.advance()
@@ -218,9 +219,7 @@ func (p *Parser) Parse() ([]Node, int) {
 			nodes = append(nodes, p.createVariable())
 		case "function_definition":
 			p.advance()
-			gnodes := p.createFunction()
-			os.Exit(65)
-			nodes = append(nodes, gnodes)
+			nodes = append(nodes, p.createFunction())
 		case "while_not":
 			p.advance()
 			nodes = append(nodes, p.createWhileNot())
@@ -244,10 +243,13 @@ func (p *Parser) Parse() ([]Node, int) {
 			fallthrough
 		case "character":
 			//its either a function
+			spew.Dump("CURR")
+			spew.Dump(p.currentToken())
 			if p.nextToken().Type == "left_parenthesis" {
 				nodes = append(nodes, p.createFunctionCall())
 				//or a direct operation
 			} else {
+				spew.Dump("YEBASHEWA")
 				nodes = append(nodes, p.createDirectOperation())
 			}
 		case "equals":
@@ -264,6 +266,7 @@ func (p *Parser) Parse() ([]Node, int) {
 		case "switch":
 			p.advance()
 			nodes = append(nodes, p.createSwitchStatement())
+			p.advance()
 		case "case":
 			p.advance()
 			nodes = append(nodes, p.createSwitchCase())
@@ -274,6 +277,7 @@ func (p *Parser) Parse() ([]Node, int) {
 			return nodes, p.TokensConsumed
 		default:
 			//TODO: make an error for this
+			spew.Dump("yooter token")
 			spew.Dump(p.currentToken())
 			os.Exit(65)
 			//errors.UnknownTypeError()
@@ -281,6 +285,7 @@ func (p *Parser) Parse() ([]Node, int) {
 
 	}
 
+	spew.Dump("done")
 	return nodes, p.TokensConsumed
 }
 
@@ -293,8 +298,6 @@ func (p *Parser) createDirectOperation() *DirectOperation {
 	p.expectCurrent([]string{"direct_variable_operation"})
 	do.Operation = p.currentToken().Value
 	p.advance()
-
-	spew.Dump(do)
 
 	return do
 }
@@ -311,7 +314,6 @@ func (p *Parser) createPrintCall() *PrintCall {
 
 	p.expectCurrent([]string{"right_parenthesis"})
 	p.advance()
-
 	return pc
 }
 
