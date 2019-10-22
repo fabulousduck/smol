@@ -61,8 +61,8 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 			i.execComparison(node.(*ast.Comparison))
 		case "switchStatement":
 			i.execSwitchStatement(node.(*ast.SwitchStatement))
-		case "releaseStatement":
-			i.execReleaseStatement(node.(*ast.ReleaseStatement))
+		case "freeStatement":
+			i.execFreeStatement(node.(*ast.FreeStatement))
 		case "directOperation":
 			i.execDirectOperation(node.(*ast.DirectOperation))
 		}
@@ -87,9 +87,9 @@ func (i *Interpreter) execPrintCall(pc *ast.PrintCall) {
 	fmt.Printf(printable)
 }
 
-func (i *Interpreter) execReleaseStatement(r *ast.ReleaseStatement) {
+func (i *Interpreter) execFreeStatement(r *ast.FreeStatement) {
 	if !ast.NodeIsVariable(r.Variable) {
-		errors.LitteralRelease()
+		errors.LitteralFree()
 		os.Exit(65)
 	}
 

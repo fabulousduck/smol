@@ -18,13 +18,13 @@ func (p PlotStatement) GetNodeName() string {
 	return "plotStatement"
 }
 
-//ReleaseStatement is an instruction that frees a variable from the stack
-type ReleaseStatement struct {
+//FreeStatement is an instruction that frees a variable from the stack
+type FreeStatement struct {
 	Variable Node
 }
 
-func (r ReleaseStatement) GetNodeName() string {
-	return "releaseStatement"
+func (r FreeStatement) GetNodeName() string {
+	return "freeStatement"
 }
 
 type DirectOperation struct {
@@ -250,9 +250,9 @@ func (p *Parser) Parse() ([]Node, int) {
 			fallthrough
 		case "greater_than":
 			nodes = append(nodes, p.createComparison())
-		case "release":
+		case "free":
 			p.advance()
-			nodes = append(nodes, p.createReleaseStatement())
+			nodes = append(nodes, p.createFreeStatement())
 		case "switch":
 			p.advance()
 			nodes = append(nodes, p.createSwitchStatement())
@@ -334,14 +334,11 @@ func (p *Parser) createUse() *UseStatement {
 	return us
 }
 
-func (p *Parser) createReleaseStatement() *ReleaseStatement {
-	r := new(ReleaseStatement)
+func (p *Parser) createFreeStatement() *FreeStatement {
+	r := new(FreeStatement)
 
 	p.expectCurrent([]string{"string", "character"})
 	r.Variable = createLit(p.currentToken())
-	p.advance()
-
-	p.expectCurrent([]string{"semicolon"})
 	p.advance()
 
 	return r

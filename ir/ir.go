@@ -100,6 +100,9 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "setStatement":
 			instruction := AST[i].(*ast.SetStatement)
 			g.createSetStatement(instruction)
+		case "freeStatement":
+			instruction := AST[i].(*ast.FreeStatement)
+			g.doFreeInstruction(instruction)
 		case "comparison":
 
 		case "switchStatement":
@@ -109,6 +112,14 @@ func (g *Generator) Generate(AST []ast.Node) {
 			g.Ir = append(g.Ir, g.newPlotInstructionSet(plotStatement))
 		}
 	}
+}
+
+//doFreeInstruction does not actually embed a instruction to free a register
+//it simply changes the internal compiler register table
+func (g *Generator) doFreeInstruction(instruction *ast.FreeStatement) {
+	variable := instruction.Variable.(*ast.StatVar)
+	register := g.regTable.Find(variable.Value)
+	g.regTable.PutRegisterValue(register, 0, "")
 }
 
 func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
