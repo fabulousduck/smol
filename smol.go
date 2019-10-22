@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/bytecode"
 
 	"github.com/fabulousduck/smol/ast"
@@ -49,7 +48,6 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	if compile {
 		g := ir.NewGenerator(filename)
 		g.Generate(p.Ast)
-		spew.Dump(g)
 		bg := bytecode.Init(g, filename)
 		bg.CreateRom()
 		return

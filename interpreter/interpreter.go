@@ -150,22 +150,21 @@ func (i *Interpreter) execComparison(cm *ast.Comparison) {
 
 	//create a stack for the block inside the comparisons body
 	i.Stacks = append(i.Stacks, stack{})
-
 	// do static analysis on same variable comparisons
 	switch cm.Operator {
-	case "LT":
+	case "lt":
 		if clhs < crhs {
 			i.Interpret(cm.Body)
 		}
-	case "GT":
+	case "gt":
 		if clhs > crhs {
 			i.Interpret(cm.Body)
 		}
-	case "EQ":
+	case "eq":
 		if clhs == crhs {
 			i.Interpret(cm.Body)
 		}
-	case "NEQ":
+	case "neq":
 		if clhs != crhs {
 			i.Interpret(cm.Body)
 		}
@@ -246,14 +245,6 @@ func (i *Interpreter) execWhileNot(anb *ast.WhileNot) {
 	}
 	//GC the Stacks that were used in the scoped block. ANB in this case
 	i.Stacks = i.Stacks[scopeLevel:]
-}
-
-func (i *Interpreter) execStatement(s *ast.Statement) {
-	switch s.LHS {
-	case "BRK":
-		fmt.Printf("\n")
-		return
-	}
 }
 
 func (s Stacks) set(name string, value string) {

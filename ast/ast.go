@@ -206,7 +206,6 @@ func NewParser(filename string, tokens []lexer.Token) *Parser {
 func (p *Parser) Parse() ([]Node, int) {
 	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
-		spew.Dump(p.currentToken())
 		switch p.currentToken().Type {
 		case "plot":
 			p.advance()
@@ -223,15 +222,9 @@ func (p *Parser) Parse() ([]Node, int) {
 		case "while_not":
 			p.advance()
 			nodes = append(nodes, p.createWhileNot())
-		case "print_break":
-			p.advance()
-			nodes = append(nodes, p.createSingleWordStatement("BRK"))
 		case "print":
 			p.advance()
 			nodes = append(nodes, p.createPrintCall())
-		case "increment_value":
-			p.advance()
-			nodes = append(nodes, p.createStatement("INC"))
 		case "set_variable":
 			p.advance()
 			nodes = append(nodes, p.createSetStatement())
@@ -243,13 +236,10 @@ func (p *Parser) Parse() ([]Node, int) {
 			fallthrough
 		case "character":
 			//its either a function
-			spew.Dump("CURR")
-			spew.Dump(p.currentToken())
 			if p.nextToken().Type == "left_parenthesis" {
 				nodes = append(nodes, p.createFunctionCall())
 				//or a direct operation
 			} else {
-				spew.Dump("YEBASHEWA")
 				nodes = append(nodes, p.createDirectOperation())
 			}
 		case "equals":
@@ -277,15 +267,12 @@ func (p *Parser) Parse() ([]Node, int) {
 			return nodes, p.TokensConsumed
 		default:
 			//TODO: make an error for this
-			spew.Dump("yooter token")
-			spew.Dump(p.currentToken())
 			os.Exit(65)
 			//errors.UnknownTypeError()
 		}
 
 	}
 
-	spew.Dump("done")
 	return nodes, p.TokensConsumed
 }
 
@@ -425,7 +412,7 @@ func (p *Parser) createComparison() *Comparison {
 	ch.Operator = p.currentToken().Value
 	p.advance()
 
-	p.expectCurrent([]string{"left_bracket"})
+	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
 	p.expectCurrent([]string{"character", "string", "integer"})
@@ -439,7 +426,7 @@ func (p *Parser) createComparison() *Comparison {
 	ch.RHS = createLit(p.currentToken())
 	p.advance()
 
-	p.expectCurrent([]string{"right_bracket"})
+	p.expectCurrent([]string{"right_parenthesis"})
 	p.advance()
 
 	p.expectCurrent([]string{"double_dot"})
@@ -452,16 +439,6 @@ func (p *Parser) createComparison() *Comparison {
 	p.advanceN(consumed)
 
 	return ch
-}
-
-func (p *Parser) createSingleWordStatement(lhs string) *Statement {
-	s := new(Statement)
-
-	s.LHS = lhs
-	p.expectCurrent([]string{"semicolon"})
-	p.advance()
-
-	return s
 }
 
 func (p *Parser) createFunctionCall() *FunctionCall {

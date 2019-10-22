@@ -3,8 +3,6 @@ package bytecode
 import (
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/fabulousduck/smol/file"
 	"github.com/fabulousduck/smol/ir"
 )
@@ -37,7 +35,6 @@ func (g *Generator) CreateRom() {
 
 	for i := 0; i < len(g.ir.Ir); i++ {
 		instructionType := g.ir.Ir[i].GetInstructionName()
-		spew.Dump(instructionType)
 		switch instructionType {
 		case "SETREG":
 			setRegInstruction := g.ir.Ir[i].(ir.SETREG)
