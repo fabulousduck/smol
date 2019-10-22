@@ -384,14 +384,14 @@ func (p *Parser) createSwitchCase() *SwitchCase {
 func (p *Parser) createSwitchStatement() *SwitchStatement {
 	st := new(SwitchStatement)
 
-	p.expectCurrent([]string{"left_bracket"})
+	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
 	p.expectCurrent([]string{"character", "string", "integer"})
 	st.MatchValue = createLit(p.currentToken())
 	p.advance()
 
-	p.expectCurrent([]string{"right_bracket"})
+	p.expectCurrent([]string{"right_parenthesis"})
 	p.advance()
 
 	p.expectCurrent([]string{"double_dot"})

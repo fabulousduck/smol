@@ -47,8 +47,6 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 		case "variable":
 			//we can do this since only ints exist in our language
 			i.stackAlloc(len(i.Stacks)-1, node.(*ast.Variable))
-		case "statement":
-			i.execStatement(node.(*ast.Statement))
 		case "whileNot":
 			i.execWhileNot(node.(*ast.WhileNot))
 		case "function":

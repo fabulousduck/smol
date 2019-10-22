@@ -1,0 +1,18 @@
+mem a 30;
+mem b 20;
+
+switch(b):
+    case 10: #case
+        print(10)
+    end
+    case 20:
+        print(20) 
+    end
+    case a:
+        print(a)
+    end
+    default:
+        print(30)
+    end
+end
+

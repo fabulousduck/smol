@@ -58,9 +58,9 @@ func getKeyword(token *Token) string {
 		"neq":      "not_equals",
 		"lt":       "less_than",
 		"gt":       "greater_than",
-		"SWT":      "switch",
-		"CAS":      "case",
-		"EOS":      "end_of_switch",
+		"switch":   "switch",
+		"case":     "case",
+		"default":  "end_of_switch",
 		"REL":      "release",
 		"USE":      "use", //TODO: libs
 		"PLT":      "plot",
