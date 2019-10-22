@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/fabulousduck/smol/errors"
 )
 
@@ -87,6 +89,7 @@ func (l *Lexer) Lex() {
 		case "semicolon":
 			l.advance()
 		case "undefined_symbol":
+			spew.Dump(l.currentChar())
 			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
 			os.Exit(65)
 		case "newline":

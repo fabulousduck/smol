@@ -57,7 +57,9 @@ func (g *Generator) CreateRom() {
 				break
 			}
 			g.embedMOV(movInstruction, romFile)
-
+		case "SUB":
+			subInstruction := g.ir.Ir[i].(ir.SUB)
+			g.embedSub(subInstruction, romFile)
 		case "RET":
 			g.embedRet(romFile)
 
@@ -90,6 +92,20 @@ literally just a return opcode. no data is encoded in this thing
 */
 func (g *Generator) embedRet(romFile *os.File) {
 
+}
+
+/*
+8XY5
+opcode: 8XY5
+
+Opcode for subtracting one register from another
+*/
+func (g *Generator) embedSub(instruction ir.SUB, romFile *os.File) {
+	baseByte := 0x8<<4 | instruction.TargetRegister
+	secondaryByte := instruction.AmountRegister<<4 | 0x5
+
+	opcode := []byte{clampUint8(baseByte), clampUint8(secondaryByte)}
+	file.WriteBytes(romFile, opcode, false, 0)
 }
 
 /*

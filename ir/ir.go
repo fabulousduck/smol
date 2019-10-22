@@ -91,6 +91,9 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "function":
 			instruction := AST[i].(*ast.Function)
 			g.createFunctionInstructions(instruction)
+		case "directOperation":
+			instruction := AST[i].(*ast.DirectOperation)
+			g.createDirectOperationInstructions(instruction)
 		case "functionCall":
 			instruction := AST[i].(*ast.FunctionCall)
 			g.createFunctionCallInstructions(instruction)
@@ -117,7 +120,6 @@ func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 	//when not called
 	passJumpInstruction := g.newJumpInstructionFromLoose(0)
 
-	//TODO use hashes here to prevent collisions instead of just a random int
 	uid := uuid.New()
 	passJumpInstructionID := uid.String()
 	passJumpInstruction.ID = passJumpInstructionID
@@ -139,6 +141,20 @@ func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 
 	//put in a return statement
 	g.Ir = append(g.Ir, g.newRetInstruction())
+}
+
+func (g *Generator) createDirectOperationInstructions(do *ast.DirectOperation) instruction {
+	if !ast.NodeIsVariable(do.Variable) {
+		errors.LitIncrementError()
+		os.Exit(65)
+	}
+	rhsVariable := do.Variable.(*ast.StatVar)
+	variableRegisterTableIndex := g.regTable.Find(rhsVariable.Value)
+	if do.Operation == "++" {
+		return g.newAddInstruction(variableRegisterTableIndex, 1)
+	}
+
+	return g.newSubInstruction(variableRegisterTableIndex, 1)
 }
 
 func (g *Generator) handleStatement(s *ast.Statement) instruction {

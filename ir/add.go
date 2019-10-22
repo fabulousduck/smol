@@ -19,7 +19,7 @@ func (a ADD) Opcodeable() bool {
 	return true
 }
 
-func (b ADD) usesVariableSpace() bool {
+func (a ADD) usesVariableSpace() bool {
 	return false
 }
 
