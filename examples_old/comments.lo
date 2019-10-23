@@ -1,4 +1,0 @@
-MEM A 10; #defines 10
-
-#defines 20;
-MEM B 20;

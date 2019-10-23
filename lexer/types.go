@@ -52,7 +52,7 @@ func getKeyword(token *Token) string {
 		"mem":      "variable_assignment",
 		"print":    "print",
 		"end":      "close_block",
-		"SET":      "set_variable",
+		"set":      "set_variable",
 		"eq":       "equals",
 		"neq":      "not_equals",
 		"lt":       "less_than",
