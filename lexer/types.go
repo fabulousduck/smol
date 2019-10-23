@@ -61,7 +61,6 @@ func getKeyword(token *Token) string {
 		"case":     "case",
 		"default":  "end_of_switch",
 		"free":     "free",
-		"USE":      "use", //TODO: libs
 		"plot":     "plot",
 	}
 
