@@ -154,7 +154,7 @@ outputs:
 
 Smol has support for simple functions. The can be defined like so:
 
-```
+```asm
 functionName(1,2)
 
 def function_name(paramA,paramB):
