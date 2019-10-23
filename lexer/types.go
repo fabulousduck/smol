@@ -19,6 +19,7 @@ func determineType(character string) string {
 		"right_parenthesis": []string{")"},
 		"semicolon":         []string{";"},
 		"plus":              []string{"+"},
+		"equals":            []string{"="},
 		"dash":              []string{"-"},
 		"left_bracket":      []string{"["},
 		"right_bracket":     []string{"]"},
@@ -46,26 +47,28 @@ func contains(name string, list []string) bool {
 }
 
 func getKeyword(token *Token) string {
-	keywords := map[string]string{
-		"def":      "function_definition",
-		"whileNot": "while_not",
-		"mem":      "variable_assignment",
-		"print":    "print",
-		"end":      "close_block",
-		"set":      "set_variable",
-		"eq":       "equals",
-		"neq":      "not_equals",
-		"lt":       "less_than",
-		"gt":       "greater_than",
-		"switch":   "switch",
-		"case":     "case",
-		"default":  "end_of_switch",
-		"free":     "free",
-		"plot":     "plot",
+	keywords := map[string][]string{
+		"function_definition": []string{"def"},
+		"while_not":           []string{"whileNot"},
+		"variable_assignment": []string{"String", "Bool", "Uint32", "Uin64"},
+		"print":               []string{"print"},
+		"close_block":         []string{"end"},
+		"set_variable":        []string{"set"},
+		"equals":              []string{"eq"},
+		"not_equals":          []string{"neq"},
+		"less_than":           []string{"lt"},
+		"greater_than":        []string{"gt"},
+		"switch":              []string{"switch"},
+		"case":                []string{"case"},
+		"end_of_switch":       []string{"default"},
+		"free":                []string{"free"},
+		"plot":                []string{"plot"},
 	}
 
-	if val, ok := keywords[token.Value]; ok {
-		return val
+	for key, values := range keywords {
+		if contains(token.Value, values) {
+			return key
+		}
 	}
 
 	if len(token.Value) > 1 {

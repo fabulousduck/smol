@@ -54,6 +54,13 @@ func (l *Lexer) Lex() {
 			l.advance()
 			l.currentCol = 0
 			continue
+		case "equals":
+			if l.peek() == "=" {
+				currTok.Value = "=="
+				currTok.Type = "comparison"
+				l.advance()
+			}
+			l.advance()
 		case "plus":
 			if l.peek() == "+" {
 				currTok.Value = "++"

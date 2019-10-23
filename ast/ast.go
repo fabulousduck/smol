@@ -109,6 +109,7 @@ func (f Function) GetNodeName() string {
 //This is the struct that will be pushed to the stack
 type Variable struct {
 	Name  string
+	Type  string
 	Value Node
 }
 
