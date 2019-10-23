@@ -1,22 +1,22 @@
-MEM A 0;
-MEM B 10;
+mem a 0;
+mem b 10;
 
-EQ[B, B]:
-    PRI 80;
-    BRK;
-END
+eq(b,b):
+    print(a)
+    break()
+end
 
-NEQ[A,B]:
-    PRI 90;
-    BRK;
-END
+neq(a,b):
+    print(a)
+    break()
+end
 
-LT[A,B]:
-    PRI 100;
-    BRK;
-END
+lt(a,b):
+    print(a)
+    break()
+end
 
-GT[B, A]:
-    PRI 110;
-    BRK;
-END
+gt(b,a):
+    print(b)
+    break()
+end

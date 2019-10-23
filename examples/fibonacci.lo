@@ -1,37 +1,41 @@
-DEF FIB<RANGE>:
-    MEM COUNTER 0; 
-    MEM NEXT 0;
-    MEM FIRST 0;
-    MEM SECOND 1;
-    MEM ADD_TMP_VAR 0;
+#for this example to work we need expressions
+#as we need to add a variable onto another variable
+#we removed ADD so thats no longer possible
 
-    ANB[COUNTER, RANGE]:
-        LT[COUNTER, 1]:
-            SET NEXT COUNTER;
-        END
+def fib(range):
+    mem counter 0; 
+    mem next 0;
+    mem first 0;
+    mem second 1;
+    mem add_tmp_var 0;
+
+    whileNot(counter, range):
+        lt(counter, 1):
+            set next counter;
+        end
  
-        EQ[COUNTER, 1]:
-             SET NEXT COUNTER;
-        END
+        eq(counter, 1):
+             set next counter;
+        end
 
-        GT[COUNTER, 1]:
-            ADD ADD_TMP_VAR FIRST;
-            ADD ADD_TMP_VAR SECOND;
-            SET NEXT ADD_TMP_VAR;
-            SET ADD_TMP_VAR 0;
+        gt(counter, 1):
+            #will be introduced with types
+            add_tmp_var += first;
+            add_tmp_var += second;
+            set next add_tmp_var;
+            set add_tmp_var 0;
 
-            SET FIRST SECOND;
-            SET SECOND NEXT;
-        END
+            set first second;
+            set second next;
+        end
 
-        PRI NEXT;
-        BRK;
-        INC COUNTER;
-    END
-END
+        print(next);
+        counter++;
+    end
+end
 
-MEM RANGE 20;
-FIB[RANGE];
+mem range 20;
+fib(RANGE)
 
 MEM A 10;
 MEM B A;

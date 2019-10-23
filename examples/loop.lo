@@ -1,5 +1,0 @@
-MEM A 0;
-
-ANB[A,30]:
-    INC A;
-END

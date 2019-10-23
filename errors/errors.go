@@ -40,8 +40,8 @@ func UnknownTypeError() {
 	fmt.Printf("Unknown token type found.")
 }
 
-//LitteralRelease error can be thrown when the programmer wants to release a number litteral
-func LitteralRelease() {
+//LitteralFree error can be thrown when the programmer wants to free a number litteral
+func LitteralFree() {
 	fmt.Printf("Cannot release a number litteral\n")
 }
 

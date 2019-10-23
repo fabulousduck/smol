@@ -1,22 +1,18 @@
-MEM A 30;
-MEM B 20;
+mem a 30;
+mem b 20;
 
-SWT[B]: #SWiTch
-    CAS 10: #case
-        PRI 10;
-        BRK;
-    END
-    CAS 20:
-        PRI 20;
-        BRK; 
-    END
-    CAS A:
-        PRI A;
-        BRK;
-    END
-    EOS: #End Of Switch
-        PRI 30;
-        BRK;
-    END
-END
+switch(b):
+    case 10: #case
+        print(10)
+    end
+    case 20:
+        print(20) 
+    end
+    case a:
+        print(a)
+    end
+    default:
+        print(30)
+    end
+end
 

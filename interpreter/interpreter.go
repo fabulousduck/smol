@@ -2,7 +2,6 @@ package interpreter
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 
@@ -48,31 +47,49 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 		case "variable":
 			//we can do this since only ints exist in our language
 			i.stackAlloc(len(i.Stacks)-1, node.(*ast.Variable))
-		case "statement":
-			i.execStatement(node.(*ast.Statement))
-		case "anb":
-			i.execANB(node.(*ast.Anb))
+		case "whileNot":
+			i.execWhileNot(node.(*ast.WhileNot))
 		case "function":
 			i.execFunctionDecl(node.(*ast.Function))
+		case "printCall":
+			i.execPrintCall(node.(*ast.PrintCall))
 		case "functionCall":
 			i.execFunctionCall(node.(*ast.FunctionCall))
 		case "setStatement":
 			i.setVariableValue(node.(*ast.SetStatement))
-		case "mathStatement":
-			i.execMathStatement(node.(*ast.MathStatement))
 		case "comparison":
 			i.execComparison(node.(*ast.Comparison))
 		case "switchStatement":
 			i.execSwitchStatement(node.(*ast.SwitchStatement))
-		case "releaseStatement":
-			i.execReleaseStatement(node.(*ast.ReleaseStatement))
+		case "freeStatement":
+			i.execFreeStatement(node.(*ast.FreeStatement))
+		case "directOperation":
+			i.execDirectOperation(node.(*ast.DirectOperation))
 		}
 	}
 }
 
-func (i *Interpreter) execReleaseStatement(r *ast.ReleaseStatement) {
+func (i *Interpreter) execDirectOperation(do *ast.DirectOperation) {
+
+	variableValue := i.Stacks.resolveVariable(do.Variable)
+	cast, _ := strconv.Atoi(variableValue.value)
+	if do.Operation == "++" {
+		cast++
+	} else {
+		cast--
+	}
+	castBack := strconv.Itoa(cast)
+	i.Stacks.set(variableValue.key, castBack)
+}
+
+func (i *Interpreter) execPrintCall(pc *ast.PrintCall) {
+	printable := i.Stacks.resolveValue(pc.Printable)
+	fmt.Printf(printable)
+}
+
+func (i *Interpreter) execFreeStatement(r *ast.FreeStatement) {
 	if !ast.NodeIsVariable(r.Variable) {
-		errors.LitteralRelease()
+		errors.LitteralFree()
 		os.Exit(65)
 	}
 
@@ -131,22 +148,21 @@ func (i *Interpreter) execComparison(cm *ast.Comparison) {
 
 	//create a stack for the block inside the comparisons body
 	i.Stacks = append(i.Stacks, stack{})
-
 	// do static analysis on same variable comparisons
 	switch cm.Operator {
-	case "LT":
+	case "lt":
 		if clhs < crhs {
 			i.Interpret(cm.Body)
 		}
-	case "GT":
+	case "gt":
 		if clhs > crhs {
 			i.Interpret(cm.Body)
 		}
-	case "EQ":
+	case "eq":
 		if clhs == crhs {
 			i.Interpret(cm.Body)
 		}
-	case "NEQ":
+	case "neq":
 		if clhs != crhs {
 			i.Interpret(cm.Body)
 		}
@@ -154,40 +170,6 @@ func (i *Interpreter) execComparison(cm *ast.Comparison) {
 
 	i.Stacks = i.Stacks[:beforeScopeLevel]
 	return
-}
-
-func (i *Interpreter) execMathStatement(ms *ast.MathStatement) {
-	operator := ms.LHS
-
-	if ms.MHS.GetNodeName() != "statVar" {
-		errors.MathInvalidReceiverError()
-	}
-
-	receiverVariable := i.Stacks.resolveVariable(ms.MHS)
-	combinatorValue := i.Stacks.resolveValue(ms.RHS)
-
-	i.Stacks.set(receiverVariable.key, evalMathExpression(operator, receiverVariable.value, combinatorValue))
-
-}
-
-func evalMathExpression(expressionType string, LHS string, RHS string) string {
-	clhs, _ := strconv.Atoi(LHS)
-	crhs, _ := strconv.Atoi(RHS)
-	switch expressionType {
-	case "ADD":
-		return strconv.Itoa(clhs + crhs)
-	case "SUB":
-		return strconv.Itoa(clhs - crhs)
-	case "MUL":
-		return strconv.Itoa(clhs * crhs)
-	case "DIV":
-		return strconv.Itoa(clhs / crhs)
-	case "POW":
-		return strconv.Itoa(int(math.Pow(float64(clhs), float64(crhs))))
-	}
-	//not sure what to return here
-	//TODO: figure above out and apply accordingly
-	return RHS
 }
 
 func (i *Interpreter) setVariableValue(ss *ast.SetStatement) {
@@ -244,7 +226,7 @@ func (i *Interpreter) stackAlloc(scopeLevel int, v *ast.Variable) {
 	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel], stackTuple)
 }
 
-func (i *Interpreter) execANB(anb *ast.Anb) {
+func (i *Interpreter) execWhileNot(anb *ast.WhileNot) {
 	LHS := i.Stacks.resolvePtrValue(anb.LHS)
 	RHS := i.Stacks.resolvePtrValue(anb.RHS)
 
@@ -261,33 +243,6 @@ func (i *Interpreter) execANB(anb *ast.Anb) {
 	}
 	//GC the Stacks that were used in the scoped block. ANB in this case
 	i.Stacks = i.Stacks[scopeLevel:]
-}
-
-func (i *Interpreter) execStatement(s *ast.Statement) {
-	switch s.LHS {
-	case "BRK":
-		fmt.Printf("\n")
-		return
-	case "PRI":
-		fmt.Printf("%s", i.Stacks.resolveValue(s.RHS))
-		return
-	case "PRU":
-		cast, _ := strconv.Atoi(i.Stacks.resolveValue(s.RHS))
-		fmt.Printf("%c", cast)
-		return
-	case "INC":
-		if s.RHS.GetNodeName() != "statVar" {
-			errors.LitIncrementError()
-			os.Exit(65)
-		}
-
-		variableValue := i.Stacks.resolveVariable(s.RHS)
-		cast, _ := strconv.Atoi(variableValue.value)
-		cast++
-		castBack := strconv.Itoa(cast)
-		i.Stacks.set(variableValue.key, castBack)
-		return
-	}
 }
 
 func (s Stacks) set(name string, value string) {

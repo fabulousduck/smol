@@ -66,7 +66,7 @@ func (g *Generator) newBNERRInstructionFromLoose(R1 int, R2 int) BNERR {
 	return BNERR{R1, R2}
 }
 
-func (g *Generator) createAnbInstructions(instruction *ast.Anb) {
+func (g *Generator) createAnbInstructions(instruction *ast.WhileNot) {
 	// we need to multiply by 2 because each instruction is 2 bytes long
 	//doing this here is a little trick to get the value to keep getting updated from its origin register
 	anbInstructionStart := 0x200 + (len(g.Ir) * 2)

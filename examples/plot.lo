@@ -1,9 +1,9 @@
-MEM X 10;
-MEM Y 10;
+mem x 10;
+mem y 10;
 
-#PLT works from the top left of the screen.
+#plot() works from the top left of the screen.
 #it will draw a single pixel with offset X and Y
 #from the top left of the screen
 
-PLT X Y;
+plot(x,y)
 

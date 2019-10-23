@@ -1,15 +1,8 @@
-DEF PRINT_LINE_STARS<LENGTH>:
-    MEM COUNTER 0;
-    MEM STAR 43;
-    ANB[COUNTER,LENGTH]:
-        PRU STAR;
-        INC COUNTER;
-    END
-    BRK;
-END
-
-MEM COUNTER 0;
-ANB[COUNTER, 10]:
-    PRINT_LINE_STARS[COUNTER];
-    INC COUNTER;
-END
+def print_line_stars(length):
+    mem counter 0;
+    mem star 43;
+    whileNot(counter, length):
+        print(star)
+        counter++
+    end
+    

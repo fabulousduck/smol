@@ -21,27 +21,22 @@ And for some reason i made it compile chip-8 ROMS. (wip)
     * [General](#General)
     * [Syntax](#Syntax)
     * [Keywords](#Keywords)
-        * [MEM](#MEM-K-V)
-        * [PRI](#PRI-V)
-        * [PRU](#PRU-V)
-        * [INC](#INC-V)
-        * [BRK](#BRK)
-    * [Functions](#DEF)
-    * [switch](#SWT)
-        * [CAS](#CAS-A)
-        * [EOS](#EOS)
-    * [a not b](#ANB)
+        * [mem](#mem-k-v)
+    * [Operators](#Operators)
+        * [++](#a++)
+        * [--](#a\-\-)
+    * [Inbuilt Functions](#Inbuilt-functions)
+        * [print](#print\(v\))
+    * [Functions](#def)
+    * [switch](#switch)
+        * [case](#case-a)
+        * [default](#default)
+    * [whileNot(a,b)](#whileNot\(a,b\))
     * [logical operators](#Logical-operators)
-        * [EQ](#EQ[A,B])
-        * [NEQ](#NEQ[A,B])
-        * [GT](#GT[A,B])
-        * [LT](#LT[A,B])
-    * [Math](#Math)
-        * [ADD](#ADD-A-B)
-        * [SUB](#SUB-A-B)
-        * [MUL](#MUL-A-B)
-        * [DIV](#DIV-A-B)
-        * [POW](#SRQ-A-B)
+        * [eq](#eq\(a,b\))
+        * [neq](#neq\(a,b\))
+        * [gt](#gt\(a,b\))
+        * [lt](#lt\(a,b\))
     * [Comments](#Comments)
 
 
@@ -79,15 +74,15 @@ All statements must end with a `;`. Not doing so will result in syntax errors.
 ## Keywords
 
 
-### `MEM K V`
-In smol `MEM` is used to declare a variable on the stack. Losp only supports whole integers as variable types. This is done on purpose to make the programmer use arithmatic to accomplish tasks like you would in assembly.
+### `mem k v`
+In smol `mem` is used to declare a variable on the stack. Losp only supports whole integers as variable types. This is done on purpose to make the programmer use arithmatic to accomplish tasks like you would in assembly.
 
 
 Example:
 ```asm
-MEM A 20;
+mem A 20;
 
-PRI A;
+print(a)
 ```
 
 outputs:
@@ -96,54 +91,18 @@ outputs:
 20
 ```
 
-### `PRI V`
+## Operators
 
-`PRI` stands for "PRint Integer, so as the name suggests, the second parameter must be a number litteral or a variable name.
+### `a++`
 
-Example:
-```asm
-MEM A 20;
-
-PRI A;
-```
-
-outputs:
-
-```
-20
-```
-
-### `PRU V`
-
-Pru is the same as `PRI` but instead of simply printing to the screen what it is given. I will use the given variable and lookup its associated value on the unicode table. So this can be used to print a character instead of an integer.
-
-Example
-
-Example:
-```asm
-MEM A 72;
-
-PRU A;
-```
-
-outputs:
-
-```
-H
-```
-
-
-### `INC V`
-
-`INC` increments value `V` where `V` must be a variable. trying to call `INC` on a number litteral will result in a syntax error.
-
+`++` is a direct operator on variables that increments the value by one.
 Example:
 
 Example:
 ```asm
-MEM A 20;
-INC A;
-PRI A;
+mem a 20;
+a++
+print(a)
 ```
 
 outputs:
@@ -152,53 +111,85 @@ outputs:
 21
 ```
 
-### `BRK`
-Simply prints a `\n` character to the terminal
+### `a--`
 
-## `DEF`
+`--` is a direct operator on variables that decrements the value by one.
+Example:
+
+Example:
+```asm
+mem a 20;
+a--
+print(a)
+```
+
+outputs:
+
+```
+19
+```
+
+
+## Inbuilt functions
+
+### `print(v)`
+
+`print` is a general printing function that prints to STDOUT. This function does not get embedded into bytecode unless the target machine has a form of STDOUT
+
+Example:
+```asm
+mem a 20;
+
+print(a);
+```
+
+outputs:
+
+```
+20
+```
+
+
+## `def`
 
 Smol has support for simple functions. The can be defined like so:
 
-```
-FUNCTION_NAME[1,2];
+```asm
+functionName(1,2)
 
-DEF FUNCTION_NAME<PARAM_A,PARAM_B>:
-    PRI A;
-    PRI B;
-END
+def function_name(paramA,paramB):
+    print(a)
+    print(b)
+end
 ```
 
 Functions do not support return values yet. 
 
 
-## `SWT`
+## `switch`
 
-`SWT` is a the switch equivelant of smol. It supports cases using either number litterals or variables. it also supports default cases. it can be used like so:
+`switch` is a basic implementation of a switch. It supports cases using either number litterals or variables. it also supports default cases. it can be used like so:
 
 Example:
 
 ```asm
-MEM A 30;
-MEM B 10;
+mem a 30;
+mem b 10;
 
-SWT[B]: #Switch
-    CAS 10: #case
-        PRI 700;
-        BRK;
-    END
-    CAS 20:
-        PRI 20;
-        BRK; 
-    END
-    CAS A:
-        PRI A;
-        BRK;
-    END
-    EOS: #End Of Switch
-        PRI 30;
-        BRK;
-    END
-END
+switch(b):
+    case 10: #case
+        print(700)
+    end
+    case 20:
+        print(20) 
+    end
+    case a:
+        print(a)
+    end
+    default:
+        print(30)
+    end
+end
 
 ```
 
@@ -208,25 +199,23 @@ outputs
 700
 ```
 
-### `CAS A`
+### `case a`
 
-`CAS` defines a case within a switch.
+`case` defines a case within a switch.
 
 Example: 
 
 ```asm
-MEM A 30;
-MEM B 10;
+mem a 30;
+mem b 10;
 
-SWT[B]:
-    CAS 10: #case
-        PRI 700;
-        BRK;
-    END
-    CAS A:
-        PRI A;
-        BRK;
-    END
+switch(b):
+    case 10: #case
+        print(700)
+    end
+    case a:
+        print(a)
+    end
 END
 
 ```
@@ -237,34 +226,30 @@ outputs
 700
 ```
 
-### `EOS`
+### `default`
 
-`EOS` can be used to declare a default case in a `SWT` statement
+`default` can be used to declare a default case in a `switch` statement
 
 Example
 
 ```asm
-MEM A 100;
-MEM B 44;
+mem a 100;
+mem b 44;
 
-SWT[B]: #SWiTch
-    CAS 10: #case
-        PRI 700;
-        BRK;
-    END
-    CAS 20:
-        PRI 20;
-        BRK; 
-    END
-    CAS A:
-        PRI A;
-        BRK;
-    END
-    EOS: #End Of Switch
-        PRI 30;
-        BRK;
-    END
-END
+switch(b): #SWiTch
+    case 10:
+        print(700)
+    end
+    case 20:
+        print(20) 
+    end
+    case a:
+        print(A)
+    end
+    default:
+        print(30)
+    end
+end
 
 ```
 
@@ -274,22 +259,21 @@ outputs
 30
 ```
 
-## `ANB`
-`ANB` is the while loop of smol. It will run its body untill `A == B`. So it can be seen as a simple `while a != b {}` loop.
+## `whileNot(a,b)`
+`whileNot` is the while loop of smol. It will run its body untill `A == B`. So it can be seen as a simple `while a != b {}` loop.
 
 Example:
 
 ```
-MEM A 0;
-MEM B 10;
+mem a 0;
+mem b 10;
 
-ANB[A,B]:
-    PRI A;
-    BRK;
-    INC A;
-END
+whileNot(a,b):
+    print(a)
+    a++
+end
 
-PRU 0;
+print(0)
 ```
 
 outputs
@@ -309,18 +293,18 @@ outputs
 
 ## Logical operators
 
-### `EQ[A,B]`
+### `eq(a,b)`
 
-EQ stands for "equals" and checks if `A == B`.
+eq stands for "equals" and checks if `A == B`.
 
 Example
 
 ```asm
-MEM A 10;
+mem a 10;
 
-EQ[A, 10]:
-    PRI A;
-END
+eq(a, 10):
+    print(a)
+end
 
 ```
 
@@ -330,18 +314,18 @@ outputs:
 10
 ```
 
-### `NEQ[A,B]`
+### `neq(a,b)`
 
-NEQ stands for "not equals" and checks if `A == B`.
+neq stands for "not equals" and checks if `A != B`.
 
 Example
 
 ```asm
-MEM A 11;
+mem a 11;
 
-NEQ[A, 10]:
-    PRI A;
-END
+neq(a, 10):
+    print(a)
+end
 
 ```
 
@@ -351,19 +335,18 @@ outputs:
 10
 ```
 
-### `GT[A,B]`
+### `gt(a,b)`
 
-GT stands for "greater than" and checks is `A < B`
+gt stands for "greater than" and checks is `A < B`
 
 Example
 
 ```asm
-MEM A 10;
+mem a 10;
 
-GT[A, 9]:
-    PRI A;
-END
-
+gt(a, 9):
+    print(a)
+end
 ```
 
 outputs:
@@ -372,105 +355,24 @@ outputs:
 10
 ```
 
-### `LT[A,B]`
+### `lt(a,b)`
 
-LT stands for "less than" and checks if `A < B`
+lt stands for "less than" and checks if `A < B`
 
 Example
 
 ```asm
-MEM A 10;
+mem a 10;
 
-LT[A, 11]:
-    PRI A;
-END
-
+lt(a, 11):
+    print(a)
+end
 ```
 
 outputs:
 
 ```
 10
-```
-
-## Math
-
-Smol supports the basic mathematical operators and all work the same way.
-When called, like in assebly, the result of the calculation will be stored in the left hand variable given.
-this means it is not possible for the left hand side to be a number litteral.
-
-### ADD A B
-
-Adds A and B
-
-```asm
-
-MEM A 10;
-MEM B 20;
-
-ADD A B;
-
-```
-
-
-outputs
-```
-30
-```
-
-### SUB A B
-
-Subtracts B from A
-
-```asm
-
-MEM A 20;
-MEM B 10;
-
-SUB A B;
-
-```
-
-
-outputs
-```
-10
-```
-
-### MUL A B
-
-multiplies A and B
-
-```asm
-
-MEM A 10;
-MEM B 20;
-
-MUL A B;
-
-```
-
-outputs
-```
-200
-```
-
-### DIV A B
-
-Devides A by B
-
-```asm
-
-MEM A 20;
-MEM B 10;
-
-DIV A B;
-
-```
-
-outputs
-```
-2
 ```
 
 ## Comments
@@ -479,8 +381,8 @@ Smol has support for code comments using the `#` symbol.
 
 Example
 ```asm
-MEM A 10; #side comment 
+mem a 10; #side comment 
 
 #top comment
-MEM B 20;
+mem b 20;
 ```

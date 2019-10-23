@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/bytecode"
 
 	"github.com/fabulousduck/smol/ast"
@@ -43,12 +42,12 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	p := ast.NewParser(filename, l.Tokens)
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
+
 	p.Ast, _ = p.Parse()
 
 	if compile {
 		g := ir.NewGenerator(filename)
 		g.Generate(p.Ast)
-		spew.Dump(g)
 		bg := bytecode.Init(g, filename)
 		bg.CreateRom()
 		return

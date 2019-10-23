@@ -1,13 +1,8 @@
-DEF EXAMPLE_FUNCTION<A, B>:
-    ANB[B, A]:
-        PRI B;
-        BRK;
-        INC B;
-    END
-END
+def example_function(a,b):
+    whileNot(b,a):
+        print(b)
+        b++
+    end
+end
 
-MEM A 20;
-MEM B 0;
-
-
-EXAMPLE_FUNCTION[A,B];
+example_function(10,0)
