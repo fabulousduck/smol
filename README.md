@@ -140,7 +140,7 @@ Example:
 ```asm
 mem a 20;
 
-print(a);
+print(a)
 ```
 
 outputs:
