@@ -6,6 +6,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/proto/src/types"
+	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
 
@@ -266,9 +267,7 @@ func (p *Parser) Parse() ([]Node, int) {
 		case "end_of_file":
 			return nodes, p.TokensConsumed
 		default:
-			//TODO: make an error for this
-			os.Exit(65)
-			//errors.UnknownTypeError()
+			errors.UnknownTypeError()
 		}
 
 	}
@@ -307,15 +306,21 @@ func (p *Parser) createPrintCall() *PrintCall {
 func (p *Parser) createPlot() *PlotStatement {
 	ps := new(PlotStatement)
 
+	p.expectCurrent([]string{"left_parenthesis"})
+	p.advance()
+
 	p.expectCurrent([]string{"character", "string", "integer"})
 	ps.X = createLit(p.currentToken())
+	p.advance()
+
+	p.expectCurrent([]string{"comma"})
 	p.advance()
 
 	p.expectCurrent([]string{"character", "string", "integer"})
 	ps.Y = createLit(p.currentToken())
 	p.advance()
 
-	p.expectCurrent([]string{"semicolon"})
+	p.expectCurrent([]string{"right_parenthesis"})
 	p.advance()
 
 	return ps

@@ -95,6 +95,8 @@ func (l *Lexer) Lex() {
 			l.advance()
 			continue
 		case "ignoreable":
+			l.currentCol = 0
+			l.currentLine++
 			l.advance()
 			continue
 		}

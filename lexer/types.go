@@ -51,7 +51,6 @@ func getKeyword(token *Token) string {
 		"whileNot": "while_not",
 		"mem":      "variable_assignment",
 		"print":    "print",
-		"INC":      "increment_value",
 		"end":      "close_block",
 		"SET":      "set_variable",
 		"eq":       "equals",
@@ -63,7 +62,7 @@ func getKeyword(token *Token) string {
 		"default":  "end_of_switch",
 		"free":     "free",
 		"USE":      "use", //TODO: libs
-		"PLT":      "plot",
+		"plot":     "plot",
 	}
 
 	if val, ok := keywords[token.Value]; ok {
