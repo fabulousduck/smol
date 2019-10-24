@@ -5,4 +5,7 @@ def example_function(a,b):
     end
 end
 
-example_function(10,0)
+Uint32 a = 10
+Uint32 b = 0
+
+example_function(a,b)
