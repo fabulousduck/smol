@@ -20,8 +20,7 @@ And for some reason i made it compile chip-8 ROMS. (wip)
 * [Documentation](#Documentation)
     * [General](#General)
     * [Syntax](#Syntax)
-    * [Keywords](#Keywords)
-        * [mem](#mem-k-v)
+    * [Variables](#Variables)
     * [Operators](#Operators)
         * [++](#a++)
         * [--](#a\-\-)
@@ -71,18 +70,27 @@ The syntax of smol is extremely small and aims to resemble something between lol
 
 All statements must end with a `;`. Not doing so will result in syntax errors.
 
-## Keywords
+## Variables
 
 
-### `mem k v`
-In smol `mem` is used to declare a variable on the stack. Losp only supports whole integers as variable types. This is done on purpose to make the programmer use arithmatic to accomplish tasks like you would in assembly.
+In smol it is possible to define variables of a number of different types. The following types are supported as of now.
 
+* `Uint32`
+* `Uint64`
+* `Bool`
+* `String`
+
+The syntax for declaring a variable is as follows:
+```
+<type> <name> = <value>
+```
 
 Example:
 ```asm
-mem A 20;
-
-print(a)
+Uint32 myUint32 = 100
+Uint64 myUint64 = 200
+Bool myBool = True
+String myString = "hello world!"
 ```
 
 outputs:
