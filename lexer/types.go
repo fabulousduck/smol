@@ -46,6 +46,16 @@ func contains(name string, list []string) bool {
 	return false
 }
 
+func containsEither(names []string, list []string) bool {
+	for i := 0; i < len(names); i++ {
+		if contains(names[i], list) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func getKeyword(token *Token) string {
 	keywords := map[string][]string{
 		"function_definition": []string{"def"},

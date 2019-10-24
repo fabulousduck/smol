@@ -46,9 +46,9 @@ func (l *Lexer) Lex() {
 		currTok := newToken(l.currentLine, l.currentCol, l.currentChar())
 		switch currTok.Type {
 		case "character":
-			currTok.Value = l.peekTypeN("character")
+			currTok.Value = l.peekTypesN([]string{"integer", "character"})
 		case "integer":
-			currTok.Value = l.peekTypeN("integer")
+			currTok.Value = l.peekTypesN([]string{"integer"})
 		case "comment":
 			l.readComment()
 			l.advance()
@@ -133,10 +133,10 @@ func (l *Lexer) peek() string {
 	return ""
 }
 
-func (l *Lexer) peekTypeN(typeName string) string {
+func (l *Lexer) peekTypesN(types []string) string {
 	var currentString bytes.Buffer
 
-	for t := determineType(l.currentChar()); t == typeName; t = determineType(l.currentChar()) {
+	for t := determineType(l.currentChar()); contains(t, types); t = determineType(l.currentChar()) {
 		char := l.currentChar()
 
 		//we do this to avoid index out of range errors

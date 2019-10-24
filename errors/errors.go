@@ -40,6 +40,11 @@ func UnknownTypeError() {
 	fmt.Printf("Unknown token type found.")
 }
 
+//UnknownVariableTypeError is an error when a variable is declared with a type that is not known
+func UnknownVariableTypeError(variableType string) {
+	fmt.Printf("Unknown variable type: %s\n", variableType)
+}
+
 //LitteralFree error can be thrown when the programmer wants to free a number litteral
 func LitteralFree() {
 	fmt.Printf("Cannot release a number litteral\n")

@@ -216,7 +216,6 @@ func (p *Parser) Parse() ([]Node, int) {
 			p.advance()
 			nodes = append(nodes, p.createUse())
 		case "variable_assignment":
-			p.advance()
 			nodes = append(nodes, p.createVariable())
 		case "function_definition":
 			p.advance()
@@ -582,19 +581,40 @@ func (p *Parser) createFunction() *Function {
 	return f
 }
 
+/*
+createVariable reads tokens to create a variable
+It adheres to the following structure
+
+<type> <name> <value>
+
+*/
 func (p *Parser) createVariable() *Variable {
 	variable := new(Variable)
+
+	p.expectCurrent([]string{"string"})
+	variable.Type = p.currentToken().Value
+	p.advance()
 
 	p.expectCurrent([]string{"character", "string"})
 	variable.Name = p.currentToken().Value
 	p.advance()
 
-	p.expectCurrent([]string{"integer", "character", "string"})
+	switch variable.Type {
+	case "Bool":
+		p.expectCurrent([]string{"string"})
+	case "String":
+		p.expectCurrent([]string{"stringLitteral"})
+	case "Uint32":
+		p.expectCurrent([]string{"integer"})
+	case "Uint64":
+		p.expectCurrent([]string{"integer"})
+	default:
+		errors.UnknownVariableTypeError(variable.Type)
+	}
+
 	variable.Value = createLit(p.currentToken())
 	p.advance()
 
-	p.expectCurrent([]string{"semicolon"})
-	p.advance()
 	return variable
 }
 
