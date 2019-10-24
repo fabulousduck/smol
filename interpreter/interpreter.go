@@ -306,9 +306,21 @@ func (s *Stacks) resolvePtrValue(node ast.Node) *string {
 }
 
 func (s *Stacks) resolveValue(node ast.Node) string {
+
 	if ast.NodeIsVariable(node) {
 		return s.resolveVariable(node).value
 	}
-	return node.(*ast.NumLit).Value
 
+	switch node.GetNodeName() {
+	case "numLit":
+		return node.(*ast.NumLit).Value
+	case "boolLit":
+		return node.(*ast.BoolLit).Value
+	}
+
+	errors.UnresolvableVariableValueError()
+	os.Exit(65)
+	//something janky to keep go happy
+	//this is literally unreachable code but it doesnt detect it
+	return node.(*ast.NumLit).Value
 }

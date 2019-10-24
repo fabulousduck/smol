@@ -45,6 +45,11 @@ func UnknownVariableTypeError(variableType string) {
 	fmt.Printf("Unknown variable type: %s\n", variableType)
 }
 
+//UnresolvableVariableValueError can be thrown when the value type of a variable cannot be determined
+func UnresolvableVariableValueError() {
+	fmt.Printf("Could not resolve type of variable")
+}
+
 //LitteralFree error can be thrown when the programmer wants to free a number litteral
 func LitteralFree() {
 	fmt.Printf("Cannot release a number litteral\n")
@@ -53,7 +58,7 @@ func LitteralFree() {
 //UndefinedVariableError can be thrown at interpret time when a variable is not found on the local scope or higher level scopes
 func UndefinedVariableError(variableName string) {
 	//TODO: make this somewhat more informative
-	fmt.Printf("Undefined varaible %s\n", variableName)
+	fmt.Printf("Undefined variable %s\n", variableName)
 }
 
 //LitAssignError can be used when the script tries to assign a new value to a litteral value

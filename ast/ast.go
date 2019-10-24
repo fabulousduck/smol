@@ -43,6 +43,15 @@ type Node interface {
 
 }
 
+//BoolLit represents a boolean litteral being either "True" or "False"
+type BoolLit struct {
+	Value string
+}
+
+func (bm BoolLit) GetNodeName() string {
+	return "boolLit"
+}
+
 //NumLit represents a numeric litteral.
 type NumLit struct {
 	Value string
@@ -215,7 +224,7 @@ func (p *Parser) Parse() ([]Node, int) {
 		case "use":
 			p.advance()
 			nodes = append(nodes, p.createUse())
-		case "variable_assignment":
+		case "variable_type":
 			nodes = append(nodes, p.createVariable())
 		case "function_definition":
 			p.advance()
@@ -499,17 +508,6 @@ func (p *Parser) createStatement(lhs string) *Statement {
 	return s
 }
 
-func createLit(token lexer.Token) Node {
-	if token.Type == "integer" {
-		nm := new(NumLit)
-		nm.Value = token.Value
-		return nm
-	}
-	sv := new(StatVar)
-	sv.Value = token.Value
-	return sv
-}
-
 func (p *Parser) createWhileNot() *WhileNot {
 	whileNot := new(WhileNot)
 
@@ -591,12 +589,15 @@ It adheres to the following structure
 func (p *Parser) createVariable() *Variable {
 	variable := new(Variable)
 
-	p.expectCurrent([]string{"string"})
+	p.expectCurrent([]string{"variable_type"})
 	variable.Type = p.currentToken().Value
 	p.advance()
 
 	p.expectCurrent([]string{"character", "string"})
 	variable.Name = p.currentToken().Value
+	p.advance()
+
+	p.expectCurrent([]string{"equals"})
 	p.advance()
 
 	switch variable.Type {
@@ -616,6 +617,21 @@ func (p *Parser) createVariable() *Variable {
 	p.advance()
 
 	return variable
+}
+
+func createLit(token lexer.Token) Node {
+	if token.Type == "integer" {
+		nl := new(NumLit)
+		nl.Value = token.Value
+		return nl
+	} else if token.Value == "True" || token.Value == "False" {
+		bl := new(BoolLit)
+		bl.Value = token.Value
+		return bl
+	}
+	sv := new(StatVar)
+	sv.Value = token.Value
+	return sv
 }
 
 func (p *Parser) expectCurrent(expectedValues []string) {

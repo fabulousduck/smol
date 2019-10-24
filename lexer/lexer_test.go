@@ -16,7 +16,7 @@ func TestVariable(T *testing.T) {
 	expectedResults := []Token{
 		{
 			Value: "MEM",
-			Type:  "variable_assignment",
+			Type:  "variable_type",
 			Line:  0,
 			Col:   0,
 		},

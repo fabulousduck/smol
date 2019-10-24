@@ -60,7 +60,7 @@ func getKeyword(token *Token) string {
 	keywords := map[string][]string{
 		"function_definition": []string{"def"},
 		"while_not":           []string{"whileNot"},
-		"variable_assignment": []string{"String", "Bool", "Uint32", "Uin64"},
+		"variable_type":       []string{"String", "Bool", "Uint32", "Uint64"},
 		"print":               []string{"print"},
 		"close_block":         []string{"end"},
 		"set_variable":        []string{"set"},

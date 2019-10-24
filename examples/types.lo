@@ -1,4 +1,3 @@
-String myString = "hello world"
-uint32 myInt = 40
-uint64 myLongInt = 40
+Uint32 myInt = 40
+Uint64 myLongInt = 40
 Bool myBool = True
