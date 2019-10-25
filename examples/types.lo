@@ -1,3 +1,4 @@
-Uint32 myInt = 40
-Uint64 myLongInt = 40
+String myString = "hello world!"
 Bool myBool = True
+Uint32 myUint32 = 100
+Uint64 myUint64 = 200

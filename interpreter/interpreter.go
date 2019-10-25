@@ -316,6 +316,8 @@ func (s *Stacks) resolveValue(node ast.Node) string {
 		return node.(*ast.NumLit).Value
 	case "boolLit":
 		return node.(*ast.BoolLit).Value
+	case "stringLit":
+		return node.(*ast.StringLit).Value
 	}
 
 	errors.UnresolvableVariableValueError()

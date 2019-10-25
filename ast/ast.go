@@ -43,6 +43,15 @@ type Node interface {
 
 }
 
+//StringLit represents a string litteral
+type StringLit struct {
+	Value string
+}
+
+func (sl StringLit) GetNodeName() string {
+	return "stringLit"
+}
+
 //BoolLit represents a boolean litteral being either "True" or "False"
 type BoolLit struct {
 	Value string
@@ -280,7 +289,6 @@ func (p *Parser) Parse() ([]Node, int) {
 		}
 
 	}
-
 	return nodes, p.TokensConsumed
 }
 
@@ -602,9 +610,9 @@ func (p *Parser) createVariable() *Variable {
 
 	switch variable.Type {
 	case "Bool":
-		p.expectCurrent([]string{"string"})
+		p.expectCurrent([]string{"boolean_keyword"})
 	case "String":
-		p.expectCurrent([]string{"stringLitteral"})
+		p.expectCurrent([]string{"string_litteral"})
 	case "Uint32":
 		p.expectCurrent([]string{"integer"})
 	case "Uint64":
@@ -620,18 +628,24 @@ func (p *Parser) createVariable() *Variable {
 }
 
 func createLit(token lexer.Token) Node {
-	if token.Type == "integer" {
+	switch token.Type {
+	case "integer":
 		nl := new(NumLit)
 		nl.Value = token.Value
 		return nl
-	} else if token.Value == "True" || token.Value == "False" {
+	case "boolean_keyword":
 		bl := new(BoolLit)
 		bl.Value = token.Value
 		return bl
+	case "string_litteral":
+		sl := new(StringLit)
+		sl.Value = token.Value
+		return sl
+	default:
+		sv := new(StatVar)
+		sv.Value = token.Value
+		return sv
 	}
-	sv := new(StatVar)
-	sv.Value = token.Value
-	return sv
 }
 
 func (p *Parser) expectCurrent(expectedValues []string) {

@@ -19,6 +19,7 @@ func determineType(character string) string {
 		"right_parenthesis": []string{")"},
 		"semicolon":         []string{";"},
 		"plus":              []string{"+"},
+		"double_quote":      []string{"\""},
 		"equals":            []string{"="},
 		"dash":              []string{"-"},
 		"left_bracket":      []string{"["},
@@ -34,6 +35,7 @@ func determineType(character string) string {
 			return key
 		}
 	}
+
 	return "undefined_symbol"
 }
 
@@ -60,6 +62,7 @@ func getKeyword(token *Token) string {
 	keywords := map[string][]string{
 		"function_definition": []string{"def"},
 		"while_not":           []string{"whileNot"},
+		"boolean_keyword":     []string{"True", "False"},
 		"variable_type":       []string{"String", "Bool", "Uint32", "Uint64"},
 		"print":               []string{"print"},
 		"close_block":         []string{"end"},
