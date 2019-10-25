@@ -109,6 +109,15 @@ func (g *Generator) createVariableOperationInstructions(variable *ast.Variable) 
 		originalRegister := g.regTable.Find(variableValue.Value)
 		g.regTable[emptyRegister] = registertable.Register{g.regTable[originalRegister].Value, variable.Name}
 		g.Ir = append(g.Ir, g.newRegCpy(originalRegister, emptyRegister))
+	} else if variable.Value.GetNodeName() == "boolLit" {
+		variableValue := variable.Value.(*ast.BoolLit).Value
+		booleanIntegerRepresentation := 0
+		if variableValue == "True" {
+			booleanIntegerRepresentation = 1
+		} else {
+			booleanIntegerRepresentation = 0
+		}
+		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, booleanIntegerRepresentation))
 	} else {
 		variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
 		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))

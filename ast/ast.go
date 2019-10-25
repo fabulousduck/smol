@@ -43,6 +43,24 @@ type Node interface {
 
 }
 
+//StringLit represents a string litteral
+type StringLit struct {
+	Value string
+}
+
+func (sl StringLit) GetNodeName() string {
+	return "stringLit"
+}
+
+//BoolLit represents a boolean litteral being either "True" or "False"
+type BoolLit struct {
+	Value string
+}
+
+func (bm BoolLit) GetNodeName() string {
+	return "boolLit"
+}
+
 //NumLit represents a numeric litteral.
 type NumLit struct {
 	Value string
@@ -109,6 +127,7 @@ func (f Function) GetNodeName() string {
 //This is the struct that will be pushed to the stack
 type Variable struct {
 	Name  string
+	Type  string
 	Value Node
 }
 
@@ -214,8 +233,7 @@ func (p *Parser) Parse() ([]Node, int) {
 		case "use":
 			p.advance()
 			nodes = append(nodes, p.createUse())
-		case "variable_assignment":
-			p.advance()
+		case "variable_type":
 			nodes = append(nodes, p.createVariable())
 		case "function_definition":
 			p.advance()
@@ -271,7 +289,6 @@ func (p *Parser) Parse() ([]Node, int) {
 		}
 
 	}
-
 	return nodes, p.TokensConsumed
 }
 
@@ -499,17 +516,6 @@ func (p *Parser) createStatement(lhs string) *Statement {
 	return s
 }
 
-func createLit(token lexer.Token) Node {
-	if token.Type == "integer" {
-		nm := new(NumLit)
-		nm.Value = token.Value
-		return nm
-	}
-	sv := new(StatVar)
-	sv.Value = token.Value
-	return sv
-}
-
 func (p *Parser) createWhileNot() *WhileNot {
 	whileNot := new(WhileNot)
 
@@ -581,20 +587,65 @@ func (p *Parser) createFunction() *Function {
 	return f
 }
 
+/*
+createVariable reads tokens to create a variable
+It adheres to the following structure
+
+<type> <name> <value>
+
+*/
 func (p *Parser) createVariable() *Variable {
 	variable := new(Variable)
+
+	p.expectCurrent([]string{"variable_type"})
+	variable.Type = p.currentToken().Value
+	p.advance()
 
 	p.expectCurrent([]string{"character", "string"})
 	variable.Name = p.currentToken().Value
 	p.advance()
 
-	p.expectCurrent([]string{"integer", "character", "string"})
+	p.expectCurrent([]string{"equals"})
+	p.advance()
+
+	switch variable.Type {
+	case "Bool":
+		p.expectCurrent([]string{"boolean_keyword"})
+	case "String":
+		p.expectCurrent([]string{"string_litteral"})
+	case "Uint32":
+		p.expectCurrent([]string{"integer"})
+	case "Uint64":
+		p.expectCurrent([]string{"integer"})
+	default:
+		errors.UnknownVariableTypeError(variable.Type)
+	}
+
 	variable.Value = createLit(p.currentToken())
 	p.advance()
 
-	p.expectCurrent([]string{"semicolon"})
-	p.advance()
 	return variable
+}
+
+func createLit(token lexer.Token) Node {
+	switch token.Type {
+	case "integer":
+		nl := new(NumLit)
+		nl.Value = token.Value
+		return nl
+	case "boolean_keyword":
+		bl := new(BoolLit)
+		bl.Value = token.Value
+		return bl
+	case "string_litteral":
+		sl := new(StringLit)
+		sl.Value = token.Value
+		return sl
+	default:
+		sv := new(StatVar)
+		sv.Value = token.Value
+		return sv
+	}
 }
 
 func (p *Parser) expectCurrent(expectedValues []string) {

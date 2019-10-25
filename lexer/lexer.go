@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/fabulousduck/smol/errors"
 )
 
@@ -26,6 +28,7 @@ func NewLexer(filename string, program string) *Lexer {
 	l := new(Lexer)
 	l.Program = program
 	l.FileName = filename
+	l.currentIndex = 0
 	l.currentLine = 1
 	return l
 }
@@ -46,14 +49,25 @@ func (l *Lexer) Lex() {
 		currTok := newToken(l.currentLine, l.currentCol, l.currentChar())
 		switch currTok.Type {
 		case "character":
-			currTok.Value = l.peekTypeN("character")
+			currTok.Value = l.peekTypesN([]string{"integer", "character"})
 		case "integer":
-			currTok.Value = l.peekTypeN("integer")
+			currTok.Value = l.peekTypesN([]string{"integer"})
 		case "comment":
 			l.readComment()
 			l.advance()
 			l.currentCol = 0
 			continue
+		case "double_quote":
+			l.advance()
+			currTok.Value = l.peekUntil([]string{"double_quote"})
+			currTok.Type = "string_litteral"
+		case "equals":
+			if l.peek() == "=" {
+				currTok.Value = "=="
+				currTok.Type = "comparison"
+				l.advance()
+			}
+			l.advance()
 		case "plus":
 			if l.peek() == "+" {
 				currTok.Value = "++"
@@ -126,10 +140,33 @@ func (l *Lexer) peek() string {
 	return ""
 }
 
-func (l *Lexer) peekTypeN(typeName string) string {
+func (l *Lexer) peekUntil(types []string) string {
 	var currentString bytes.Buffer
 
-	for t := determineType(l.currentChar()); t == typeName; t = determineType(l.currentChar()) {
+	//loop until the current character type (t) is in types
+	for t := determineType(l.currentChar()); !contains(t, types); t = determineType(l.currentChar()) {
+		char := l.currentChar()
+
+		//we do this to avoid index out of range errors
+		if l.currentIndex+1 >= len(l.Program) {
+			spew.Dump("out of range clause")
+			currentString.WriteString(char)
+			l.advance()
+
+			return currentString.String()
+		}
+		currentString.WriteString(char)
+		l.advance()
+	}
+	//advance over the untill symbol
+	l.advance()
+	return currentString.String()
+}
+
+func (l *Lexer) peekTypesN(types []string) string {
+	var currentString bytes.Buffer
+
+	for t := determineType(l.currentChar()); contains(t, types); t = determineType(l.currentChar()) {
 		char := l.currentChar()
 
 		//we do this to avoid index out of range errors

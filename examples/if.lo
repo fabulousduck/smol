@@ -1,5 +1,5 @@
-mem a 0;
-mem b 10;
+Uint32 a 0;
+Uint32 b 10;
 
 eq(b,b):
     print(a)
