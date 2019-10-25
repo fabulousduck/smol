@@ -2,3 +2,8 @@ String myString = "hello world!"
 Bool myBool = True
 Uint32 myUint32 = 100
 Uint64 myUint64 = 200
+
+print(myString)
+print(myBool)
+print(myUint32)
+print(myUint64)
