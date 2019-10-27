@@ -1,0 +1,3 @@
+Uint32 a = 10
+Uint32 b = 20
+Uint32 c = a + b / a * b
