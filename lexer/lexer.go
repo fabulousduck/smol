@@ -82,9 +82,9 @@ func (l *Lexer) Lex() {
 				l.advance()
 			}
 			l.advance()
-		case "left_arrow":
+		case "less_than":
 			fallthrough
-		case "right_arrow":
+		case "greater_than":
 			fallthrough
 		case "comma":
 			fallthrough
@@ -99,9 +99,10 @@ func (l *Lexer) Lex() {
 		case "double_dot":
 			fallthrough
 		case "semicolon":
+			spew.Dump(currTok)
 			l.advance()
 		case "undefined_symbol":
-			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
+			errors.Report(l.currentLine, l.FileName, fmt.Sprintf("undefined symbol \"%s\" used", currTok.Value))
 			os.Exit(65)
 		case "newline":
 			l.currentCol = 0

@@ -50,6 +50,16 @@ func UnresolvableVariableValueError() {
 	fmt.Printf("Could not resolve type of variable")
 }
 
+//ExpectedExpressionError is used when an expression is expected but none are given
+func ExpectedExpressionError() {
+	fmt.Printf("Expected expression. got nothing instead")
+}
+
+//InvalidOperatorError is used when the attributes of an unknown operator is requested
+func InvalidOperatorError() {
+	fmt.Printf("Given operator does not have any attributes\n")
+}
+
 //LitteralFree error can be thrown when the programmer wants to free a number litteral
 func LitteralFree() {
 	fmt.Printf("Cannot release a number litteral\n")

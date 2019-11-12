@@ -472,11 +472,10 @@ func (p *Parser) createFunctionCall() *FunctionCall {
 
 	for currentToken := p.currentToken(); currentToken.Type != "right_parenthesis"; currentToken = p.currentToken() {
 		if currentToken.Type == "comma" {
-			p.expectNext([]string{"character", "string", "integer"})
 			p.advance()
 			continue
 		}
-		fc.Args = append(fc.Args, createLit(currentToken))
+		fc.Args = append(fc.Args, p.readExpression())
 		p.advance()
 	}
 
