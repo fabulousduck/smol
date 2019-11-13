@@ -273,8 +273,6 @@ whileNot(a,b):
     print(a)
     a++
 end
-
-print(0)
 ```
 
 outputs
