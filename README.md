@@ -7,10 +7,10 @@
 ```asm
 Uint32 a = 0
 Uint32 b = 10
-while(a < b) {
+while(a < b):
    print("hello world!")
    a++
-}
+end
 ```
 
 # Table of contents
