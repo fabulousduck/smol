@@ -82,6 +82,10 @@ func (l *Lexer) Lex() {
 				l.advance()
 			}
 			l.advance()
+		case "star":
+			fallthrough
+		case "division":
+			fallthrough
 		case "less_than":
 			fallthrough
 		case "greater_than":
@@ -99,7 +103,6 @@ func (l *Lexer) Lex() {
 		case "double_dot":
 			fallthrough
 		case "semicolon":
-			spew.Dump(currTok)
 			l.advance()
 		case "undefined_symbol":
 			errors.Report(l.currentLine, l.FileName, fmt.Sprintf("undefined symbol \"%s\" used", currTok.Value))
@@ -111,7 +114,6 @@ func (l *Lexer) Lex() {
 			continue
 		case "ignoreable":
 			l.currentCol = 0
-			l.currentLine++
 			l.advance()
 			continue
 		}

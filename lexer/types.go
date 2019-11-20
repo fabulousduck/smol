@@ -1,17 +1,15 @@
 package lexer
 
 import (
-	"os"
 	"strings"
-
-	"github.com/fabulousduck/smol/errors"
 )
 
 type typename map[string]string
 
-type operatorAttributes struct {
-	precedance    int
-	associativity string
+//OperatorAttributes wraps the precedance and Associativity of a operator
+type OperatorAttributes struct {
+	Precedance    int
+	Associativity string
 }
 
 //IsLitteral checks if a given token is a litteral type
@@ -112,9 +110,9 @@ func getKeyword(token *Token) string {
 	return token.Type
 }
 
-//returns the precedance and associativity of an operator
-func getOperatorAttributes(operator string) operatorAttributes {
-	operatorAttributeMap := map[string]operatorAttributes{
+//GetOperatorAttributes returns the precedance and associativity of an operator
+func GetOperatorAttributes(operator string) (OperatorAttributes, bool) {
+	operatorAttributeMap := map[string]OperatorAttributes{
 		"less_than":         {6, "left"},  // <
 		"greater_than":      {6, "left"},  // >
 		"exponent":          {4, "right"}, // ^
@@ -127,12 +125,18 @@ func getOperatorAttributes(operator string) operatorAttributes {
 	}
 
 	if val, ok := operatorAttributeMap[operator]; ok {
-		return val
+		return val, true
 	}
-	errors.InvalidOperatorError()
-	os.Exit(65)
+
 	//this is only here because otherwise golang will cry about no return value even though this is unreachable code
-	return operatorAttributes{}
+	return OperatorAttributes{}, false
+}
+
+//IsOperator checks whether a given character is an operator
+//wraps around GetOperatorAttributes method
+func IsOperator(character string) bool {
+	_, isOperator := GetOperatorAttributes(character)
+	return isOperator
 }
 
 //DetermineStringType will determine the type of a given string

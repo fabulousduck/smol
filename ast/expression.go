@@ -1,15 +1,22 @@
 package ast
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
 
-//Expression is a set of tokens in shunting yard format
+//Expression contains nodes in RPN form
 type Expression struct {
-	nodes []Node
+	Nodes []Node
+}
+
+func createExpression(nodes []Node) *Expression {
+	expression := new(Expression)
+	expression.Nodes = nodes
+	return expression
 }
 
 //GetNodeName so its valid on the node interface
@@ -18,25 +25,35 @@ func (e Expression) GetNodeName() string {
 	return "expression"
 }
 
+//VariableReference contains the name of a referenced variable during AST generation
+type VariableReference struct {
+	name string
+}
+
+//GetNodeName so its valid on the node interface
+//and we can ask what type it is later
+func (vr VariableReference) GetNodeName() string {
+	return "variableReference"
+}
+
+func createVariableReference(name string) VariableReference {
+	return VariableReference{name: name}
+}
+
 //Litteral is a node type for static values such as integers and string litterals
 type Litteral struct {
+	ltype string
 	value string
 }
 
+//GetNodeName is a generic function that allows subtypes of a node in the AST
 func (l Litteral) GetNodeName() string {
 	return "litteral"
 }
 
-//CreateExpression returns a new pointer to an expression
-func CreateExpression(expressionNodes []Node) *Expression {
-	expression := new(Expression)
-	expression.nodes = expressionNodes
-	return expression
-}
-
 //CreateLitteral creates a new Litteral struct
-func CreateLitteral(value string) Litteral {
-	litteral := Litteral{value: value}
+func CreateLitteral(value string, ltype string) Litteral {
+	litteral := Litteral{value: value, ltype: ltype}
 	return litteral
 }
 
@@ -48,9 +65,17 @@ func (p *Parser) readExpression() *Expression {
 	expressionLine := p.currentToken().Line
 	expressionTokens := []lexer.Token{}
 
+	fmt.Printf("expression line: %d\n", expressionLine)
+
 	for currTok := p.currentToken(); currTok.Line == expressionLine; currTok = p.currentToken() {
 		expressionTokens = append(expressionTokens, currTok)
+		p.advance()
+		if !p.nextExists() {
+			break
+		}
 	}
+
+	expressionParser := NewParser(p.Filename, expressionTokens)
 
 	switch len(expressionTokens) {
 	case 0:
@@ -58,12 +83,13 @@ func (p *Parser) readExpression() *Expression {
 		os.Exit(65)
 	case 1:
 		if lexer.IsLitteral(expressionTokens[0]) {
-			return CreateExpression([]Node{CreateLitteral(expressionTokens[0].Value)})
+			litteralToken := expressionTokens[0]
+			return createExpression([]Node{CreateLitteral(litteralToken.Value, litteralToken.Type)})
 		}
 		errors.InvalidOperatorError()
 		os.Exit(65)
 	default:
-		return CreateExpression(applyShuntingYard(expressionTokens))
+		return expressionParser.parseExpression()
 	}
 
 	return expression
@@ -73,19 +99,37 @@ func (p *Parser) readExpression() *Expression {
 readExpressionUntil allows for parsing and expression with a defined
 symbol as an end boundary
 */
-func (p *Parser) readExpressionUntil() []*Node {
-	expressionAST := []*Node{}
+func (p *Parser) readExpressionUntil() *Expression {
+	expressionAST := createExpression([]Node{})
 
 	return expressionAST
 }
 
-func applyShuntingYard(tokens []lexer.Token) []Node {
+func (p *Parser) parseExpression() *Expression {
 	operatorStack := []Node{}
 	outputQueue := []Node{}
 
-	for _, token := range tokens {
+	for p.TokensConsumed < len(p.Tokens) {
+		token := p.currentToken()
 
+		switch token.Type {
+		case "integer":
+			outputQueue = append(operatorStack, CreateLitteral(token.Value, token.Type))
+			p.advance()
+			break
+		case "string":
+			//its a function
+			if p.nextToken().Type == "left_parenthesis" {
+				outputQueue = append(outputQueue, p.createFunctionCall())
+				break
+			}
+			//we treat variable names the same as integers because all other variable values are not allowed in expressions
+			operatorStack = append(operatorStack, createVariableReference(token.Value))
+			p.advance()
+			break
+
+		}
 	}
 
-	return outputQueue
+	return createExpression(outputQueue)
 }

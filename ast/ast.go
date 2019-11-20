@@ -6,7 +6,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/fabulousduck/proto/src/types"
-	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
 
@@ -126,9 +125,10 @@ func (f Function) GetNodeName() string {
 //Variable is a construct used to create a new variable.
 //This is the struct that will be pushed to the stack
 type Variable struct {
-	Name  string
-	Type  string
-	Value Node
+	Name            string
+	Type            string
+	Value           Node
+	ValueExpression Expression
 }
 
 //WhileNot is the while loop of smol. It will keep executing its body until LHS equals RHS
@@ -285,7 +285,8 @@ func (p *Parser) Parse() ([]Node, int) {
 		case "end_of_file":
 			return nodes, p.TokensConsumed
 		default:
-			errors.UnknownTypeError()
+			// spew.Dump(p.currentToken())
+			// errors.UnknownTypeError()
 		}
 
 	}
@@ -607,21 +608,9 @@ func (p *Parser) createVariable() *Variable {
 	p.expectCurrent([]string{"equals"})
 	p.advance()
 
-	switch variable.Type {
-	case "Bool":
-		p.expectCurrent([]string{"boolean_keyword"})
-	case "String":
-		p.expectCurrent([]string{"string_litteral"})
-	case "Uint32":
-		p.expectCurrent([]string{"integer"})
-	case "Uint64":
-		p.expectCurrent([]string{"integer"})
-	default:
-		errors.UnknownVariableTypeError(variable.Type)
-	}
+	expression := p.readExpression()
 
-	variable.Value = createLit(p.currentToken())
-	p.advance()
+	variable.ValueExpression = *expression
 
 	return variable
 }
@@ -663,6 +652,10 @@ func (p *Parser) expectNext(expectedValues []string) {
 		lexer.ThrowSemanticError(&nextToken, expectedValues, p.Filename)
 		os.Exit(65)
 	}
+}
+
+func (p *Parser) nextExists() bool {
+	return p.TokensConsumed < len(p.Tokens)
 }
 
 func (p *Parser) currentToken() lexer.Token {

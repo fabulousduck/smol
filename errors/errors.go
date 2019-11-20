@@ -50,6 +50,11 @@ func UnresolvableVariableValueError() {
 	fmt.Printf("Could not resolve type of variable")
 }
 
+//ExpressionAbortError is used when an expression ends abruptly when another token is expected
+func ExpressionAbortError() {
+	fmt.Printf("Expected another expression token. Got none")
+}
+
 //ExpectedExpressionError is used when an expression is expected but none are given
 func ExpectedExpressionError() {
 	fmt.Printf("Expected expression. got nothing instead")
