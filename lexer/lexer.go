@@ -102,6 +102,8 @@ func (l *Lexer) Lex() {
 			fallthrough
 		case "double_dot":
 			fallthrough
+		case "exponent":
+			fallthrough
 		case "semicolon":
 			l.advance()
 		case "undefined_symbol":

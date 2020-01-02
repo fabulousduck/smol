@@ -33,6 +33,7 @@ func determineType(character string) string {
 		"less_than":         []string{"<"},
 		"comma":             []string{","},
 		"greater_than":      []string{">"},
+		"exponent":          []string{"^"},
 		"left_parenthesis":  []string{"("},
 		"right_parenthesis": []string{")"},
 		"semicolon":         []string{";"},
@@ -111,32 +112,41 @@ func getKeyword(token *Token) string {
 }
 
 //GetOperatorAttributes returns the precedance and associativity of an operator
-func GetOperatorAttributes(operator string) (OperatorAttributes, bool) {
+func GetOperatorAttributes(operator string) OperatorAttributes {
 	operatorAttributeMap := map[string]OperatorAttributes{
+		"left_parenthesis":  {11, "left"}, // (
+		"right_parenthesis": {11, "left"}, // )
 		"less_than":         {6, "left"},  // <
 		"greater_than":      {6, "left"},  // >
 		"exponent":          {4, "right"}, // ^
-		"slash":             {3, "left"},  // /
+		"division":          {3, "left"},  // /
 		"star":              {3, "left"},  // *
 		"plus":              {2, "left"},  // +
 		"dash":              {2, "left"},  // -
-		"left_parenthesis":  {1, "left"},  // (
-		"right_parenthesis": {1, "left"},  // )
 	}
 
 	if val, ok := operatorAttributeMap[operator]; ok {
-		return val, true
+		return val
 	}
 
-	//this is only here because otherwise golang will cry about no return value even though this is unreachable code
-	return OperatorAttributes{}, false
+	//we assume its a variable if its not found
+	//this works since functions and variables have the same associativity and precedance
+	return OperatorAttributes{14, "left"}
 }
 
-//IsOperator checks whether a given character is an operator
-//wraps around GetOperatorAttributes method
-func IsOperator(character string) bool {
-	_, isOperator := GetOperatorAttributes(character)
-	return isOperator
+//GetPrec is a simple wrapper for GetOperatorAttributes but only returns the precedance
+func GetPrec(operator string) int {
+	return GetOperatorAttributes(operator).Precedance
+}
+
+//HasHigherPrec is a simple check for checking if lhs has a bigger precednce than rhs
+func (lhs Token) HasHigherPrec(rhs Token) bool {
+	operatorA := GetOperatorAttributes(lhs.Type)
+	operatorB := GetOperatorAttributes(rhs.Type)
+	hasPrec := (operatorB.Associativity == "left" && operatorB.Precedance <= operatorA.Precedance) ||
+		(operatorB.Associativity == "right" && operatorB.Precedance < operatorA.Precedance)
+
+	return hasPrec
 }
 
 //DetermineStringType will determine the type of a given string

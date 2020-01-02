@@ -608,10 +608,7 @@ func (p *Parser) createVariable() *Variable {
 	p.expectCurrent([]string{"equals"})
 	p.advance()
 
-	expression := p.readExpression()
-
-	variable.ValueExpression = *expression
-
+	variable.ValueExpression = p.readExpression()
 	return variable
 }
 
@@ -655,7 +652,8 @@ func (p *Parser) expectNext(expectedValues []string) {
 }
 
 func (p *Parser) nextExists() bool {
-	return p.TokensConsumed < len(p.Tokens)
+	//+1 because we have to account for arrays starting at 0
+	return p.TokensConsumed+1 < len(p.Tokens)
 }
 
 func (p *Parser) currentToken() lexer.Token {

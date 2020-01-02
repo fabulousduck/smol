@@ -1,9 +1,9 @@
 package ast
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
@@ -13,9 +13,8 @@ type Expression struct {
 	Nodes []Node
 }
 
-func createExpression(nodes []Node) *Expression {
-	expression := new(Expression)
-	expression.Nodes = nodes
+func createExpression(nodes []Node) Expression {
+	expression := Expression{Nodes: nodes}
 	return expression
 }
 
@@ -40,6 +39,25 @@ func createVariableReference(name string) VariableReference {
 	return VariableReference{name: name}
 }
 
+//Operator is a symbol that operates on one or more sides
+type Operator struct {
+	value string
+}
+
+//GetNodeName is a generic function that allows subtypes of a node in the AST
+func (o Operator) GetNodeName() string {
+	return "operator"
+}
+
+//Symbol is a character that is not and operator or a latin character / numeral
+type Symbol struct {
+	value string
+}
+
+func (s Symbol) GetNodeName() string {
+	return "symbol"
+}
+
 //Litteral is a node type for static values such as integers and string litterals
 type Litteral struct {
 	ltype string
@@ -57,30 +75,34 @@ func CreateLitteral(value string, ltype string) Litteral {
 	return litteral
 }
 
+//CreateSymbol takes a string and returns it wrapped in a node like
+func CreateSymbol(value string) Symbol {
+	return Symbol{value: value}
+}
+
 /*
 readExpression turns a set of nodes into a expression using shunting yard
 */
-func (p *Parser) readExpression() *Expression {
-	expression := new(Expression)
+func (p *Parser) readExpression() Expression {
 	expressionLine := p.currentToken().Line
 	expressionTokens := []lexer.Token{}
 
-	fmt.Printf("expression line: %d\n", expressionLine)
-
+	//gather all tokens of the expression into a slice
 	for currTok := p.currentToken(); currTok.Line == expressionLine; currTok = p.currentToken() {
 		expressionTokens = append(expressionTokens, currTok)
 		p.advance()
 		if !p.nextExists() {
+			expressionTokens = append(expressionTokens, p.currentToken())
 			break
 		}
 	}
-
 	expressionParser := NewParser(p.Filename, expressionTokens)
 
 	switch len(expressionTokens) {
 	case 0:
 		errors.ExpectedExpressionError()
 		os.Exit(65)
+		break
 	case 1:
 		if lexer.IsLitteral(expressionTokens[0]) {
 			litteralToken := expressionTokens[0]
@@ -88,48 +110,115 @@ func (p *Parser) readExpression() *Expression {
 		}
 		errors.InvalidOperatorError()
 		os.Exit(65)
+		break
 	default:
 		return expressionParser.parseExpression()
 	}
 
-	return expression
+	return createExpression(expressionParser.Ast)
 }
 
 /*
 readExpressionUntil allows for parsing and expression with a defined
 symbol as an end boundary
 */
-func (p *Parser) readExpressionUntil() *Expression {
+func (p *Parser) readExpressionUntil() Expression {
 	expressionAST := createExpression([]Node{})
 
 	return expressionAST
 }
 
-func (p *Parser) parseExpression() *Expression {
-	operatorStack := []Node{}
-	outputQueue := []Node{}
+func transformTokensToTypes(tokens []lexer.Token) []Node {
+	var nodes []Node
+	//TOOD
+	return nodes
+}
 
+func (p *Parser) parseExpression() Expression {
+	operatorStack := []lexer.Token{}
+	outputQueue := []lexer.Token{}
 	for p.TokensConsumed < len(p.Tokens) {
 		token := p.currentToken()
-
 		switch token.Type {
 		case "integer":
-			outputQueue = append(operatorStack, CreateLitteral(token.Value, token.Type))
+			outputQueue = append(outputQueue, token)
 			p.advance()
 			break
-		case "string":
-			//its a function
-			if p.nextToken().Type == "left_parenthesis" {
-				outputQueue = append(outputQueue, p.createFunctionCall())
-				break
+		case "less_than":
+			fallthrough
+		case "greater_than":
+			break
+		case "exponent":
+			fallthrough
+		case "division":
+			fallthrough
+		case "star":
+			fallthrough
+		case "plus":
+			fallthrough
+		case "dash":
+			if len(operatorStack) >= 1 {
+				for len(operatorStack) != 0 {
+
+					stackTopAttributes := lexer.GetOperatorAttributes(top(operatorStack).Type)
+					tokenAttributes := lexer.GetOperatorAttributes(token.Type)
+					hasHigherPrec := top(operatorStack).HasHigherPrec(token)
+					eqRule := stackTopAttributes.Precedance == tokenAttributes.Precedance && tokenAttributes.Associativity == "left"
+					parenNotTop := top(operatorStack).Type != "left_parenthesis"
+
+					if (hasHigherPrec || eqRule) && parenNotTop {
+
+						outputQueue = append(outputQueue, top(operatorStack))
+						operatorStack = (operatorStack)[:len(operatorStack)-1]
+
+					} else {
+
+						break
+
+					}
+				}
 			}
-			//we treat variable names the same as integers because all other variable values are not allowed in expressions
-			operatorStack = append(operatorStack, createVariableReference(token.Value))
+			operatorStack = append(operatorStack, token)
+			p.advance()
+			break
+		case "left_parenthesis":
+			operatorStack = append(operatorStack, token)
+			p.advance()
+			break
+		case "right_parenthesis":
+			for top(operatorStack).Value != "(" {
+				outputQueue = append(outputQueue, top(operatorStack))
+				operatorStack = (operatorStack)[:len(operatorStack)-1]
+			}
+			if top(operatorStack).Value == "(" {
+				operatorStack = (operatorStack)[:len(operatorStack)-1]
+			}
+			p.advance()
+			break
+		case "character":
+			fallthrough
+		case "string":
+			if p.nextExists() && p.nextToken().Type == "left_parenthesis" {
+				outputQueue = append(outputQueue, token)
+			} else {
+				operatorStack = append(operatorStack, token)
+			}
+
 			p.advance()
 			break
 
 		}
 	}
+	if len(operatorStack) != 0 {
+		for i := len(operatorStack); 0 < i; i-- {
+			outputQueue = append(outputQueue, operatorStack[i-1])
+			operatorStack = (operatorStack)[:len(operatorStack)-1]
+		}
+	}
+	spew.Dump(outputQueue)
+	return createExpression(transformTokensToTypes(outputQueue))
+}
 
-	return createExpression(outputQueue)
+func top(sl []lexer.Token) lexer.Token {
+	return sl[len(sl)-1]
 }
