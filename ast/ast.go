@@ -130,29 +130,6 @@ type Variable struct {
 	ValueExpression Expression
 }
 
-//WhileNot is the while loop of smol. It will keep executing its body until LHS equals RHS
-type WhileNot struct {
-	LHS  Node
-	RHS  Node
-	Body []Node
-}
-
-func (whileNot WhileNot) GetNodeName() string {
-	return "whileNot"
-}
-
-//Comparison is an expression type that is used when an operation like GT, LT, EQ or NEQ is called
-type Comparison struct {
-	Operator string
-	LHS      Node
-	RHS      Node
-	Body     []Node
-}
-
-func (c Comparison) GetNodeName() string {
-	return "comparison"
-}
-
 //SetStatement is used when a value needs to be set to a variable. Instructions that could make use of this are SET
 type SetStatement struct {
 	MHS Node
@@ -251,14 +228,6 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 			} else {
 				nodes = append(nodes, p.createDirectOperation())
 			}
-		case "equals":
-			fallthrough
-		case "not_equals":
-			fallthrough
-		case "less_than":
-			fallthrough
-		case "greater_than":
-			nodes = append(nodes, p.createComparison())
 		case "free":
 			p.advance()
 			nodes = append(nodes, p.createFreeStatement())
@@ -401,41 +370,6 @@ func (p *Parser) createSwitchStatement() *SwitchStatement {
 	p.advanceN(consumed)
 
 	return st
-}
-
-func (p *Parser) createComparison() *Comparison {
-	ch := new(Comparison)
-
-	ch.Operator = p.currentToken().Value
-	p.advance()
-
-	p.expectCurrent([]string{"left_parenthesis"})
-	p.advance()
-
-	p.expectCurrent([]string{"character", "string", "integer"})
-	ch.LHS = createLit(p.currentToken())
-	p.advance()
-
-	p.expectCurrent([]string{"comma"})
-	p.advance()
-
-	p.expectCurrent([]string{"character", "string", "integer"})
-	ch.RHS = createLit(p.currentToken())
-	p.advance()
-
-	p.expectCurrent([]string{"right_parenthesis"})
-	p.advance()
-
-	p.expectCurrent([]string{"double_dot"})
-	p.advance()
-
-	comparisonParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
-
-	body, consumed := comparisonParser.Parse("")
-	ch.Body = body
-	p.advanceN(consumed)
-
-	return ch
 }
 
 func (p *Parser) createFunctionCall() *FunctionCall {

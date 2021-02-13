@@ -100,8 +100,6 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "freeStatement":
 			instruction := AST[i].(*ast.FreeStatement)
 			g.doFreeInstruction(instruction)
-		case "comparison":
-
 		case "switchStatement":
 
 		case "plotStatement":
