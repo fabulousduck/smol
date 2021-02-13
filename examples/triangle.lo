@@ -1,8 +1,8 @@
 def print_line_stars(length):
-    mem counter 0;
-    mem star 43;
+    Uint32 counter = 0
+    Uint32 star = 43
     whileNot(counter, length):
         print(star)
         counter++
     end
-    
+end

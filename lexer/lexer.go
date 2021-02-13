@@ -73,6 +73,10 @@ func (l *Lexer) Lex() {
 				currTok.Value = "++"
 				currTok.Type = "direct_variable_operation"
 				l.advance()
+			} else if l.peek() == "=" {
+				currTok.Value = "+="
+				currTok.Type = "direct_variable_operation"
+				l.advance()
 			}
 			l.advance()
 		case "dash":

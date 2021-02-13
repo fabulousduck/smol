@@ -3,17 +3,16 @@ package ast
 import (
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
 
 //Expression contains nodes in RPN form
 type Expression struct {
-	Nodes []Node
+	Nodes []lexer.Token
 }
 
-func createExpression(nodes []Node) Expression {
+func createExpression(nodes []lexer.Token) Expression {
 	expression := Expression{Nodes: nodes}
 	return expression
 }
@@ -54,6 +53,7 @@ type Symbol struct {
 	value string
 }
 
+//GetNodeName is a generic function that allows subtypes of a node in the AST
 func (s Symbol) GetNodeName() string {
 	return "symbol"
 }
@@ -106,7 +106,7 @@ func (p *Parser) readExpression() Expression {
 	case 1:
 		if lexer.IsLitteral(expressionTokens[0]) {
 			litteralToken := expressionTokens[0]
-			return createExpression([]Node{CreateLitteral(litteralToken.Value, litteralToken.Type)})
+			return createExpression([]lexer.Token{litteralToken})
 		}
 		errors.InvalidOperatorError()
 		os.Exit(65)
@@ -115,23 +115,58 @@ func (p *Parser) readExpression() Expression {
 		return expressionParser.parseExpression()
 	}
 
-	return createExpression(expressionParser.Ast)
+	return createExpression([]lexer.Token{})
 }
 
 /*
 readExpressionUntil allows for parsing and expression with a defined
-symbol as an end boundary
+symbol as an end boundary.
+
+This is used for when we parse inside of function calls
 */
-func (p *Parser) readExpressionUntil() Expression {
-	expressionAST := createExpression([]Node{})
+func (p *Parser) readExpressionUntil(tokValues []string) (Expression, string) {
+	expressionTokens := []lexer.Token{}
+	fnContext := false
+	delimFound := ""
 
-	return expressionAST
-}
+	for i := 0; i < len(p.Tokens); i++ {
+		if containsStr(tokValues, p.currentToken().Value) && !fnContext {
+			delimFound = p.currentToken().Value
+			break
+		}
+		if p.currentToken().Value == "(" {
+			fnContext = true
+		}
 
-func transformTokensToTypes(tokens []lexer.Token) []Node {
-	var nodes []Node
-	//TOOD
-	return nodes
+		if p.currentToken().Value == ")" && fnContext {
+			fnContext = false
+		}
+		expressionTokens = append(expressionTokens, p.currentToken())
+		p.advance()
+
+	}
+
+	expressionParser := NewParser(p.Filename, expressionTokens)
+	expressionParser.Tokens = expressionTokens
+
+	switch len(expressionTokens) {
+	case 0:
+		errors.ExpectedExpressionError()
+		os.Exit(65)
+		break
+	case 1:
+		if lexer.IsLitteral(expressionTokens[0]) {
+			return createExpression([]lexer.Token{expressionTokens[0]}), delimFound
+		}
+
+		errors.InvalidOperatorError()
+		os.Exit(65)
+		break
+	default:
+		return expressionParser.parseExpression(), delimFound
+	}
+
+	return createExpression([]lexer.Token{}), delimFound
 }
 
 func (p *Parser) parseExpression() Expression {
@@ -140,6 +175,9 @@ func (p *Parser) parseExpression() Expression {
 	for p.TokensConsumed < len(p.Tokens) {
 		token := p.currentToken()
 		switch token.Type {
+		case "comma":
+			p.advance()
+			break
 		case "integer":
 			outputQueue = append(outputQueue, token)
 			p.advance()
@@ -172,9 +210,7 @@ func (p *Parser) parseExpression() Expression {
 						operatorStack = (operatorStack)[:len(operatorStack)-1]
 
 					} else {
-
 						break
-
 					}
 				}
 			}
@@ -215,10 +251,19 @@ func (p *Parser) parseExpression() Expression {
 			operatorStack = (operatorStack)[:len(operatorStack)-1]
 		}
 	}
-	spew.Dump(outputQueue)
-	return createExpression(transformTokensToTypes(outputQueue))
+
+	return createExpression(outputQueue)
 }
 
 func top(sl []lexer.Token) lexer.Token {
 	return sl[len(sl)-1]
+}
+
+func containsStr(a []string, b string) bool {
+	for i := 0; i < len(a); i++ {
+		if a[i] == b {
+			return true
+		}
+	}
+	return false
 }

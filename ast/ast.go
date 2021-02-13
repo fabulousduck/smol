@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/fabulousduck/proto/src/types"
 	"github.com/fabulousduck/smol/lexer"
 )
@@ -164,14 +163,6 @@ func (ss SetStatement) GetNodeName() string {
 	return "setStatement"
 }
 
-type UseStatement struct {
-	name string
-}
-
-func (us UseStatement) GetNodeName() string {
-	return "useStatement"
-}
-
 //Statement is a general statement container for all other statements that do not fall under math and logic for example MEM
 type Statement struct {
 	LHS string
@@ -223,16 +214,18 @@ func NewParser(filename string, tokens []lexer.Token) *Parser {
 }
 
 //Parse takes a set of tokens and generates an AST from them
-func (p *Parser) Parse() ([]Node, int) {
+func (p *Parser) Parse(delim string) ([]Node, int) {
 	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
+		if delim != "" && p.currentToken().Type == delim {
+			p.advance()
+			return nodes, p.TokensConsumed
+		}
+
 		switch p.currentToken().Type {
 		case "plot":
 			p.advance()
 			nodes = append(nodes, p.createPlot())
-		case "use":
-			p.advance()
-			nodes = append(nodes, p.createUse())
 		case "variable_type":
 			nodes = append(nodes, p.createVariable())
 		case "function_definition":
@@ -308,7 +301,6 @@ func (p *Parser) createDirectOperation() *DirectOperation {
 
 func (p *Parser) createPrintCall() *PrintCall {
 	pc := new(PrintCall)
-
 	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
@@ -344,19 +336,7 @@ func (p *Parser) createPlot() *PlotStatement {
 	return ps
 }
 
-func (p *Parser) createUse() *UseStatement {
-	us := new(UseStatement)
-
-	p.expectCurrent([]string{"string"})
-	us.name = p.currentToken().Value
-	p.advance()
-
-	p.expectCurrent([]string{"semicolon"})
-	p.advance()
-
-	return us
-}
-
+//TODO: make this into a parenthesized function
 func (p *Parser) createFreeStatement() *FreeStatement {
 	r := new(FreeStatement)
 
@@ -374,7 +354,7 @@ func (p *Parser) createEOSStatement() *Eos {
 	p.advance()
 
 	eosParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
-	body, consumed := eosParser.Parse()
+	body, consumed := eosParser.Parse("")
 	eos.Body = body
 
 	p.advanceN(consumed)
@@ -393,7 +373,7 @@ func (p *Parser) createSwitchCase() *SwitchCase {
 	p.advance()
 
 	switchParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
-	body, consumed := switchParser.Parse()
+	body, consumed := switchParser.Parse("")
 	sc.Body = body
 
 	p.advanceN(consumed)
@@ -419,7 +399,7 @@ func (p *Parser) createSwitchStatement() *SwitchStatement {
 
 	switchParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
 
-	body, consumed := switchParser.Parse()
+	body, consumed := switchParser.Parse("")
 	st.Cases = body
 	p.advanceN(consumed)
 
@@ -454,7 +434,7 @@ func (p *Parser) createComparison() *Comparison {
 
 	comparisonParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
 
-	body, consumed := comparisonParser.Parse()
+	body, consumed := comparisonParser.Parse("")
 	ch.Body = body
 	p.advanceN(consumed)
 
@@ -472,15 +452,17 @@ func (p *Parser) createFunctionCall() *FunctionCall {
 	p.advance()
 
 	for currentToken := p.currentToken(); currentToken.Type != "right_parenthesis"; currentToken = p.currentToken() {
-		if currentToken.Type == "comma" {
+		exprList, delimFound := p.readExpressionUntil([]string{",", ")"})
+		fc.Args = append(fc.Args, exprList)
+		if delimFound == "," {
 			p.advance()
 			continue
 		}
-		fc.Args = append(fc.Args, p.readExpression())
 		p.advance()
+		break
 	}
+	spew.Dump(fc)
 
-	p.advance()
 	return fc
 }
 
@@ -542,7 +524,7 @@ func (p *Parser) createWhileNot() *WhileNot {
 
 	whileNotParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
 
-	body, consumed := whileNotParser.Parse()
+	body, consumed := whileNotParser.Parse("")
 	whileNot.Body = body
 	p.advanceN(consumed)
 
@@ -550,6 +532,7 @@ func (p *Parser) createWhileNot() *WhileNot {
 }
 
 func (p *Parser) createFunction() *Function {
+
 	f := new(Function)
 
 	p.expectCurrent([]string{"string", "character"})
@@ -561,7 +544,6 @@ func (p *Parser) createFunction() *Function {
 
 	for currentToken := p.currentToken(); currentToken.Type != "right_parenthesis"; currentToken = p.currentToken() {
 		p.expectCurrent([]string{"string", "character", "comma"})
-
 		//we expect there to be another parameter when we see a comma
 		if currentToken.Type == "comma" {
 			p.expectNext([]string{"character", "string"})
@@ -579,11 +561,9 @@ func (p *Parser) createFunction() *Function {
 	p.advance()
 
 	functionParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
-
-	body, consumed := functionParser.Parse()
+	body, consumed := functionParser.Parse("")
 	f.Body = body
 	p.advanceN(consumed)
-
 	return f
 }
 
@@ -607,7 +587,6 @@ func (p *Parser) createVariable() *Variable {
 
 	p.expectCurrent([]string{"equals"})
 	p.advance()
-
 	variable.ValueExpression = p.readExpression()
 	return variable
 }
@@ -637,7 +616,6 @@ func (p *Parser) expectCurrent(expectedValues []string) {
 	currentToken := p.currentToken()
 
 	if !types.Contains(currentToken.Type, expectedValues) {
-		spew.Dump(currentToken)
 		lexer.ThrowSemanticError(&currentToken, expectedValues, p.Filename)
 		os.Exit(65)
 	}

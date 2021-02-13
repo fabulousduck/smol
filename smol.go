@@ -42,7 +42,7 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	p := ast.NewParser(filename, l.Tokens)
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
-	p.Ast, _ = p.Parse()
+	p.Ast, _ = p.Parse("")
 
 	if compile {
 		g := ir.NewGenerator(filename)
@@ -69,6 +69,6 @@ func (smol *Smol) RunRepl(sourceCode string, filename string, statefullInterpret
 	})
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
-	p.Ast, _ = p.Parse()
+	p.Ast, _ = p.Parse("")
 	statefullInterpreter.Interpret(p.Ast)
 }
