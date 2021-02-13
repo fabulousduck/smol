@@ -231,9 +231,6 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 		case "function_definition":
 			p.advance()
 			nodes = append(nodes, p.createFunction())
-		case "while_not":
-			p.advance()
-			nodes = append(nodes, p.createWhileNot())
 		case "print":
 			p.advance()
 			nodes = append(nodes, p.createPrintCall())
@@ -496,39 +493,6 @@ func (p *Parser) createStatement(lhs string) *Statement {
 	p.advance()
 
 	return s
-}
-
-func (p *Parser) createWhileNot() *WhileNot {
-	whileNot := new(WhileNot)
-
-	p.expectCurrent([]string{"left_parenthesis"})
-	p.advance()
-
-	p.expectCurrent([]string{"character", "integer", "string"})
-
-	whileNot.LHS = createLit(p.currentToken())
-	p.advance()
-
-	p.expectCurrent([]string{"comma"})
-	p.advance()
-
-	p.expectCurrent([]string{"character", "integer", "string"})
-	whileNot.RHS = createLit(p.currentToken())
-	p.advance()
-
-	p.expectCurrent([]string{"right_parenthesis"})
-	p.advance()
-
-	p.expectCurrent([]string{"double_dot"})
-	p.advance()
-
-	whileNotParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
-
-	body, consumed := whileNotParser.Parse("")
-	whileNot.Body = body
-	p.advanceN(consumed)
-
-	return whileNot
 }
 
 func (p *Parser) createFunction() *Function {

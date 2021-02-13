@@ -82,7 +82,6 @@ func containsEither(names []string, list []string) bool {
 func getKeyword(token *Token) string {
 	keywords := map[string][]string{
 		"function_definition": []string{"def"},
-		"while_not":           []string{"whileNot"},
 		"boolean_keyword":     []string{"True", "False"},
 		"variable_type":       []string{"String", "Bool", "Uint32", "Uint64"},
 		"print":               []string{"print"},
