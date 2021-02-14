@@ -1,6 +1,6 @@
 
 # Smol
-Smol interpreted language.
+Smol interpreted and compiled language.
 
 This is a small educational language I made with the primary intent <br>
 to help new students get accustomed to programming without having to know<br>
