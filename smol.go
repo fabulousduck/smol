@@ -36,7 +36,7 @@ func (smol *Smol) RunFile(filename string, compile bool) {
 }
 
 //Run exectues a given script
-func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
+func (smol *Smol) Run(sourceCode string, filename string, compile bool, target string) {
 	l := lexer.NewLexer(filename, sourceCode)
 	l.Lex()
 	p := ast.NewParser(filename, l.Tokens)
@@ -45,7 +45,7 @@ func (smol *Smol) Run(sourceCode string, filename string, compile bool) {
 	p.Ast, _ = p.Parse("")
 
 	if compile {
-		g := ir.NewGenerator(filename)
+		g := ir.NewGenerator(filename, target)
 		g.Generate(p.Ast)
 		bg := bytecode.Init(g, filename)
 		bg.CreateRom()

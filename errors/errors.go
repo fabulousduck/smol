@@ -20,6 +20,10 @@ func ConcatVariables(vars []string, sep string) string {
 	return currentString.String()
 }
 
+func UnknownCPULayoutError(name string) {
+	fmt.Printf("unknown CPU compile target \"%s\"", name)
+}
+
 //UnknownFunctionName is an error when a lookup on a function is done but none could be found
 func UnknownFunctionName(name string) {
 	fmt.Printf("tried to call unknown function: %s\n", name)

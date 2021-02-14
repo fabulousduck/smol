@@ -12,6 +12,23 @@ import (
 	"github.com/google/uuid"
 )
 
+//CPULayout are CPU specific variables that the ir needs.
+//These are things like memory boundries and registers
+type CPULayout map[string]int
+
+//CH8CPULayout has specific offsets and variables for the CHIP8 CPU
+var CH8CPULayout = CPULayout{
+	"functionSpaceStart": 0xA00,
+	"memorySize":         4094 - 0x200, //0x200 is reserved space on the CH8
+	"IRegisterIndex":     0xF,
+	"plotXRegister":      0xE,
+	"plotYRegister":      0xD,
+	"BNEXRegister":       0xC,
+}
+
+//Z80Layout has specific offsets and variables for the Z80 CPU
+var Z80Layout = CPULayout{}
+
 type instruction interface {
 	GetInstructionName() string
 	Opcodeable() bool
@@ -21,31 +38,41 @@ type instruction interface {
 //Generator contains all the basic information needed
 //to transform an AST into a chip-8 ROM
 type Generator struct {
-	filename                                     string
-	functionAddrTable                            functionaddrtable.FunctionAddrTable
-	nodesConsumed                                int
-	memorySize                                   int
-	functionSpaceStart                           int
-	IRegisterIndex, plotXRegister, plotYRegister int
-	BNEXRegister                                 int
-	Ir                                           []instruction
-	memTable                                     memtable.MemTable
-	regTable                                     registertable.RegisterTable
+	filename          string
+	target            string
+	nodesConsumed     int
+	targetCPU         CPULayout
+	Ir                []instruction
+	memTable          memtable.MemTable
+	regTable          registertable.RegisterTable
+	functionAddrTable functionaddrtable.FunctionAddrTable
+}
+
+func getCPULayout(name string) CPULayout {
+
+	switch name {
+	case "CH8":
+		return CH8CPULayout
+		break
+	case "Z80":
+		return Z80Layout
+	}
+
+	errors.UnknownCPULayoutError(name)
+	os.Exit(65)
+	//this is just there so Go is happy about returns
+	return CH8CPULayout
 }
 
 //NewGenerator inits the generator
-func NewGenerator(filename string) *Generator {
+func NewGenerator(filename string, target string) *Generator {
 	g := new(Generator)
 	g.memTable = make(memtable.MemTable)
 	g.regTable = make(registertable.RegisterTable)
 	g.filename = filename
 	g.nodesConsumed = 0
-	g.functionSpaceStart = 0xA00
-	g.memorySize = 4096 - 0x200 //0x200 is reserved space that we cannot use
-	g.IRegisterIndex = 0xF
-	g.plotXRegister = 0xE
-	g.plotYRegister = 0xD
-	g.BNEXRegister = 0xC
+	g.target = target
+	g.targetCPU = getCPULayout(target)
 	g.regTable.Init()
 
 	return g
