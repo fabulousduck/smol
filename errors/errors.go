@@ -50,6 +50,21 @@ func UnresolvableVariableValueError() {
 	fmt.Printf("Could not resolve type of variable")
 }
 
+//ExpressionAbortError is used when an expression ends abruptly when another token is expected
+func ExpressionAbortError() {
+	fmt.Printf("Expected another expression token. Got none")
+}
+
+//ExpectedExpressionError is used when an expression is expected but none are given
+func ExpectedExpressionError() {
+	fmt.Printf("Expected expression. got nothing instead")
+}
+
+//InvalidOperatorError is used when the attributes of an unknown operator is requested
+func InvalidOperatorError() {
+	fmt.Printf("Given operator does not have any attributes\n")
+}
+
 //LitteralFree error can be thrown when the programmer wants to free a number litteral
 func LitteralFree() {
 	fmt.Printf("Cannot release a number litteral\n")
@@ -72,8 +87,8 @@ func LitIncrementError() {
 }
 
 //UndefinedFunctionReferenceError can be thrown when the script tries to reference an error that is not defined
-func UndefinedFunctionReferenceError(name string) {
-	fmt.Printf("Cannot find function with name: %s\n", name)
+func UndefinedFunctionOrStringReferenceError(name string) {
+	fmt.Printf("Cannot find function or string with name: %s\n", name)
 }
 
 //IncorrectFunctionParamCountError can be throw when more or less arguments are provided to a function than it asks for. We dont support argument defaulting so this is usefull

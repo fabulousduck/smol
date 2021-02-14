@@ -1,22 +1,6 @@
-Uint32 a 0;
-Uint32 b 10;
+Uint32 a = 0
+Uint32 b = 10
 
-eq(b,b):
-    print(a)
-    break()
-end
-
-neq(a,b):
-    print(a)
-    break()
-end
-
-lt(a,b):
-    print(a)
-    break()
-end
-
-gt(b,a):
-    print(b)
-    break()
+if(a < b):
+    print("a < b")
 end

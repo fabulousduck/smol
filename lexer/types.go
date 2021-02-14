@@ -6,20 +6,41 @@ import (
 
 type typename map[string]string
 
+//OperatorAttributes wraps the precedance and Associativity of a operator
+type OperatorAttributes struct {
+	Precedance    int
+	Associativity string
+}
+
+//IsLitteral checks if a given token is a litteral type
+func IsLitteral(token Token) bool {
+	litteralTypes := []string{"character", "string", "integer", "string_litteral"}
+
+	for _, litteral := range litteralTypes {
+		if token.Type == litteral {
+			return true
+		}
+	}
+	return false
+}
+
 func determineType(character string) string {
 
 	usableChar := strings.ToLower(character)
 	types := map[string][]string{
 		"character":         []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "_"},
 		"integer":           []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
-		"left_arrow":        []string{"<"},
+		"less_than":         []string{"<"},
 		"comma":             []string{","},
-		"right_arrow":       []string{">"},
+		"greater_than":      []string{">"},
+		"exponent":          []string{"^"},
 		"left_parenthesis":  []string{"("},
 		"right_parenthesis": []string{")"},
 		"semicolon":         []string{";"},
 		"plus":              []string{"+"},
 		"double_quote":      []string{"\""},
+		"star":              []string{"*"},
+		"division":          []string{"/"},
 		"equals":            []string{"="},
 		"dash":              []string{"-"},
 		"left_bracket":      []string{"["},
@@ -61,16 +82,12 @@ func containsEither(names []string, list []string) bool {
 func getKeyword(token *Token) string {
 	keywords := map[string][]string{
 		"function_definition": []string{"def"},
-		"while_not":           []string{"whileNot"},
 		"boolean_keyword":     []string{"True", "False"},
 		"variable_type":       []string{"String", "Bool", "Uint32", "Uint64"},
 		"print":               []string{"print"},
 		"close_block":         []string{"end"},
 		"set_variable":        []string{"set"},
-		"equals":              []string{"eq"},
-		"not_equals":          []string{"neq"},
-		"less_than":           []string{"lt"},
-		"greater_than":        []string{"gt"},
+		"if_statement":        []string{"if"},
 		"switch":              []string{"switch"},
 		"case":                []string{"case"},
 		"end_of_switch":       []string{"default"},
@@ -88,6 +105,44 @@ func getKeyword(token *Token) string {
 		return "string"
 	}
 	return token.Type
+}
+
+//GetOperatorAttributes returns the precedance and associativity of an operator
+func GetOperatorAttributes(operator string) OperatorAttributes {
+	operatorAttributeMap := map[string]OperatorAttributes{
+		"left_parenthesis":  {11, "left"}, // (
+		"right_parenthesis": {11, "left"}, // )
+		"less_than":         {6, "left"},  // <
+		"greater_than":      {6, "left"},  // >
+		"exponent":          {4, "right"}, // ^
+		"division":          {3, "left"},  // /
+		"star":              {3, "left"},  // *
+		"plus":              {2, "left"},  // +
+		"dash":              {2, "left"},  // -
+	}
+
+	if val, ok := operatorAttributeMap[operator]; ok {
+		return val
+	}
+
+	//we assume its a variable if its not found
+	//this works since functions and variables have the same associativity and precedance
+	return OperatorAttributes{14, "left"}
+}
+
+//GetPrec is a simple wrapper for GetOperatorAttributes but only returns the precedance
+func GetPrec(operator string) int {
+	return GetOperatorAttributes(operator).Precedance
+}
+
+//HasHigherPrec is a simple check for checking if lhs has a bigger precednce than rhs
+func (lhs Token) HasHigherPrec(rhs Token) bool {
+	operatorA := GetOperatorAttributes(lhs.Type)
+	operatorB := GetOperatorAttributes(rhs.Type)
+	hasPrec := (operatorB.Associativity == "left" && operatorB.Precedance <= operatorA.Precedance) ||
+		(operatorB.Associativity == "right" && operatorB.Precedance < operatorA.Precedance)
+
+	return hasPrec
 }
 
 //DetermineStringType will determine the type of a given string

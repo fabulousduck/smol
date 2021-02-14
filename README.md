@@ -1,17 +1,17 @@
-
 # Smol
 Smol interpreted and compiled language.
 
-This is a small educational language I made with the primary intent <br>
-to help new students get accustomed to programming without having to know<br>
-intricate programming concepts.
+<p align="center">This is a small language i made to have something other than raw assembly to write when i want to make a piece of software for an older system. Right now, to build the system and test it. It only compiles down to Chip-8 opcodes. It has a interpreter too and a REPL if you so wish. In the future i plan to support older chips like the 6502 and the Z80 flavours. 
 
-It is not intended to make sense for a seasoned programmer, but for people who<br>
-are not that familiar with programming yet.
+```asm
+Uint32 a = 0
+Uint32 b = 10
+while(a < b):
+   print("hello world!")
+   a++
+end
+```
 
-It at this point has also become an expiriment to see how well a language that does not have expressions fairs.
-
-And for some reason i made it compile chip-8 ROMS. (wip)
 # Table of contents
 
 * [table of contents](#Table-of-contents)
@@ -126,7 +126,7 @@ Example:
 
 Example:
 ```asm
-mem a 20;
+mem a = 20;
 a--
 print(a)
 ```
@@ -146,7 +146,7 @@ outputs:
 
 Example:
 ```asm
-mem a 20;
+mem a = 20;
 
 print(a)
 ```
@@ -165,7 +165,7 @@ Smol has support for simple functions. The can be defined like so:
 ```asm
 functionName(1,2)
 
-def function_name(paramA,paramB):
+def function_name(a,b):
     print(a)
     print(b)
 end
@@ -181,8 +181,8 @@ Functions do not support return values yet.
 Example:
 
 ```asm
-mem a 30;
-mem b 10;
+mem a = 30;
+mem b = 10;
 
 switch(b):
     case 10: #case
@@ -214,8 +214,8 @@ outputs
 Example: 
 
 ```asm
-mem a 30;
-mem b 10;
+mem a = 30;
+mem b = 10;
 
 switch(b):
     case 10: #case
@@ -241,8 +241,8 @@ outputs
 Example
 
 ```asm
-mem a 100;
-mem b 44;
+mem a = 100;
+mem b = 44;
 
 switch(b): #SWiTch
     case 10:
@@ -273,15 +273,13 @@ outputs
 Example:
 
 ```
-mem a 0;
-mem b 10;
+mem a = 0;
+mem b = 10;
 
 whileNot(a,b):
     print(a)
     a++
 end
-
-print(0)
 ```
 
 outputs
@@ -308,7 +306,7 @@ eq stands for "equals" and checks if `A == B`.
 Example
 
 ```asm
-mem a 10;
+mem a = 10;
 
 eq(a, 10):
     print(a)
@@ -329,7 +327,7 @@ neq stands for "not equals" and checks if `A != B`.
 Example
 
 ```asm
-mem a 11;
+mem a = 11;
 
 neq(a, 10):
     print(a)
@@ -350,7 +348,7 @@ gt stands for "greater than" and checks is `A < B`
 Example
 
 ```asm
-mem a 10;
+mem a = 10;
 
 gt(a, 9):
     print(a)
@@ -370,7 +368,7 @@ lt stands for "less than" and checks if `A < B`
 Example
 
 ```asm
-mem a 10;
+mem a = 10;
 
 lt(a, 11):
     print(a)
@@ -389,7 +387,7 @@ Smol has support for code comments using the `#` symbol.
 
 Example
 ```asm
-mem a 10; #side comment 
+mem a = 10; #side comment 
 
 #top comment
 mem b 20;

@@ -73,6 +73,10 @@ func (l *Lexer) Lex() {
 				currTok.Value = "++"
 				currTok.Type = "direct_variable_operation"
 				l.advance()
+			} else if l.peek() == "=" {
+				currTok.Value = "+="
+				currTok.Type = "direct_variable_operation"
+				l.advance()
 			}
 			l.advance()
 		case "dash":
@@ -82,9 +86,13 @@ func (l *Lexer) Lex() {
 				l.advance()
 			}
 			l.advance()
-		case "left_arrow":
+		case "star":
 			fallthrough
-		case "right_arrow":
+		case "division":
+			fallthrough
+		case "less_than":
+			fallthrough
+		case "greater_than":
 			fallthrough
 		case "comma":
 			fallthrough
@@ -98,10 +106,12 @@ func (l *Lexer) Lex() {
 			fallthrough
 		case "double_dot":
 			fallthrough
+		case "exponent":
+			fallthrough
 		case "semicolon":
 			l.advance()
 		case "undefined_symbol":
-			errors.Report(l.currentLine, l.FileName, "undefined symbol used")
+			errors.Report(l.currentLine, l.FileName, fmt.Sprintf("undefined symbol \"%s\" used", currTok.Value))
 			os.Exit(65)
 		case "newline":
 			l.currentCol = 0
@@ -110,7 +120,6 @@ func (l *Lexer) Lex() {
 			continue
 		case "ignoreable":
 			l.currentCol = 0
-			l.currentLine++
 			l.advance()
 			continue
 		}
