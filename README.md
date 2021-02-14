@@ -1,6 +1,5 @@
-
-<h1 align="center">Smol</h1>
-<p align="center">Smol interpreted language.</p>
+# Smol
+Smol interpreted and compiled language.
 
 <p align="center">This is a small language i made to have something other than raw assembly to write when i want to make a piece of software for an older system. Right now, to build the system and test it. It only compiles down to Chip-8 opcodes. It has a interpreter too and a REPL if you so wish. In the future i plan to support older chips like the 6502 and the Z80 flavours. 
 
