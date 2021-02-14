@@ -87,6 +87,7 @@ func getKeyword(token *Token) string {
 		"print":               []string{"print"},
 		"close_block":         []string{"end"},
 		"set_variable":        []string{"set"},
+		"if_statement":        []string{"if"},
 		"switch":              []string{"switch"},
 		"case":                []string{"case"},
 		"end_of_switch":       []string{"default"},

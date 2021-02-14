@@ -8,6 +8,16 @@ import (
 	"github.com/fabulousduck/smol/lexer"
 )
 
+//IfStatement is a conditional block that has an expression and a body
+type IfStatement struct {
+	Condition Node
+	Body      []Node
+}
+
+func (i IfStatement) GetNodeName() string {
+	return "IfStatement"
+}
+
 //PlotStatement is a statement that contains all info needed to draw a pixel to the screen
 type PlotStatement struct {
 	X, Y Node
@@ -38,7 +48,6 @@ func (do DirectOperation) GetNodeName() string {
 //Node is a wrapper interface that AST nodes can implement
 type Node interface {
 	GetNodeName() string //GetNodeName Gets the identifier of a AST node describing what it is
-
 }
 
 //StringLit represents a string litteral
@@ -214,6 +223,10 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 		case "set_variable":
 			p.advance()
 			nodes = append(nodes, p.createSetStatement())
+
+		case "if_statement":
+			p.advance()
+			nodes = append(nodes, p.createIfStatement())
 		case "close_block":
 			p.advance()
 			return nodes, p.TokensConsumed
@@ -252,6 +265,30 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 	return nodes, p.TokensConsumed
 }
 
+func (p *Parser) createIfStatement() *IfStatement {
+	ifStatement := new(IfStatement)
+
+	p.expectCurrent([]string{"left_parenthesis"})
+	p.advance()
+
+	condition, _ := p.readExpressionUntil([]string{")"})
+	spew.Dump(condition)
+	ifStatement.Condition = condition
+	p.advance()
+
+	p.expectCurrent([]string{"double_dot"})
+	p.advance()
+
+	ifBodyParser := NewParser(p.Filename, p.Tokens[p.TokensConsumed:])
+	body, consumed := ifBodyParser.Parse("")
+	ifStatement.Body = body
+	p.advanceN(consumed)
+
+	spew.Dump(ifStatement)
+
+	return ifStatement
+}
+
 func (p *Parser) createDirectOperation() *DirectOperation {
 	do := new(DirectOperation)
 
@@ -270,7 +307,7 @@ func (p *Parser) createPrintCall() *PrintCall {
 	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
-	p.expectCurrent([]string{"character", "string", "integer"})
+	p.expectCurrent([]string{"character", "string", "integer", "string_litteral"})
 	pc.Printable = createLit(p.currentToken())
 	p.advance()
 
@@ -551,4 +588,22 @@ func (p *Parser) advanceN(n int) {
 //NodeIsVariable allows for nice statements like if NodeIsVariable(node) {}
 func NodeIsVariable(node Node) bool {
 	return node.GetNodeName() == "statVar"
+}
+
+//GetAllocationType determines if a type must be stack or heap allocated
+func (v *Variable) GetAllocationType() string {
+	types := map[string]string{
+		"Uint16": "stack",
+		"Uint32": "stack",
+		"Uint64": "stack",
+		"String": "heap",
+		"Bool":   "stack",
+		"Char":   "stack",
+	}
+
+	if val, ok := types[v.Type]; ok {
+		return val
+	}
+
+	return "heap"
 }

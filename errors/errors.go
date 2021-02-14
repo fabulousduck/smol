@@ -87,8 +87,8 @@ func LitIncrementError() {
 }
 
 //UndefinedFunctionReferenceError can be thrown when the script tries to reference an error that is not defined
-func UndefinedFunctionReferenceError(name string) {
-	fmt.Printf("Cannot find function with name: %s\n", name)
+func UndefinedFunctionOrStringReferenceError(name string) {
+	fmt.Printf("Cannot find function or string with name: %s\n", name)
 }
 
 //IncorrectFunctionParamCountError can be throw when more or less arguments are provided to a function than it asks for. We dont support argument defaulting so this is usefull

@@ -9,11 +9,11 @@ import (
 
 //Expression contains nodes in RPN form
 type Expression struct {
-	Nodes []lexer.Token
+	Tokens []lexer.Token
 }
 
 func createExpression(nodes []lexer.Token) Expression {
-	expression := Expression{Nodes: nodes}
+	expression := Expression{Tokens: nodes}
 	return expression
 }
 
@@ -158,7 +158,6 @@ func (p *Parser) readExpressionUntil(tokValues []string) (Expression, string) {
 		if lexer.IsLitteral(expressionTokens[0]) {
 			return createExpression([]lexer.Token{expressionTokens[0]}), delimFound
 		}
-
 		errors.InvalidOperatorError()
 		os.Exit(65)
 		break
@@ -185,7 +184,7 @@ func (p *Parser) parseExpression() Expression {
 		case "less_than":
 			fallthrough
 		case "greater_than":
-			break
+			fallthrough
 		case "exponent":
 			fallthrough
 		case "division":
