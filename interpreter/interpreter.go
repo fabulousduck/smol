@@ -5,48 +5,36 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/ast"
 	"github.com/fabulousduck/smol/errors"
 )
 
-type stackItem struct {
-	key, value string
+type tuple struct {
+	key   string
+	value string
 }
 
-type heapItem struct {
-	key      string
-	itemType string
-	value    ast.Node
-}
-
-type stack []*stackItem
+type stack []*tuple
 
 //Stacks is the global scope that hold sub scopes for varianbles
 type Stacks []stack
 
 //Heap is not really a heap since it does not hold dynamically sized types, but a good excuse to put my function decls into
-type heap []*heapItem
-
-//Heaps is a list of scopes starting from global to nested
-type Heaps []heap
+type Heap []*ast.Function
 
 //Interpreter contains all data needed to Interpret an AST
 type Interpreter struct {
-	Stacks       Stacks
-	Heaps        Heaps
-	CurrentScope int
+	Stacks Stacks
+	Heap   Heap
 }
 
 //NewInterpreter provides a new interpreter with empty base stack and heap
 func NewInterpreter() *Interpreter {
 	i := new(Interpreter)
-
-	//scopes work on an array, where 0 is the global scope
-	//all following scopes are
-	i.CurrentScope = 0
-	i.Stacks = Stacks{stack{}}
-	i.Heaps = Heaps{heap{}}
+	i.Stacks = Stacks{}
+	i.Heap = Heap{}
+	baseStack := stack{}
+	i.Stacks = append(i.Stacks, baseStack)
 	return i
 }
 
@@ -57,23 +45,20 @@ func (i Interpreter) Interpret(AST []ast.Node) {
 		nodeType := node.GetNodeName()
 		switch nodeType {
 		case "variable":
-
-			if node.(*ast.Variable).GetAllocationType() == "stack" {
-				i.stackAlloc(len(i.Stacks)-1, node.(*ast.Variable))
-				break
-			}
-
-			i.heapAlloc(len(i.Heaps)-1, node)
-			break
-
+			//we can do this since only ints exist in our language
+			i.stackAlloc(len(i.Stacks)-1, node.(*ast.Variable))
+		case "whileNot":
+			i.execWhileNot(node.(*ast.WhileNot))
 		case "function":
-			i.heapAlloc(0, node)
+			i.execFunctionDecl(node.(*ast.Function))
 		case "printCall":
 			i.execPrintCall(node.(*ast.PrintCall))
 		case "functionCall":
 			i.execFunctionCall(node.(*ast.FunctionCall))
 		case "setStatement":
 			i.setVariableValue(node.(*ast.SetStatement))
+		case "comparison":
+			i.execComparison(node.(*ast.Comparison))
 		case "switchStatement":
 			i.execSwitchStatement(node.(*ast.SwitchStatement))
 		case "freeStatement":
@@ -152,6 +137,41 @@ func (i *Interpreter) execSwitchStatement(ss *ast.SwitchStatement) {
 	return
 }
 
+func (i *Interpreter) execComparison(cm *ast.Comparison) {
+
+	clhs := 0
+	crhs := 0
+	beforeScopeLevel := len(i.Stacks)
+
+	clhs, _ = strconv.Atoi(i.Stacks.resolveValue(cm.LHS))
+	crhs, _ = strconv.Atoi(i.Stacks.resolveValue(cm.RHS))
+
+	//create a stack for the block inside the comparisons body
+	i.Stacks = append(i.Stacks, stack{})
+	// do static analysis on same variable comparisons
+	switch cm.Operator {
+	case "lt":
+		if clhs < crhs {
+			i.Interpret(cm.Body)
+		}
+	case "gt":
+		if clhs > crhs {
+			i.Interpret(cm.Body)
+		}
+	case "eq":
+		if clhs == crhs {
+			i.Interpret(cm.Body)
+		}
+	case "neq":
+		if clhs != crhs {
+			i.Interpret(cm.Body)
+		}
+	}
+
+	i.Stacks = i.Stacks[:beforeScopeLevel]
+	return
+}
+
 func (i *Interpreter) setVariableValue(ss *ast.SetStatement) {
 	if ss.MHS.GetNodeName() != "statVar" {
 		errors.LitAssignError()
@@ -166,9 +186,7 @@ func (i *Interpreter) setVariableValue(ss *ast.SetStatement) {
 }
 
 func (i *Interpreter) execFunctionCall(fc *ast.FunctionCall) {
-	//indexing this to 0 means we only look at top level scope.
-	//this disallows functions in functions since we wont find them this way
-	functionDecl := i.Heaps[0].resolveFunction(fc.Name)
+	functionDecl := i.Heap.resolveFunction(fc.Name)
 
 	if len(fc.Args) != len(functionDecl.Params) {
 		errors.IncorrectFunctionParamCountError(functionDecl.Name, len(fc.Args), len(functionDecl.Params))
@@ -178,34 +196,13 @@ func (i *Interpreter) execFunctionCall(fc *ast.FunctionCall) {
 
 	beforeScopeLevel := len(i.Stacks)
 	scopedStack := stack{}
-	scopedHeap := heap{}
 
 	for paramListIndex, param := range functionDecl.Params {
-		currentArg := fc.Args[paramListIndex]
 
-		if ast.NodeIsVariable(currentArg) {
-			if currentArg.(*ast.Variable).GetAllocationType() == "stack" {
-				scopedStack = append(scopedStack, i.Stacks.resolveVariable(currentArg))
-				continue
-			}
-			scopedHeap = append(scopedHeap, i.Heaps.resolveVariable(currentArg))
+		if ast.NodeIsVariable(fc.Args[paramListIndex]) {
+			scopedStack = append(scopedStack, i.Stacks.resolveVariable(fc.Args[paramListIndex]))
 		} else {
-			nodeName := currentArg.GetNodeName()
-			switch nodeName {
-			case "BoolLit":
-				boolLit := currentArg.(*ast.BoolLit)
-				scopedStack = append(scopedStack, &stackItem{key: param, value: boolLit.Value})
-				break
-			case "StringLit":
-				scopedHeap = append(scopedHeap, &heapItem{key: param, itemType: "stringLit", value: currentArg})
-				break
-			case "NumLit":
-				numLit := currentArg.(*ast.NumLit)
-				scopedStack = append(scopedStack, &stackItem{key: param, value: numLit.Value})
-				break
-			default:
-				//TODO: error: attempted stack allocation for unknown litteral
-			}
+			scopedStack = append(scopedStack, &tuple{key: param, value: fc.Args[paramListIndex].(*ast.NumLit).Value})
 		}
 	}
 
@@ -215,34 +212,37 @@ func (i *Interpreter) execFunctionCall(fc *ast.FunctionCall) {
 	i.Interpret(functionDecl.Body)
 	i.Stacks = i.Stacks[:beforeScopeLevel]
 }
-func (i *Interpreter) stackAlloc(scopeLevel int, v *ast.Variable) {
-	stackItem := new(stackItem)
-	spew.Dump(v)
-	stackItem.key = v.Name
 
-	stackItem.value = i.Stacks.resolveValue(v.Value)
-
-	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel], stackItem)
+func (i *Interpreter) execFunctionDecl(f *ast.Function) {
+	i.Heap = append(i.Heap, f)
 }
 
-func (i *Interpreter) heapAlloc(scopeLevel int, node ast.Node) {
-	heapItem := new(heapItem)
-	nodeType := node.GetNodeName()
+func (i *Interpreter) stackAlloc(scopeLevel int, v *ast.Variable) {
+	stackTuple := new(tuple)
+	stackTuple.key = v.Name
 
-	switch nodeType {
-	case "Function":
-		heapItem.key = node.(*ast.Function).Name
-		break
-	case "StringLit":
-		heapItem.key = node.(*ast.Variable).Name
-		break
-	default:
-		//TODO: error message: invalid heap allocation
+	stackTuple.value = i.Stacks.resolveValue(v.Value)
+
+	i.Stacks[scopeLevel] = append(i.Stacks[scopeLevel], stackTuple)
+}
+
+func (i *Interpreter) execWhileNot(anb *ast.WhileNot) {
+	LHS := i.Stacks.resolvePtrValue(anb.LHS)
+	RHS := i.Stacks.resolvePtrValue(anb.RHS)
+
+	i.Stacks = append(i.Stacks, stack{})
+	scopeLevel := len(i.Stacks)
+	v, _ := strconv.Atoi(*LHS)
+	n, _ := strconv.Atoi(*RHS)
+	for v != n {
+
+		i.Interpret(anb.Body)
+		//check if it works without htis
+		v, _ = strconv.Atoi(*LHS)
+		n, _ = strconv.Atoi(*RHS)
 	}
-
-	heapItem.value = node
-	heapItem.itemType = node.GetNodeName()
-	i.Heaps[scopeLevel] = append(i.Heaps[scopeLevel], heapItem)
+	//GC the Stacks that were used in the scoped block. ANB in this case
+	i.Stacks = i.Stacks[scopeLevel:]
 }
 
 func (s Stacks) set(name string, value string) {
@@ -275,11 +275,26 @@ func (s stack) stackContains(key string) int {
 	return -1
 }
 
-func (s *Stacks) get(scopeLevel int, index int) *stackItem {
+func (h Heap) find(name string) int {
+	for i := 0; i < len(h); i++ {
+		if h[i].Name == name {
+			return i
+		}
+	}
+	errors.UndefinedFunctionReferenceError(name)
+	os.Exit(65)
+	return -1
+}
+
+func (h Heap) resolveFunction(name string) *ast.Function {
+	return h[h.find(name)]
+}
+
+func (s *Stacks) get(scopeLevel int, index int) *tuple {
 	return (*s)[scopeLevel][index]
 }
 
-func (s *Stacks) resolveVariable(node ast.Node) *stackItem {
+func (s *Stacks) resolveVariable(node ast.Node) *tuple {
 	return s.get(s.find(node.(*ast.StatVar).Value))
 }
 
@@ -291,6 +306,7 @@ func (s *Stacks) resolvePtrValue(node ast.Node) *string {
 }
 
 func (s *Stacks) resolveValue(node ast.Node) string {
+
 	if ast.NodeIsVariable(node) {
 		return s.resolveVariable(node).value
 	}
@@ -309,53 +325,4 @@ func (s *Stacks) resolveValue(node ast.Node) string {
 	//something janky to keep go happy
 	//this is literally unreachable code but it doesnt detect it
 	return node.(*ast.NumLit).Value
-}
-
-func (h *Heaps) resolveVariable(node ast.Node) *heapItem {
-	return h.get(h.find(node.(*ast.StatVar).Value))
-}
-
-func (h *Heaps) get(scopeLevel int, index int) *heapItem {
-	return (*h)[scopeLevel][index]
-}
-
-func (h heap) heapContains(name string) int {
-	for i := 0; i < len(h); i++ {
-		//There are two types on the heap. String and function.
-		//If we add more than that, this function should be made more generic
-		if h[i].itemType == "Function" {
-			if h[i].value.(*ast.Function).Name == name {
-				return i
-			}
-		} else if h[i].itemType == "StringLit" {
-			if h[i].value.(*ast.Variable).Name == name {
-				return i
-			}
-		} else {
-			continue
-		}
-	}
-	errors.UndefinedFunctionOrStringReferenceError(name)
-	os.Exit(65)
-	return -1
-}
-
-func (h heap) resolveFunction(name string) *ast.Function {
-	return h[h.heapContains(name)].value.(*ast.Function)
-}
-
-func (h Heaps) find(key string) (int, int) {
-	//reverse stack search so we start at local scope and keep working our way up intill we find something
-
-	for i := len(h) - 1; i > -1; i-- {
-		heapIndex := h[i].heapContains(key)
-		if heapIndex != -1 {
-			//scopeLevel, scopedStackIndex
-			return i, heapIndex
-		}
-	}
-
-	errors.UndefinedVariableError(key)
-	os.Exit(65)
-	return -1, -1
 }

@@ -1,4 +1,4 @@
-Uint32 a = 10
+mem a 10;
 a++
 print(a)
 a--

@@ -85,6 +85,9 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "statement":
 			statement := AST[i].(*ast.Statement)
 			g.Ir = append(g.Ir, g.handleStatement(statement))
+		case "whileNot":
+			instruction := AST[i].(*ast.WhileNot)
+			g.createAnbInstructions(instruction)
 		case "function":
 			instruction := AST[i].(*ast.Function)
 			g.createFunctionInstructions(instruction)
@@ -100,6 +103,8 @@ func (g *Generator) Generate(AST []ast.Node) {
 		case "freeStatement":
 			instruction := AST[i].(*ast.FreeStatement)
 			g.doFreeInstruction(instruction)
+		case "comparison":
+
 		case "switchStatement":
 
 		case "plotStatement":

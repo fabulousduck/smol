@@ -1,5 +1,5 @@
 def example_function(a,b):
-    while(a < b):
+    whileNot(b,a):
         print(b)
         b++
     end
