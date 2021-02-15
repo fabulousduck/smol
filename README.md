@@ -108,7 +108,7 @@ Example:
 
 Example:
 ```asm
-mem a 20;
+Uint32 a = 20;
 a++
 print(a)
 ```
@@ -126,7 +126,7 @@ Example:
 
 Example:
 ```asm
-mem a = 20;
+Uint32 a = 20;
 a--
 print(a)
 ```
@@ -146,7 +146,7 @@ outputs:
 
 Example:
 ```asm
-mem a = 20;
+Uint32 a = 20;
 
 print(a)
 ```
@@ -181,8 +181,8 @@ Functions do not support return values yet.
 Example:
 
 ```asm
-mem a = 30;
-mem b = 10;
+Uint32 a = 30;
+Uint32 b = 10;
 
 switch(b):
     case 10: #case
@@ -214,8 +214,8 @@ outputs
 Example: 
 
 ```asm
-mem a = 30;
-mem b = 10;
+Uin32 a = 30;
+Uin32 b = 10;
 
 switch(b):
     case 10: #case
@@ -241,8 +241,8 @@ outputs
 Example
 
 ```asm
-mem a = 100;
-mem b = 44;
+Uint32 a = 100;
+Uint32 b = 44;
 
 switch(b): #SWiTch
     case 10:
@@ -273,8 +273,8 @@ outputs
 Example:
 
 ```
-mem a = 0;
-mem b = 10;
+Uint32 a = 0;
+Uint32 b = 10;
 
 whileNot(a,b):
     print(a)
@@ -306,7 +306,7 @@ eq stands for "equals" and checks if `A == B`.
 Example
 
 ```asm
-mem a = 10;
+Uint32 a = 10;
 
 eq(a, 10):
     print(a)
@@ -327,7 +327,7 @@ neq stands for "not equals" and checks if `A != B`.
 Example
 
 ```asm
-mem a = 11;
+Uint32 a = 11;
 
 neq(a, 10):
     print(a)
@@ -368,7 +368,7 @@ lt stands for "less than" and checks if `A < B`
 Example
 
 ```asm
-mem a = 10;
+Uint32 a = 10;
 
 lt(a, 11):
     print(a)
@@ -387,8 +387,8 @@ Smol has support for code comments using the `#` symbol.
 
 Example
 ```asm
-mem a = 10; #side comment 
+Uint32 a = 10; #side comment 
 
 #top comment
-mem b 20;
+Uint32 b 20;
 ```
