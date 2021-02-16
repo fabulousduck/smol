@@ -24,12 +24,12 @@ func NewSmol() *Smol {
 }
 
 //RunFile : Interprets a given file
-func (smol *Smol) RunFile(filename string, compile bool) {
+func (smol *Smol) RunFile(filename string, compile bool, target string) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	smol.Run(string(file), filename, compile)
+	smol.Run(string(file), filename, compile, target) //TODO: make this configurable
 	if smol.HadError {
 		os.Exit(65)
 	}

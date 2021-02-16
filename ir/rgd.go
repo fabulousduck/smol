@@ -39,8 +39,8 @@ func (g *Generator) NewRGDInstruction(endRegister int) RGD {
 	instr.startLocation = emptyRegionStart
 
 	//set I register to the start of the dump region
-	g.regTable.PutRegisterValue(g.IRegisterIndex, emptyRegionStart, "I_REGISTER")
-	g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.IRegisterIndex, emptyRegionStart, "I_REGISTER"))
+	g.regTable.PutRegisterValue(g.targetCPU["IRegisterIndex"], emptyRegionStart, "I_REGISTER")
+	g.Ir = append(g.Ir, g.newSpecificRegisterSet(g.targetCPU["IRegisterIndex"], emptyRegionStart, "I_REGISTER"))
 
 	//put all register values into a slice
 	for i := 0; i < endRegister; i++ {
