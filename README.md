@@ -224,7 +224,7 @@ switch(b):
     case a:
         print(a)
     end
-END
+end
 
 ```
 
