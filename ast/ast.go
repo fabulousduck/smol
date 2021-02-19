@@ -8,6 +8,15 @@ import (
 	"github.com/fabulousduck/smol/lexer"
 )
 
+//Include is a means to include other source code files
+type Include struct {
+	Name string
+}
+
+func (i Include) GetNodeName() string {
+	return "Include"
+}
+
 //IfStatement is a conditional block that has an expression and a body
 type IfStatement struct {
 	Condition Node
@@ -207,8 +216,11 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 			p.advance()
 			return nodes, p.TokensConsumed
 		}
-
+		// spew.Dump(p.currentToken())
 		switch p.currentToken().Type {
+		case "include":
+			p.advance()
+			nodes = append(nodes, p.createInclude())
 		case "plot":
 			p.advance()
 			nodes = append(nodes, p.createPlot())
@@ -223,7 +235,6 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 		case "set_variable":
 			p.advance()
 			nodes = append(nodes, p.createSetStatement())
-
 		case "if_statement":
 			p.advance()
 			nodes = append(nodes, p.createIfStatement())
@@ -262,7 +273,18 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 		}
 
 	}
+	spew.Dump(nodes)
 	return nodes, p.TokensConsumed
+}
+
+func (p *Parser) createInclude() *Include {
+	includeStatement := new(Include)
+
+	p.expectCurrent([]string{"string_litteral"})
+	includeStatement.Name = p.currentToken().Value
+	p.advance()
+
+	return includeStatement
 }
 
 func (p *Parser) createIfStatement() *IfStatement {
@@ -419,6 +441,11 @@ func (p *Parser) createFunctionCall() *FunctionCall {
 	p.expectCurrent([]string{"left_parenthesis"})
 	p.advance()
 
+	if p.currentToken().Type == "right_parenthesis" {
+		p.advance()
+		return fc
+	}
+
 	for currentToken := p.currentToken(); currentToken.Type != "right_parenthesis"; currentToken = p.currentToken() {
 		exprList, delimFound := p.readExpressionUntil([]string{",", ")"})
 		fc.Args = append(fc.Args, exprList)
@@ -429,7 +456,6 @@ func (p *Parser) createFunctionCall() *FunctionCall {
 		p.advance()
 		break
 	}
-	spew.Dump(fc)
 
 	return fc
 }

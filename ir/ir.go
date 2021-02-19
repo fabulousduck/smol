@@ -38,8 +38,8 @@ type instruction interface {
 //Generator contains all the basic information needed
 //to transform an AST into a chip-8 ROM
 type Generator struct {
-	target            string
 	nodesConsumed     int
+	target            string
 	targetCPU         CPULayout
 	Ir                []instruction
 	memTable          memtable.MemTable
@@ -144,8 +144,8 @@ func (g *Generator) doFreeInstruction(instruction *ast.FreeStatement) {
 
 func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 
-	beforeGenerationInstructionCount := len(g.Ir)
 	//find the location where the function will be placed
+	beforeGenerationInstructionCount := len(g.Ir)
 
 	//create the jump instruction so it knows to jump over the function
 	//when not called

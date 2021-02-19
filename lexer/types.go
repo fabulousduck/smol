@@ -85,6 +85,7 @@ func getKeyword(token *Token) string {
 		"boolean_keyword":     []string{"True", "False"},
 		"variable_type":       []string{"String", "Bool", "Uint32", "Uint64"},
 		"print":               []string{"print"},
+		"include":             []string{"include"},
 		"close_block":         []string{"end"},
 		"set_variable":        []string{"set"},
 		"if_statement":        []string{"if"},
