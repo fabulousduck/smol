@@ -38,7 +38,6 @@ type instruction interface {
 //Generator contains all the basic information needed
 //to transform an AST into a chip-8 ROM
 type Generator struct {
-	filename          string
 	target            string
 	nodesConsumed     int
 	targetCPU         CPULayout
@@ -65,11 +64,10 @@ func getCPULayout(name string) CPULayout {
 }
 
 //NewGenerator inits the generator
-func NewGenerator(filename string, target string) *Generator {
+func NewGenerator(target string) *Generator {
 	g := new(Generator)
 	g.memTable = make(memtable.MemTable)
 	g.regTable = make(registertable.RegisterTable)
-	g.filename = filename
 	g.nodesConsumed = 0
 	g.target = target
 	g.targetCPU = getCPULayout(target)

@@ -29,8 +29,8 @@ func (p PLOT) usesVariableSpace() bool {
 	return false
 }
 
-func (gen *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT {
-	g := gen.targetCPU
+func (g *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PLOT {
+	targetCPU := g.targetCPU
 
 	/*
 		chip-8's pixel placement system works on a 8x8 sprite.
@@ -56,10 +56,10 @@ func (gen *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PL
 	/*
 		check if the single pixel has been set or not
 	*/
-	if gen.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
-		gen.Ir = append(gen.Ir, gen.newSetMemoryLocationFromLoose(topLeftPixelMemoryName, topLeftPixel))
+	if g.memTable.LookupVariable(topLeftPixelMemoryName, true) == nil {
+		g.Ir = append(g.Ir, g.newSetMemoryLocationFromLoose(topLeftPixelMemoryName, topLeftPixel))
 	}
-	pixelBufferVariable := gen.memTable.LookupVariable(topLeftPixelMemoryName, true)
+	pixelBufferVariable := g.memTable.LookupVariable(topLeftPixelMemoryName, true)
 
 	/*
 		fill the I register with the memory address of the single pixel value
@@ -67,16 +67,16 @@ func (gen *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PL
 
 		only do this if the I register is not there already
 	*/
-	if gen.regTable[g["IRegisterIndex"]].Value != pixelBufferVariable.Addr {
-		gen.Ir = append(gen.Ir, gen.newMovInstructionFromLoose(g["IRegisterIndex"], pixelBufferVariable.Addr, true))
+	if g.regTable[targetCPU["IRegisterIndex"]].Value != pixelBufferVariable.Addr {
+		g.Ir = append(g.Ir, g.newMovInstructionFromLoose(targetCPU["IRegisterIndex"], pixelBufferVariable.Addr, true))
 	}
 
 	/*
 		actually set the I register
 	*/
-	IRegister := gen.regTable[g["IRegisterIndex"]]
+	IRegister := g.regTable[targetCPU["IRegisterIndex"]]
 	IRegister.Value = pixelBufferVariable.Addr
-	gen.regTable[g["IRegisterIndex"]] = IRegister
+	g.regTable[targetCPU["IRegisterIndex"]] = IRegister
 
 	/*
 		if the node uses variables, we will need to resolve those
@@ -85,41 +85,41 @@ func (gen *Generator) newPlotInstructionSet(plotStatement *ast.PlotStatement) PL
 	if ast.NodeIsVariable(plotStatement.X) {
 		variableName := plotStatement.X.(*ast.StatVar).Value
 		//first we check if the variable is loaded into a register somewhere
-		registerLoadedValue := gen.regTable.Find(variableName)
+		registerLoadedValue := g.regTable.Find(variableName)
 		if registerLoadedValue == -1 {
 			//if it is not in any register. the variable does not exist and we error out
 			errors.UndefinedVariableError(variableName)
 			os.Exit(65)
 		} else {
 			//if it is variable loaded
-			gen.Ir = append(gen.Ir, gen.newRegCpy(registerLoadedValue, g["plotXRegister"]))
+			g.Ir = append(g.Ir, g.newRegCpy(registerLoadedValue, targetCPU["plotXRegister"]))
 		}
 	} else {
 		variableValue := plotStatement.X.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
-		gen.Ir = append(gen.Ir, gen.newSpecificRegisterSet(g["plotXRegister"], intValue, "plotXRegister"))
+		g.Ir = append(g.Ir, g.newSpecificRegisterSet(targetCPU["plotXRegister"], intValue, "plotXRegister"))
 	}
 
 	if ast.NodeIsVariable(plotStatement.Y) {
 		variableName := plotStatement.Y.(*ast.StatVar).Value
 
 		//first we check if the variable is loaded into a register somewhere
-		registerLoadedValue := gen.regTable.Find(variableName)
+		registerLoadedValue := g.regTable.Find(variableName)
 		if registerLoadedValue == -1 {
 			//if it is not in any register. the variable does not exist and we error out
 			errors.UndefinedVariableError(variableName)
 			os.Exit(65)
 		} else {
 			//if it is variable loaded
-			gen.Ir = append(gen.Ir, gen.newRegCpy(registerLoadedValue, g["plotYRegister"]))
+			g.Ir = append(g.Ir, g.newRegCpy(registerLoadedValue, targetCPU["plotYRegister"]))
 		}
 	} else {
 		variableValue := plotStatement.Y.(*ast.NumLit).Value
 		intValue, _ := strconv.Atoi(variableValue)
-		gen.Ir = append(gen.Ir, gen.newSpecificRegisterSet(g["plotYRegister"], intValue, "plotYRegister"))
+		g.Ir = append(g.Ir, g.newSpecificRegisterSet(targetCPU["plotYRegister"], intValue, "plotYRegister"))
 	}
 
-	plotInstr.X = g["plotXRegister"]
-	plotInstr.Y = g["plotYRegister"]
+	plotInstr.X = targetCPU["plotXRegister"]
+	plotInstr.Y = targetCPU["plotYRegister"]
 	return plotInstr
 }
