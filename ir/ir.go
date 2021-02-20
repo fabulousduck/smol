@@ -102,28 +102,32 @@ Generate interprets the AST and makes an IR from it
 */
 func (g *Generator) Generate(AST []ast.Node) {
 	for i := 0; i < len(AST); i++ {
-		nodeType := AST[i].GetNodeName()
+		node := AST[i]
+		nodeType := node.GetNodeName()
 		switch nodeType {
 		case "variable":
-			variable := AST[i].(*ast.Variable)
+			variable := node.(*ast.Variable)
 			g.createVariableOperationInstructions(variable)
 		case "statement":
-			statement := AST[i].(*ast.Statement)
+			statement := node.(*ast.Statement)
 			g.Ir = append(g.Ir, g.handleStatement(statement))
 		case "function":
-			instruction := AST[i].(*ast.Function)
+			instruction := node.(*ast.Function)
 			g.createFunctionInstructions(instruction)
 		case "directOperation":
-			instruction := AST[i].(*ast.DirectOperation)
+			instruction := node.(*ast.DirectOperation)
 			g.createDirectOperationInstructions(instruction)
 		case "functionCall":
-			instruction := AST[i].(*ast.FunctionCall)
+			instruction := node.(*ast.FunctionCall)
 			g.createFunctionCallInstructions(instruction)
 		case "setStatement":
-			instruction := AST[i].(*ast.SetStatement)
+			instruction := node.(*ast.SetStatement)
 			g.createSetStatement(instruction)
+		case "includeStatement":
+			instruction := node.(*ast.IncludeStatement)
+			g.createIncludeStatement(instruction)
 		case "freeStatement":
-			instruction := AST[i].(*ast.FreeStatement)
+			instruction := node.(*ast.FreeStatement)
 			g.doFreeInstruction(instruction)
 		case "switchStatement":
 

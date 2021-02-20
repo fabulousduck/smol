@@ -1,8 +1,5 @@
 def example_function(a,b):
-    while(a < b):
-        print(b)
-        b++
-    end
+    print(b)
 end
 
 Uint32 a = 10

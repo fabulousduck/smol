@@ -1,20 +1,23 @@
 package ast
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/fabulousduck/proto/src/types"
+	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
 
 //Include is a means to include other source code files
-type Include struct {
+type IncludeStatement struct {
 	Name string
 }
 
-func (i Include) GetNodeName() string {
-	return "Include"
+func (i IncludeStatement) GetNodeName() string {
+	return "IncludeStatement"
 }
 
 //IfStatement is a conditional block that has an expression and a body
@@ -57,33 +60,6 @@ func (do DirectOperation) GetNodeName() string {
 //Node is a wrapper interface that AST nodes can implement
 type Node interface {
 	GetNodeName() string //GetNodeName Gets the identifier of a AST node describing what it is
-}
-
-//StringLit represents a string litteral
-type StringLit struct {
-	Value string
-}
-
-func (sl StringLit) GetNodeName() string {
-	return "stringLit"
-}
-
-//BoolLit represents a boolean litteral being either "True" or "False"
-type BoolLit struct {
-	Value string
-}
-
-func (bm BoolLit) GetNodeName() string {
-	return "boolLit"
-}
-
-//NumLit represents a numeric litteral.
-type NumLit struct {
-	Value string
-}
-
-func (nm NumLit) GetNodeName() string {
-	return "numLit"
 }
 
 //Eos is a special node in a switch statement that is called if defined when no cases match the given value
@@ -216,11 +192,13 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 			p.advance()
 			return nodes, p.TokensConsumed
 		}
-		// spew.Dump(p.currentToken())
-		switch p.currentToken().Type {
+		currentTokenType := p.currentToken().Type
+		switch currentTokenType {
 		case "include":
 			p.advance()
-			nodes = append(nodes, p.createInclude())
+			//ResolveInclude is special because it includes the nodes from the file
+			//to the AST itself
+			p.resolveInclude()
 		case "plot":
 			p.advance()
 			nodes = append(nodes, p.createPlot())
@@ -241,7 +219,7 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 		case "close_block":
 			p.advance()
 			return nodes, p.TokensConsumed
-		//string and character loose can be either a function call or a direct operation on the variable such as a++s
+		//string and character by themselves can be either a function call or a direct operation on the variable such as a++s
 		case "string":
 			fallthrough
 		case "character":
@@ -268,23 +246,57 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 		case "end_of_file":
 			return nodes, p.TokensConsumed
 		default:
-			// spew.Dump(p.currentToken())
-			// errors.UnknownTypeError()
+			spew.Dump(p.currentToken())
+			errors.UnknownTypeError()
 		}
 
 	}
+
 	spew.Dump(nodes)
 	return nodes, p.TokensConsumed
 }
 
-func (p *Parser) createInclude() *Include {
-	includeStatement := new(Include)
+func (p *Parser) resolveInclude() {
+	includeStatement := new(IncludeStatement)
 
 	p.expectCurrent([]string{"string_litteral"})
 	includeStatement.Name = p.currentToken().Value
 	p.advance()
 
-	return includeStatement
+	var sb strings.Builder
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(fmt.Sprintf("failed PWD call %s", err.Error()))
+	}
+
+	//get the path to the current dir
+	sb.WriteString(pwd)
+	sb.WriteString("/")
+
+	entryFolderPathSplit := strings.Split(p.Filename, "/")
+	if len(entryFolderPathSplit) > 1 {
+		//pop filename off
+		entryFolderPath := entryFolderPathSplit[:len(entryFolderPathSplit)-1]
+		//add folder path
+		sb.WriteString(strings.Join(entryFolderPath[:], "/"))
+		sb.WriteString("/")
+	}
+	sb.WriteString(includeStatement.Name)
+
+	//resolve the file
+	file, err := ioutil.ReadFile(sb.String())
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+
+	libLexer := lexer.NewLexer(includeStatement.Name, string(file))
+	libLexer.Lex()
+	libParser := NewParser(includeStatement.Name, libLexer.Tokens)
+	libParser.Ast, _ = libParser.Parse("")
+	for i := 0; i < len(libParser.Ast); i++ {
+		p.Ast = append(p.Ast, libParser.Ast[i])
+	}
 }
 
 func (p *Parser) createIfStatement() *IfStatement {
@@ -526,110 +538,4 @@ func (p *Parser) createFunction() *Function {
 	f.Body = body
 	p.advanceN(consumed)
 	return f
-}
-
-/*
-createVariable reads tokens to create a variable
-It adheres to the following structure
-
-<type> <name> <value>
-
-*/
-func (p *Parser) createVariable() *Variable {
-	variable := new(Variable)
-
-	p.expectCurrent([]string{"variable_type"})
-	variable.Type = p.currentToken().Value
-	p.advance()
-
-	p.expectCurrent([]string{"character", "string"})
-	variable.Name = p.currentToken().Value
-	p.advance()
-
-	p.expectCurrent([]string{"equals"})
-	p.advance()
-	variable.ValueExpression = p.readExpression()
-	return variable
-}
-
-func createLit(token lexer.Token) Node {
-	switch token.Type {
-	case "integer":
-		nl := new(NumLit)
-		nl.Value = token.Value
-		return nl
-	case "boolean_keyword":
-		bl := new(BoolLit)
-		bl.Value = token.Value
-		return bl
-	case "string_litteral":
-		sl := new(StringLit)
-		sl.Value = token.Value
-		return sl
-	default:
-		sv := new(StatVar)
-		sv.Value = token.Value
-		return sv
-	}
-}
-
-func (p *Parser) expectCurrent(expectedValues []string) {
-	currentToken := p.currentToken()
-
-	if !types.Contains(currentToken.Type, expectedValues) {
-		lexer.ThrowSemanticError(&currentToken, expectedValues, p.Filename)
-		os.Exit(65)
-	}
-}
-
-func (p *Parser) expectNext(expectedValues []string) {
-	nextToken := p.nextToken()
-	if !types.Contains(nextToken.Type, expectedValues) {
-		lexer.ThrowSemanticError(&nextToken, expectedValues, p.Filename)
-		os.Exit(65)
-	}
-}
-
-func (p *Parser) nextExists() bool {
-	//+1 because we have to account for arrays starting at 0
-	return p.TokensConsumed+1 < len(p.Tokens)
-}
-
-func (p *Parser) currentToken() lexer.Token {
-	return p.Tokens[p.TokensConsumed]
-}
-
-func (p *Parser) nextToken() lexer.Token {
-	return p.Tokens[p.TokensConsumed+1]
-}
-
-func (p *Parser) advance() {
-	p.TokensConsumed++
-}
-
-func (p *Parser) advanceN(n int) {
-	p.TokensConsumed += n
-}
-
-//NodeIsVariable allows for nice statements like if NodeIsVariable(node) {}
-func NodeIsVariable(node Node) bool {
-	return node.GetNodeName() == "statVar"
-}
-
-//GetAllocationType determines if a type must be stack or heap allocated
-func (v *Variable) GetAllocationType() string {
-	types := map[string]string{
-		"Uint16": "stack",
-		"Uint32": "stack",
-		"Uint64": "stack",
-		"String": "heap",
-		"Bool":   "stack",
-		"Char":   "stack",
-	}
-
-	if val, ok := types[v.Type]; ok {
-		return val
-	}
-
-	return "heap"
 }
