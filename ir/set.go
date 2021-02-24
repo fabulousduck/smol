@@ -100,28 +100,33 @@ func (g *Generator) newSetRegisterInstructionFromLoose(registerName string, varV
 }
 
 func (g *Generator) createVariableOperationInstructions(variable *ast.Variable) {
-	//check if its a reference
-	if ast.NodeIsVariable(variable.Value) {
-		//if it is a reference, we get the original value,
-		//and copy it over into a new register with the name of the new variable
-		variableValue := variable.Value.(*ast.StatVar)
-		emptyRegister := g.regTable.FindEmptyRegister()
-		originalRegister := g.regTable.Find(variableValue.Value)
-		g.regTable[emptyRegister] = registertable.Register{g.regTable[originalRegister].Value, variable.Name}
-		g.Ir = append(g.Ir, g.newRegCpy(originalRegister, emptyRegister))
-	} else if variable.Value.GetNodeName() == "boolLit" {
-		variableValue := variable.Value.(*ast.BoolLit).Value
-		booleanIntegerRepresentation := 0
-		if variableValue == "True" {
-			booleanIntegerRepresentation = 1
-		} else {
-			booleanIntegerRepresentation = 0
-		}
-		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, booleanIntegerRepresentation))
-	} else {
-		variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
-		g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
+	//check if value is a litteral
+	if len(variable.ValueExpression.Tokens) == 1 {
+
 	}
+
+	//check if its a reference
+	// if ast.NodeIsVariable(variable.Value) {
+	// 	//if it is a reference, we get the original value,
+	// 	//and copy it over into a new register with the name of the new variable
+	// 	variableValue := variable.Value.(*ast.StatVar)
+	// 	emptyRegister := g.regTable.FindEmptyRegister()
+	// 	originalRegister := g.regTable.Find(variableValue.Value)
+	// 	g.regTable[emptyRegister] = registertable.Register{g.regTable[originalRegister].Value, variable.Name}
+	// 	g.Ir = append(g.Ir, g.newRegCpy(originalRegister, emptyRegister))
+	// } else if variable.Value.GetNodeName() == "boolLit" {
+	// 	variableValue := variable.Value.(*ast.BoolLit).Value
+	// 	booleanIntegerRepresentation := 0
+	// 	if variableValue == "True" {
+	// 		booleanIntegerRepresentation = 1
+	// 	} else {
+	// 		booleanIntegerRepresentation = 0
+	// 	}
+	// 	g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, booleanIntegerRepresentation))
+	// } else {
+	// 	variableValue, _ := strconv.Atoi(variable.Value.(*ast.NumLit).Value)
+	// 	g.Ir = append(g.Ir, g.newSetRegisterInstructionFromLoose(variable.Name, variableValue))
+	// }
 }
 
 func (g *Generator) createSetStatement(instruction *ast.SetStatement) {

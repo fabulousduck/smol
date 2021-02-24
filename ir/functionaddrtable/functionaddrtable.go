@@ -3,6 +3,7 @@ package functionaddrtable
 import (
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/errors"
 )
 
@@ -29,6 +30,7 @@ func NewFunctionAddr(addr int, name string) FunctionAddr {
 Find checks if a given function with name name exists in the function table
 */
 func (table FunctionAddrTable) Find(name string) FunctionAddr {
+	spew.Dump(table)
 	for i := 0; i < len(table); i++ {
 		if table[i].Name == name {
 			return table[i]

@@ -3,6 +3,7 @@ package ast
 import (
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fabulousduck/smol/errors"
 	"github.com/fabulousduck/smol/lexer"
 )
@@ -40,7 +41,8 @@ func createVariableReference(name string) VariableReference {
 
 //Operator is a symbol that operates on one or more sides
 type Operator struct {
-	value string
+	Symbol   Symbol
+	LHS, RHS Node
 }
 
 //GetNodeName is a generic function that allows subtypes of a node in the AST
@@ -48,7 +50,7 @@ func (o Operator) GetNodeName() string {
 	return "operator"
 }
 
-//Symbol is a character that is not and operator or a latin character / numeral
+//Symbol is an operator by itself
 type Symbol struct {
 	value string
 }
@@ -162,19 +164,76 @@ func (p *Parser) readExpressionUntil(tokValues []string) (Expression, string) {
 		os.Exit(65)
 		break
 	default:
-		return expressionParser.parseExpression(), delimFound
+		expr := expressionParser.parseExpression()
+		p.rpnToTree(expr)
+		return expr, delimFound
 	}
 
 	return createExpression([]lexer.Token{}), delimFound
 }
+
+func (p *Parser) rpnToTree(e Expression) []Node {
+	tree := []Node{}
+	workingStack := invertStack(e.Tokens)
+	spew.Dump(workingStack)
+	for 0 < len(e.Tokens) {
+		ctop := top(workingStack)
+		if lexer.IsOperator(ctop.Type) {
+			operator := Operator{}
+			operator.Symbol = CreateSymbol(ctop.Value)
+			//pop the operator of the input stack
+			workingStack = (workingStack)[:len(workingStack)-1]
+			//lhs
+			operator.LHS = tree[len(tree)-1]
+			//pop lhs off tree
+			tree = (tree)[:len(tree)-1]
+			//rhs
+			operator.RHS = tree[len(tree)-1]
+			//pop rhs off the tree
+			tree = (tree)[:len(tree)-1]
+			//append operator to the tree
+			tree = append(tree, operator)
+		} else {
+			switch ctop.Type {
+			case "integer":
+				tree = append(tree, CreateLitteral(ctop.Value, ctop.Type))
+			case "string":
+				fallthrough
+			case "character":
+				tree = append(tree, createVariableReference(ctop.Value))
+			}
+		}
+	}
+
+	return tree
+}
+
+/*
+LEFT OFF HERE.
+
+PROBLEM:
+	WHEN WE PARSE AN EXPRESSION, IT COULD BE THAT THERE IS A FUNCTION CALL IN THERE
+	IF THERE IS, WE NEED TO GET ALL THE ARGUMENTS TO THAT FUNCTION CALL IN ORDER TO MAKE A FUNCTIONCALL NODE
+	WE DO NOT KNOW WHERE ARGUMENTS START AND END WHEN THIS PROCESS OF RPN GENERATION IS DONE
+
+POSSIBLE SOLUTION:
+	- IF WE FIND A FUNCTION NAME, READEXPRUNTILL([]STRING{","}) UNTIL WE HIT A )
+	  THESE WILL BE SUB EXPRESSION WRAPPED IN A TOKEN WITH TYPE SUBEXPRESSION AND VALUE OF THE EXPRESSION IN RPN FORM
+	  THEN WE PARSE ALL THOSE EXPRESSIONS THROUGH THE RPN PARSER INDIVIDUALLY
+	  ONCE DONE, WE CAN THEN RPN PARSE THE FUNCTION CALL AND ITS ARGUMENTS TO END UP WITH VALID RPN
+	  THEN CONTINUE THROUGH THE PARSER UNTIL DONE
+*/
 
 func (p *Parser) parseExpression() Expression {
 	operatorStack := []lexer.Token{}
 	outputQueue := []lexer.Token{}
 	for p.TokensConsumed < len(p.Tokens) {
 		token := p.currentToken()
+		spew.Dump(token)
 		switch token.Type {
 		case "comma":
+			// subExpr := lexer.Token{}
+			operatorStack = append(operatorStack, token)
 			p.advance()
 			break
 		case "integer":
@@ -230,15 +289,13 @@ func (p *Parser) parseExpression() Expression {
 			}
 			p.advance()
 			break
+		case "function_name":
+			operatorStack = append(operatorStack, token)
+			p.advance()
 		case "character":
 			fallthrough
 		case "string":
-			if p.nextExists() && p.nextToken().Type == "left_parenthesis" {
-				outputQueue = append(outputQueue, token)
-			} else {
-				operatorStack = append(operatorStack, token)
-			}
-
+			outputQueue = append(outputQueue, token)
 			p.advance()
 			break
 
@@ -252,6 +309,15 @@ func (p *Parser) parseExpression() Expression {
 	}
 
 	return createExpression(outputQueue)
+}
+
+func invertStack(stack []lexer.Token) []lexer.Token {
+	nstack := []lexer.Token{}
+	for i := len(stack) - 1; i >= 0; i-- {
+		nstack = append(nstack, stack[i])
+	}
+
+	return nstack
 }
 
 func top(sl []lexer.Token) lexer.Token {

@@ -2,9 +2,7 @@ def fnc(a):
     print(a)
 end
 
-fnc(1+1)
-
-fnb(hello(a,b) + world(c,d), 2 + 2, hello(a))
+fnc(hello(a+1*kekw,b+2/x) + world(c,d), 2 + 2, hello(a))
 
 if(hello(a,b)):
     print("f")

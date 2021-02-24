@@ -186,11 +186,10 @@ func NewParser(filename string, tokens []lexer.Token) *Parser {
 
 //Parse takes a set of tokens and generates an AST from them
 func (p *Parser) Parse(delim string) ([]Node, int) {
-	nodes := []Node{}
 	for p.TokensConsumed < len(p.Tokens) {
 		if delim != "" && p.currentToken().Type == delim {
 			p.advance()
-			return nodes, p.TokensConsumed
+			return p.Ast, p.TokensConsumed
 		}
 		currentTokenType := p.currentToken().Type
 		switch currentTokenType {
@@ -201,59 +200,53 @@ func (p *Parser) Parse(delim string) ([]Node, int) {
 			p.resolveInclude()
 		case "plot":
 			p.advance()
-			nodes = append(nodes, p.createPlot())
+			p.Ast = append(p.Ast, p.createPlot())
 		case "variable_type":
-			nodes = append(nodes, p.createVariable())
+			p.Ast = append(p.Ast, p.createVariable())
 		case "function_definition":
 			p.advance()
-			nodes = append(nodes, p.createFunction())
+			p.Ast = append(p.Ast, p.createFunction())
 		case "print":
 			p.advance()
-			nodes = append(nodes, p.createPrintCall())
+			p.Ast = append(p.Ast, p.createPrintCall())
 		case "set_variable":
 			p.advance()
-			nodes = append(nodes, p.createSetStatement())
+			p.Ast = append(p.Ast, p.createSetStatement())
 		case "if_statement":
 			p.advance()
-			nodes = append(nodes, p.createIfStatement())
+			p.Ast = append(p.Ast, p.createIfStatement())
 		case "close_block":
 			p.advance()
-			return nodes, p.TokensConsumed
-		//string and character by themselves can be either a function call or a direct operation on the variable such as a++s
+			return p.Ast, p.TokensConsumed
+		case "function_name":
+			p.Ast = append(p.Ast, p.createFunctionCall())
 		case "string":
 			fallthrough
 		case "character":
-			//its either a function
-			if p.nextToken().Type == "left_parenthesis" {
-				nodes = append(nodes, p.createFunctionCall())
-				//or a direct operation
-			} else {
-				nodes = append(nodes, p.createDirectOperation())
-			}
+			spew.Dump(p.currentToken())
+			p.Ast = append(p.Ast, p.createDirectOperation())
 		case "free":
 			p.advance()
-			nodes = append(nodes, p.createFreeStatement())
+			p.Ast = append(p.Ast, p.createFreeStatement())
 		case "switch":
 			p.advance()
-			nodes = append(nodes, p.createSwitchStatement())
+			p.Ast = append(p.Ast, p.createSwitchStatement())
 			p.advance()
 		case "case":
 			p.advance()
-			nodes = append(nodes, p.createSwitchCase())
+			p.Ast = append(p.Ast, p.createSwitchCase())
 		case "end_of_switch":
 			p.advance()
-			nodes = append(nodes, p.createEOSStatement())
+			p.Ast = append(p.Ast, p.createEOSStatement())
 		case "end_of_file":
-			return nodes, p.TokensConsumed
+			return p.Ast, p.TokensConsumed
 		default:
 			spew.Dump(p.currentToken())
 			errors.UnknownTypeError()
 		}
 
 	}
-
-	spew.Dump(nodes)
-	return nodes, p.TokensConsumed
+	return p.Ast, p.TokensConsumed
 }
 
 func (p *Parser) resolveInclude() {
@@ -446,7 +439,7 @@ func (p *Parser) createSwitchStatement() *SwitchStatement {
 func (p *Parser) createFunctionCall() *FunctionCall {
 	fc := new(FunctionCall)
 
-	p.expectCurrent([]string{"string", "character"})
+	p.expectCurrent([]string{"function_name"})
 	fc.Name = p.currentToken().Value
 	p.advance()
 
@@ -508,7 +501,7 @@ func (p *Parser) createFunction() *Function {
 
 	f := new(Function)
 
-	p.expectCurrent([]string{"string", "character"})
+	p.expectCurrent([]string{"function_name"})
 	f.Name = p.currentToken().Value
 	p.advance()
 

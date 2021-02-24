@@ -50,6 +50,9 @@ func (l *Lexer) Lex() {
 		switch currTok.Type {
 		case "character":
 			currTok.Value = l.peekTypesN([]string{"integer", "character"})
+			if l.currentChar() == "(" {
+				currTok.Type = "function_name"
+			}
 		case "integer":
 			currTok.Value = l.peekTypesN([]string{"integer"})
 		case "comment":

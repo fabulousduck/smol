@@ -41,9 +41,9 @@ func (smol *Smol) Compile(sourceCode string, filename string, target string) {
 	p := ast.NewParser(filename, l.Tokens)
 	//We can ignore the second return value here as it is the amount of tokens consumed.
 	//We do not need this here
-	p.Ast, _ = p.Parse("")
+	ast, _ := p.Parse("")
 	g := ir.NewGenerator(target)
-	g.Generate(p.Ast)
+	g.Generate(ast)
 	bg := bytecode.Init(g, filename)
 	bg.CreateRom()
 	return

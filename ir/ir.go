@@ -68,6 +68,7 @@ func NewGenerator(target string) *Generator {
 	g := new(Generator)
 	g.memTable = make(memtable.MemTable)
 	g.regTable = make(registertable.RegisterTable)
+	g.functionAddrTable = functionaddrtable.FunctionAddrTable{}
 	g.nodesConsumed = 0
 	g.target = target
 	g.targetCPU = getCPULayout(target)
@@ -159,6 +160,8 @@ func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 	passJumpInstructionID := uid.String()
 	passJumpInstruction.ID = passJumpInstructionID
 
+	g.Ir = append(g.Ir, &passJumpInstruction)
+
 	//save the byte addr before generating function code
 	functionStartAddr := 0x200 + (beforeGenerationInstructionCount * 2)
 
@@ -170,6 +173,9 @@ func (g *Generator) createFunctionInstructions(instruction *ast.Function) {
 
 	//find the jump back
 	passJumpInstrIndex := g.FindInstructionIndex(passJumpInstructionID)
+	if passJumpInstrIndex == -1 {
+		panic("no jmp index for fn")
+	}
 
 	//replace it with the new one that contains the proper address
 	g.Ir[passJumpInstrIndex] = Jump{To: 0x200 + (len(g.Ir) * 2), ID: passJumpInstructionID}
